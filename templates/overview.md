@@ -5,32 +5,52 @@ order: 1
 updatedAt:
 ---
 
-# Title
+# {{Technology}}
 
-## Historia
+## Definition
 
-## ¿Por qué nació?
+> Explain what the technology is, why it was created, which problem it solves,
+> provide a brief historical context, and explain why it is still relevant today.
+>
+> Never assume previous knowledge.
 
-## ¿Qué problema resuelve?
+---
 
-## ¿Qué es?
+## How it Works
 
-## ¿Cómo funciona?
+> Explain the technology from a high-level perspective.
+>
+> Introduce every important concept before using it.
+>
+> The objective is to build a mental model, not to explain implementation details.
 
-## Componentes principales
+---
 
-## Casos de uso
+## How it Fits into the Ecosystem
 
-## ¿Cuándo utilizarla?
+> Explain where this technology fits inside real production systems.
+>
+> Describe which technologies usually surround it and how they interact.
 
-## ¿Cuándo NO utilizarla?
+---
 
-## Ventajas
+## Real-World Usage
 
-## Desventajas
+> Explain:
+>
+> - When should it be used?
+> - When shouldn't it be used?
+> - Advantages
+> - Disadvantages
+> - Trade-offs
+> - Common alternatives
 
-## Ejemplo sencillo
+---
 
-## Conceptos relacionados
+## Practical Examples
 
-## Resumen
+> Use production-oriented examples.
+>
+> Avoid academic examples whenever possible.
+>
+> The reader should immediately understand where this technology appears in real software systems.

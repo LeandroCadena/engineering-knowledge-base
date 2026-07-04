@@ -5,26 +5,56 @@ order: 2
 updatedAt:
 ---
 
-# Deep Dive
+# {{Technology}} Deep Dive
 
-## Arquitectura
+## Internal Architecture
 
-## Funcionamiento interno
+> Explain the internal architecture.
 
-## Componentes
+---
 
-## Flujo interno
+## Internal Components
 
-## Ciclo de vida
+> Describe every important internal component and its responsibility.
+
+---
+
+## Execution Flow
+
+> Explain step by step how the technology works internally.
+
+---
 
 ## Performance
 
-## Seguridad
+> Explain the main performance characteristics.
 
-## Buenas prácticas
+---
 
-## Errores comunes
+## Security
 
-## Casos reales
+> Describe security considerations and common risks.
 
-## Referencias
+---
+
+## Best Practices
+
+> Explain industry best practices and why they exist.
+
+---
+
+## Common Mistakes
+
+> Explain the most common mistakes developers make.
+
+---
+
+## Real-World Examples
+
+> Show real production scenarios.
+
+---
+
+## References
+
+> Official documentation, RFCs, specifications and trusted resources.
