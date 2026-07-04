@@ -11,13 +11,13 @@ export async function DocsLayout({ children }: DocsLayoutProps) {
 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-100">
-            <div className="grid min-h-screen grid-cols-[280px_1fr]">
-                <aside className="border-r border-zinc-800 bg-zinc-900 p-6">
+            <div className="lg:grid lg:min-h-screen lg:grid-cols-[280px_1fr]">
+                <aside className="border-b border-zinc-800 bg-zinc-900 p-4 lg:border-r lg:border-b-0 lg:p-6">
                     <Link href="/" className="block text-lg font-semibold">
                         Engineering KB
                     </Link>
 
-                    <nav className="mt-8 space-y-8">
+                    <nav className="mt-6 max-h-[320px] space-y-6 overflow-y-auto lg:max-h-none">
                         {navigation.map((category) => (
                             <section key={category.slug}>
                                 <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -50,7 +50,9 @@ export async function DocsLayout({ children }: DocsLayoutProps) {
                     </nav>
                 </aside>
 
-                <main className="min-w-0 px-10 py-8">{children}</main>
+                <main className="min-w-0 px-5 py-6 sm:px-8 lg:px-10 lg:py-8">
+                    {children}
+                </main>
             </div>
         </div>
     );
