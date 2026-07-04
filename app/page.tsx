@@ -1,29 +1,51 @@
 import Link from 'next/link';
 
-export default function HomePage() {
+import { getNavigation } from '@/lib/content';
+
+export default async function HomePage() {
+  const navigation = await getNavigation();
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-10">
-      <h1 className="text-4xl font-bold">Engineering Knowledge Base</h1>
+    <main className="min-h-screen bg-zinc-950 px-6 py-16 text-zinc-100">
+      <section className="mx-auto max-w-5xl">
+        <p className="mb-4 text-sm font-semibold tracking-wide text-zinc-500 uppercase">
+          Engineering Knowledge Base
+        </p>
 
-      <p className="max-w-xl text-center text-gray-600">
-        Personal technical documentation built with Next.js and Markdown.
-      </p>
+        <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">
+          A personal technical reference for modern software engineering.
+        </h1>
 
-      <div className="flex gap-4">
-        <Link
-          href="/test"
-          className="rounded-lg border px-4 py-2 hover:bg-gray-100"
-        >
-          Markdown Test
-        </Link>
+        <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-400">
+          Organized documentation about languages, frameworks, architecture, cloud, infrastructure,
+          databases, AI, and DevOps.
+        </p>
 
-        <Link
-          href="/navigation-test"
-          className="rounded-lg border px-4 py-2 hover:bg-gray-100"
-        >
-          Navigation Test
-        </Link>
-      </div>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {navigation.map((category) => {
+            const firstTechnology = category.technologies[0];
+            const firstDocument = firstTechnology?.documents[0];
+
+            const href =
+              firstTechnology && firstDocument
+                ? `/docs/${category.slug}/${firstTechnology.slug}/${firstDocument.slug}`
+                : '#';
+
+            return (
+              <Link
+                key={category.slug}
+                href={href}
+                className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-700"
+              >
+                <h2 className="text-lg font-semibold">{category.title}</h2>
+                <p className="mt-2 text-sm text-zinc-400">
+                  {category.technologies.length} topics available
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
     </main>
   );
 }
