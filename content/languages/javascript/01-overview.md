@@ -1,221 +1,254 @@
 ---
-title: JavaScript Overview
-description: Core overview of JavaScript, its history, purpose, use cases, and fundamentals.
+title: Node.js Overview
+description: Understand why Node.js was created, how it works at a high level, where it fits in modern software systems, and when to use it.
 order: 1
-updatedAt: 2026-07-04
+updatedAt: 2026-07-05
 ---
 
+# Node.js
+
+## Definition
+
+Node.js was created by **Ryan Dahl** in 2009 to solve a scalability problem found in many traditional web servers.
+
+Before Node.js, JavaScript could only execute inside web browsers, while backend applications were typically developed using different programming languages. This separation increased development complexity and prevented developers from using JavaScript across the entire application.
+
+Traditional web servers commonly assigned one execution thread to every incoming request. While waiting for databases, file systems, or external services to respond, those threads remained occupied without performing useful work.
+
+Node.js introduced a different execution model that minimizes the number of execution threads required to manage large numbers of waiting operations. This approach made it possible to build highly concurrent backend applications while using JavaScript outside the browser.
+
 ---
 
-# JavaScript
+## How it Works
 
-## Historia
+Node.js is a **Runtime Environment**, a software environment that provides everything required to execute JavaScript outside the browser.
 
-JavaScript fue creado en 1995 por Brendan Eich mientras trabajaba en Netscape. Su objetivo inicial era permitir que las páginas web fueran interactivas dentro del navegador.
+A Runtime Environment interacts with the operating system, allowing applications to access resources such as the file system, networking, processes, and memory.
 
-En sus primeros años, JavaScript era visto principalmente como un lenguaje simple para validar formularios, manipular elementos visuales y agregar pequeños comportamientos a páginas HTML. Sin embargo, con el crecimiento de la web, los navegadores modernos y motores como V8, JavaScript evolucionó hasta convertirse en uno de los lenguajes más importantes del desarrollo moderno.
+Node.js executes JavaScript using the **V8 JavaScript Engine**, the engine responsible for parsing, compiling, and executing JavaScript code.
 
-Hoy JavaScript se utiliza tanto en frontend como en backend, aplicaciones móviles, herramientas de línea de comandos, automatizaciones, desktop apps y sistemas distribuidos.
+JavaScript executes on a **single main execution thread**, meaning only one JavaScript instruction can be processed at any given moment.
 
-## ¿Por qué nació?
+A **blocking operation** prevents the main execution thread from processing additional JavaScript code until the current operation finishes.
 
-JavaScript nació porque la web necesitaba interactividad.
+Many operations performed by backend applications involve **I/O (Input/Output)**, including communicating with databases, reading files, sending network requests, or interacting with external APIs. These operations typically spend more time waiting for external resources than executing JavaScript code.
 
-Antes de JavaScript, las páginas web eran mayormente estáticas. Cada acción importante requería enviar información al servidor y recargar una nueva página.
+Instead of blocking the main execution thread while waiting, Node.js delegates asynchronous work outside the JavaScript execution thread whenever possible, allowing other JavaScript code to continue executing.
 
-JavaScript permitió ejecutar lógica directamente en el navegador, haciendo posible:
+The **Event Loop** coordinates the execution of completed asynchronous operations once the main execution thread becomes available.
 
-- validar formularios antes de enviarlos;
-- modificar contenido sin recargar la página;
-- responder a eventos del usuario;
-- crear interfaces más dinámicas;
-- mejorar la experiencia de usuario.
+Node.js relies on **libuv** to coordinate asynchronous operations and interact with operating system services.
 
-## ¿Qué problema resuelve?
+Some operations that cannot be performed asynchronously by the operating system are delegated to a **Worker Pool**, a small group of background threads managed by libuv.
 
-JavaScript resuelve el problema de ejecutar lógica dinámica en aplicaciones web.
+---
 
-Permite que una aplicación responda a acciones del usuario, consuma APIs, actualice la interfaz, procese datos y coordine comportamiento entre diferentes partes del sistema.
+## How it Fits into the Ecosystem
 
-Con Node.js, JavaScript también resolvió otro problema importante: usar el mismo lenguaje en el frontend y en el backend.
+Node.js primarily runs in the **backend**, the part of an application responsible for executing business logic, accessing data, communicating with external services, and responding to client requests.
 
-Esto permite construir aplicaciones completas con una misma base tecnológica.
+Within modern software systems, Node.js commonly fulfills one of the following roles.
 
-## ¿Qué es?
+```text
+                    Node.js
 
-JavaScript es un lenguaje de programación interpretado, dinámico, multiparadigma y de alto nivel.
+        ┌────────────┼────────────┐
+        │            │            │
+        ▼            ▼            ▼
 
-Es dinámico porque los tipos se resuelven en tiempo de ejecución. Es multiparadigma porque permite programar de diferentes maneras: imperativa, funcional, orientada a objetos basada en prototipos y event-driven.
-
-JavaScript es el lenguaje nativo de la web. Todos los navegadores modernos lo ejecutan sin necesidad de instalar nada adicional.
-
-## ¿Cómo se usa?
-
-JavaScript se usa principalmente de estas formas:
-
-- en el navegador, para construir interfaces interactivas;
-- en backend, usando Node.js;
-- en frameworks frontend como React, Vue, Angular y Next.js;
-- en aplicaciones móviles con React Native;
-- en scripts de automatización;
-- en herramientas CLI;
-- en testing;
-- en procesamiento de datos;
-- en integraciones con APIs externas.
-
-Un ejemplo simple:
-
-```js
-const user = {
-  name: 'Leandro',
-  role: 'Software Engineer',
-};
-
-function greet(user) {
-  return `Hello, ${user.name}`;
-}
-
-console.log(greet(user));
+     REST API   Background    Serverless
+                  Worker       Function
 ```
 
-## ¿Cómo funciona?
+### REST API
 
-JavaScript se ejecuta dentro de un motor. En Chrome y Node.js, el motor más conocido es V8.
+A **REST API** receives requests over **HTTP**, executes business logic, communicates with databases or external services, and returns a response to the client.
 
-El motor se encarga de interpretar y optimizar el código JavaScript para que pueda ejecutarse de forma eficiente.
-
-JavaScript usa un modelo de ejecución basado en un solo hilo principal, conocido como single-threaded. Esto significa que una sola tarea se ejecuta a la vez en el call stack.
-
-Sin embargo, JavaScript puede manejar operaciones asíncronas gracias al event loop. Esto permite trabajar con timers, llamadas HTTP, eventos del navegador, promesas y operaciones de entrada/salida sin bloquear toda la aplicación.
-
-## Componentes principales
-
-Los fundamentos más importantes de JavaScript son:
-
-- variables y tipos de datos;
-- funciones;
-- objetos;
-- arrays;
-- scope;
-- closures;
-- prototypes;
-- promises;
-- async/await;
-- event loop;
-- módulos;
-- manejo de errores;
-- manipulación del DOM en navegador;
-- consumo de APIs;
-- programación orientada a eventos.
-
-## Casos de uso
-
-JavaScript se usa en una gran cantidad de contextos:
-
-- aplicaciones web;
-- SPAs;
-- dashboards;
-- ecommerce;
-- APIs REST;
-- microservicios con Node.js;
-- serverless functions;
-- aplicaciones móviles;
-- aplicaciones desktop con Electron;
-- automatización;
-- scripting;
-- testing;
-- herramientas de desarrollo.
-
-## ¿Cuándo utilizarlo?
-
-JavaScript es una buena opción cuando necesitas construir productos web, APIs, interfaces dinámicas, aplicaciones full stack o herramientas donde la productividad y el ecosistema sean importantes.
-
-También es especialmente útil cuando el equipo ya trabaja con frontend moderno, porque permite compartir lenguaje, patrones y conocimiento entre frontend y backend.
-
-## ¿Cuándo NO utilizarlo?
-
-JavaScript no suele ser la mejor opción cuando el sistema requiere procesamiento intensivo de CPU, bajo nivel, control estricto de memoria o máximo rendimiento computacional.
-
-Para casos como motores gráficos complejos, sistemas embebidos, procesamiento científico pesado o servicios de muy alta concurrencia CPU-bound, lenguajes como Rust, Go, C++ o Java pueden ser más adecuados.
-
-También puede ser una mala elección en proyectos grandes si se usa sin estructura, sin TypeScript, sin buenas prácticas y sin una arquitectura clara.
-
-## Ventajas
-
-JavaScript tiene varias ventajas importantes:
-
-- es el lenguaje nativo del navegador;
-- tiene un ecosistema enorme;
-- permite desarrollo full stack;
-- tiene una comunidad muy grande;
-- es flexible;
-- tiene alta productividad;
-- se integra fácilmente con APIs;
-- funciona bien para aplicaciones event-driven;
-- tiene muchísimas librerías y frameworks.
-
-## Desventajas
-
-Algunas desventajas de JavaScript son:
-
-- tipado dinámico;
-- errores que pueden aparecer recién en runtime;
-- algunas decisiones históricas confusas;
-- ecosistema muy cambiante;
-- dependencia excesiva de paquetes externos;
-- menor seguridad estructural si no se combina con TypeScript;
-- puede volverse difícil de mantener en proyectos grandes sin arquitectura.
-
-## Ejemplo sencillo
-
-```js
-async function getUser(userId) {
-  const response = await fetch(`https://api.example.com/users/${userId}`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch user');
-  }
-
-  return response.json();
-}
-
-getUser(1)
-  .then((user) => console.log(user))
-  .catch((error) => console.error(error));
+```text
+Browser / Mobile App
+         │
+         ▼
+     REST API
+     (Node.js)
+         │
+         ▼
+      Database
 ```
 
-Este ejemplo muestra varios conceptos importantes:
+### Background Worker
 
-- función asíncrona;
-- consumo de API;
-- uso de `await`;
-- manejo de errores;
-- promesas.
+A **Background Worker** executes tasks without responding directly to users. Instead of processing client requests, it consumes jobs from a **Queue** and performs work asynchronously.
 
-## Conceptos relacionados
+```text
+Application
+      │
+      ▼
+    Queue
+      │
+      ▼
+Background Worker
+    (Node.js)
+      │
+      ▼
+External Service
+```
 
-JavaScript se relaciona directamente con:
+### Serverless Function
 
-- TypeScript;
-- Node.js;
-- React;
-- Next.js;
-- Express;
-- NestJS;
-- HTML;
-- CSS;
-- APIs REST;
-- JSON;
-- Event Loop;
-- Promises;
-- Web APIs;
-- DOM;
-- Frontend Architecture.
+A **Serverless Function** executes code only when triggered by an event. The cloud provider automatically starts the function, executes the required work, and stops it when the execution finishes.
 
-## Resumen
+```text
+Event
+  │
+  ▼
+Serverless Function
+     (Node.js)
+  │
+  ▼
+Database
+```
 
-JavaScript es uno de los lenguajes más importantes del desarrollo moderno. Nació para agregar interactividad a la web, pero evolucionó hasta convertirse en una tecnología clave para construir aplicaciones completas.
+---
 
-Su mayor fortaleza es la combinación de presencia universal en navegadores, enorme ecosistema, productividad y capacidad de trabajar tanto en frontend como backend.
+## Real-World Usage
 
-Para proyectos profesionales, JavaScript suele alcanzar su mejor versión cuando se combina con TypeScript, buenas prácticas, testing y una arquitectura clara.
+### When to Use Node.js
+
+Node.js is an excellent choice for **I/O-bound applications**, where most execution time is spent waiting for external resources rather than performing computations.
+
+Common examples include:
+
+- REST APIs
+- Microservices
+- Background Workers
+- Real-time applications
+- Serverless Functions
+- API Gateways
+- Streaming services
+
+### When Not to Use Node.js
+
+Node.js is generally not the best choice for **CPU-bound applications**, where most execution time is spent performing intensive calculations.
+
+Examples include:
+
+- Image processing
+- Video encoding
+- Scientific computing
+- Machine learning training
+- Large data transformations
+
+These workloads can block the main JavaScript execution thread and reduce the application's ability to process concurrent requests.
+
+### Advantages
+
+- Uses JavaScript across both frontend and backend.
+- Efficiently handles large numbers of concurrent I/O operations.
+- Large ecosystem and community support.
+- Excellent for scalable network applications.
+- Fast development cycle.
+
+### Trade-offs
+
+- Not ideal for long-running CPU-intensive tasks.
+- Blocking JavaScript code affects the entire execution thread.
+- Some computational workloads require Worker Threads or external services.
+
+### Common Alternatives
+
+Different workloads benefit from different technologies.
+
+Examples include:
+
+- Go for lightweight concurrent services.
+- Java for large enterprise systems and CPU-intensive workloads.
+- C# for applications within the Microsoft ecosystem.
+- Python for automation, AI, and data science workloads.
+
+---
+
+## Practical Examples
+
+### Example 1 — REST API
+
+A client application sends an **HTTP** request to a REST API built with Node.js. The API validates the request, executes the required business logic, retrieves data from the database, and returns a response to the client.
+
+```text
+Browser / Mobile App
+         │
+         ▼
+     REST API
+     (Node.js)
+         │
+         ▼
+      Database
+```
+
+Typical use cases include:
+
+- Authentication systems
+- E-commerce platforms
+- Mobile application backends
+- SaaS products
+- Public APIs
+
+---
+
+### Example 2 — Background Worker
+
+An application publishes a job to a **Queue** after completing an operation. A Node.js Background Worker consumes the job asynchronously and performs tasks without affecting the application's response time.
+
+Typical responsibilities include:
+
+- Sending emails
+- Processing uploaded files
+- Generating reports
+- Synchronizing external systems
+- Executing scheduled jobs
+
+```text
+Application
+      │
+      ▼
+    Queue
+      │
+      ▼
+Background Worker
+    (Node.js)
+      │
+      ▼
+External Service
+```
+
+---
+
+### Example 3 — Serverless Function
+
+An event triggers a Serverless Function written in Node.js. The function executes a specific task, stores the result if necessary, and automatically terminates once the execution finishes.
+
+Typical use cases include:
+
+- Processing uploaded files
+- Webhook handlers
+- Scheduled tasks
+- API integrations
+- Cloud automations
+
+```text
+Event
+  │
+  ▼
+Serverless Function
+     (Node.js)
+  │
+  ▼
+Database
+```
+
+---
+
+## What's Next?
+
+This overview introduced the purpose of Node.js, its execution model, its role within modern software systems, and the situations where it provides the greatest value.
+
+The **Node.js Deep Dive** expands these concepts by explaining the internal architecture of the Node.js Runtime, including the Event Loop, libuv, Worker Pool, Streams, Buffers, EventEmitter, memory management, and other concepts expected from experienced software engineers.

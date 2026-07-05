@@ -1,60 +1,42 @@
 ---
-title:
-description:
+title: Technology Deep Dive
+description: Master the internal concepts that explain how the technology works from an engineering perspective.
 order: 2
-updatedAt:
+updatedAt: YYYY-MM-DD
 ---
 
-# {{Technology}} Deep Dive
+# Technology Deep Dive
 
-## Internal Architecture
+## Concept Name
 
-> Explain the internal architecture.
+Engineering explanation...
 
----
+The objective of this section is to explain one engineering concept that contributes to understanding how the technology works internally.
 
-## Internal Components
+Avoid teaching APIs or implementation details unless they improve the understanding of the concept.
 
-> Describe every important internal component and its responsibility.
+### At a Glance
 
----
+Use this section only when it adds value.
 
-## Execution Flow
+Include only concise information that helps readers quickly recall the most important aspects of the concept.
 
-> Explain step by step how the technology works internally.
+Examples include:
 
----
+- Execution priority
+- Comparisons
+- Common APIs
+- Typical use cases
+- Decision tables
 
-## Performance
+### Common Misconceptions
 
-> Explain the main performance characteristics.
+Use this section only when the concept is frequently misunderstood.
 
----
+Include only misconceptions commonly found in the industry.
 
-## Security
+Examples:
 
-> Describe security considerations and common risks.
+❌ Incorrect statement
 
----
-
-## Best Practices
-
-> Explain industry best practices and why they exist.
-
----
-
-## Common Mistakes
-
-> Explain the most common mistakes developers make.
-
----
-
-## Real-World Examples
-
-> Show real production scenarios.
-
----
-
-## References
-
-> Official documentation, RFCs, specifications and trusted resources.
+✅ Correct explanation

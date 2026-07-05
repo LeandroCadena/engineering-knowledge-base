@@ -242,78 +242,101 @@ The purpose is to acknowledge the concept without interrupting the current learn
 
 ---
 
-# Overview Structure
+# Document Types
 
-Every Overview should follow the same structure.
+The knowledge base is divided into two complementary document types.
 
-## 1. Definition
-
-Explain:
-
-- What it is.
-- Why it was created.
-- Which problem it solved.
-- Brief historical context.
-- Why it is still relevant today.
-
-The objective is to understand why the technology exists.
+Each one has a different purpose and depth.
 
 ---
 
-## 2. How it Works
+# Overview
 
-Explain the technology from a high-level perspective.
+## Purpose
 
-Introduce every important concept before using it.
+The purpose of an Overview is to help readers **understand the technology**.
 
-Build a mental model.
+After reading an Overview, readers should understand:
 
-Do not explain internal implementation details.
+- Why the technology exists.
+- The problem it was created to solve.
+- How it works at a high level.
+- Where it fits inside modern software systems.
+- When it should (and should not) be used.
+- How it is commonly applied in production.
 
-Those belong to the Deep Dive.
+The Overview should build an accurate mental model without exploring internal implementation details.
 
----
+Readers should finish the document understanding the technology well enough to discuss it confidently and recognize it inside real software systems.
 
-## 3. How it Fits into the Ecosystem
-
-Explain where the technology fits inside real production systems.
-
-Describe:
-
-- what surrounds it;
-- how it interacts with other technologies;
-- which role it usually plays.
-
-This section should help readers visualize complete software architectures instead of isolated tools.
+Typical reading time: **10–15 minutes**.
 
 ---
 
-## 4. Real-World Usage
+## Overview Structure
 
-Explain:
+Every Overview follows the same structure.
 
-- when it should be used;
-- when it should not be used;
-- advantages;
-- disadvantages;
-- trade-offs;
-- common alternatives.
+1. Definition
+2. How it Works
+3. How it Fits into the Ecosystem
+4. Real-World Usage
+5. Practical Examples
 
-The objective is to help readers make engineering decisions, not simply describe features.
-
----
-
-## 5. Practical Examples
-
-Use realistic production scenarios.
-
-Prefer architectures and workflows over isolated code snippets.
-
-Readers should immediately recognize where this technology appears inside real software systems.
+Each section answers only its own learning objective and naturally prepares the reader for the next one.
 
 ---
 
-# Deep Dive Structure
+# Deep Dive
+
+## Purpose
+
+The purpose of a Deep Dive is to help readers **master the technology from an engineering perspective**.
+
+It does **not** teach how to build applications with the technology.
+
+Instead, it explains the internal concepts that allow engineers to reason about the technology, discuss it confidently during technical interviews, and make informed architectural decisions.
+
+A Deep Dive should answer the technical questions expected from a senior engineer.
+
+Examples include:
+
+- Internal architecture
+- Execution model
+- Performance
+- Memory management
+- Concurrency
+- Synchronization
+- Internal components
+- Design decisions
+- Common misconceptions
+- Real-world trade-offs
+
+Each concept should be developed independently, following the same writing principles as the Overview:
+
+- Introduce one concept at a time.
+- Define every new concept before using it.
+- Avoid unnecessary transitions.
+- Maintain high knowledge density.
+- Build understanding progressively.
+
+The goal is not to memorize implementation details.
+
+The goal is to understand how the technology works well enough to reason about it.
+
+Typical reading time: **30–60 minutes**, distributed across independent concepts.
+
+---
+
+# Relationship Between Both Documents
+
+The Overview explains what every software engineer should know.
+
+The Deep Dive explains what every senior software engineer should understand.
+
+The Overview builds the mental model.
+
+The Deep Dive expands and strengthens it.
 
 The purpose of a Deep Dive is to explain how a technology actually works internally.
 
