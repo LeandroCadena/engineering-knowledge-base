@@ -39,11 +39,13 @@ export const markdownComponents: CustomMarkdownComponents = {
     li: ({ children }) => <li className="leading-7">{children}</li>,
 
     code: ({ children }) => (
-        <code className="rounded bg-zinc-800 px-1.5 py-0.5 text-sm text-zinc-100">{children}</code>
+        <code className="rounded-md border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 text-[0.9em] text-zinc-100">
+            {children}
+        </code>
     ),
 
     pre: ({ children }) => (
-        <pre className="mb-6 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm">
+        <pre className="my-6 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-5 text-sm leading-7 text-zinc-200">
             {children}
         </pre>
     ),
@@ -53,4 +55,24 @@ export const markdownComponents: CustomMarkdownComponents = {
             {children}
         </blockquote>
     ),
+
+    hr: () => <hr className="my-10 border-zinc-800" />,
+
+    table: ({ children }) => (
+        <div className="my-8 overflow-x-auto rounded-xl border border-zinc-800">
+            <table className="w-full border-collapse text-sm">{children}</table>
+        </div>
+    ),
+
+    thead: ({ children }) => <thead className="bg-zinc-900 text-zinc-100">{children}</thead>,
+
+    tbody: ({ children }) => <tbody className="divide-y divide-zinc-800">{children}</tbody>,
+
+    tr: ({ children }) => <tr className="border-zinc-800">{children}</tr>,
+
+    th: ({ children }) => (
+        <th className="px-4 py-3 text-left font-semibold text-zinc-200">{children}</th>
+    ),
+
+    td: ({ children }) => <td className="px-4 py-3 text-zinc-300">{children}</td>,
 };

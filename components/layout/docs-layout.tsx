@@ -11,16 +11,16 @@ export async function DocsLayout({ children }: DocsLayoutProps) {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="lg:grid lg:min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside className="border-b border-zinc-800 bg-zinc-900 p-4 lg:border-r lg:border-b-0 lg:p-6">
-          <Link href="/" className="block text-lg font-semibold">
+      <div className="mx-auto grid min-h-screen max-w-[1500px] lg:grid-cols-[300px_1fr]">
+        <aside className="border-b border-zinc-800 bg-zinc-950/95 p-5 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:border-r lg:border-b-0 lg:p-6">
+          <Link href="/" className="block text-lg font-semibold tracking-tight">
             Engineering KB
           </Link>
 
-          <nav className="mt-6 max-h-[320px] space-y-6 overflow-y-auto lg:max-h-none">
+          <nav className="mt-8 space-y-8">
             {navigation.map((category) => (
               <section key={category.slug}>
-                <h2 className="mb-3 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   {category.title}
                 </h2>
 
@@ -34,7 +34,7 @@ export async function DocsLayout({ children }: DocsLayoutProps) {
                           <Link
                             key={document.slug}
                             href={`/docs/${category.slug}/${technology.slug}/${document.slug}`}
-                            className="block rounded-md px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+                            className="block rounded-md px-3 py-1.5 text-sm text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-100"
                           >
                             {document.title}
                           </Link>
@@ -48,7 +48,9 @@ export async function DocsLayout({ children }: DocsLayoutProps) {
           </nav>
         </aside>
 
-        <main className="min-w-0 px-5 py-6 sm:px-8 lg:px-10 lg:py-8">{children}</main>
+        <main className="min-w-0 px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
+          {children}
+        </main>
       </div>
     </div>
   );
