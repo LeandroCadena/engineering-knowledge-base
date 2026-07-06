@@ -44,6 +44,33 @@ At no point does the application know or store the user's credentials.
 
 ---
 
+## Identity
+
+Identity represents the information that uniquely identifies a user.
+
+Examples include:
+
+- User ID
+- Email address
+- Username
+- Employee ID
+
+Identity itself does not grant permissions.
+
+Knowing who a user is does not automatically determine what that user may access.
+
+Identity becomes especially important when discussing OpenID Connect, which extends OAuth by adding an identity layer.
+
+:::at-a-glance
+
+Identity describes who the user is.
+
+OAuth describes what applications may access.
+
+:::
+
+---
+
 ## Authentication
 
 Authentication answers one question:
@@ -96,32 +123,52 @@ Authorization determines permissions.
 
 ---
 
-## Identity
+## Consent
 
-Identity represents the information that uniquely identifies a user.
+Consent is the explicit approval given by the Resource Owner allowing a Client to access specific resources.
 
-Examples include:
+Authentication proves who the user is.
 
-- User ID
-- Email address
-- Username
-- Employee ID
+Authorization determines what permissions may be granted.
 
-Identity itself does not grant permissions.
+Consent is the user's decision to approve or deny those permissions.
 
-Knowing who a user is does not automatically determine what that user may access.
+During the OAuth flow, the Authorization Server presents the requested scopes to the user before issuing an Access Token.
 
-Identity becomes especially important when discussing OpenID Connect, which extends OAuth by adding an identity layer.
+The user may:
+
+- Approve all requested scopes.
+- Deny the request.
+- Cancel the authorization process.
+
+Consent ensures that delegated access always remains under the Resource Owner's control.
 
 :::at-a-glance
 
-Identity describes who the user is.
+### Consent
 
-OAuth describes what applications may access.
+- Explicit user approval.
+- Happens after authentication.
+- Grants requested scopes.
+- Can be denied or revoked.
 
 :::
 
----
+:::misconceptions
+
+❌ Authentication automatically grants application access.
+
+✅ Authentication verifies identity.
+
+Consent determines whether the user authorizes the requested permissions.
+
+:::
+
+:::production-note
+
+Many Authorization Servers remember previously granted consent so users do not need to approve the same permissions every time.
+
+:::
 
 ## OAuth Roles
 
@@ -182,6 +229,104 @@ Before serving any request, it validates the Access Token received from the Clie
 
 ---
 
+## Client Types
+
+OAuth distinguishes between two categories of clients based on their ability to securely protect credentials.
+
+### Confidential Clients
+
+Confidential Clients execute in trusted environments where credentials can be securely stored.
+
+Examples include:
+
+- Backend services.
+- Server-side web applications.
+- Microservices.
+
+These clients can safely use a Client Secret.
+
+---
+
+### Public Clients
+
+Public Clients execute in environments controlled by the user.
+
+Examples include:
+
+- Single Page Applications.
+- Mobile applications.
+- Desktop applications.
+
+Because users can inspect the application, Public Clients cannot securely protect a Client Secret.
+
+Instead, they rely on mechanisms such as PKCE.
+
+:::at-a-glance
+
+### Client Types
+
+Confidential Clients
+
+- Trusted environment.
+- Can store secrets.
+
+Public Clients
+
+- User-controlled environment.
+- Cannot securely store secrets.
+
+:::
+
+:::misconceptions
+
+❌ Mobile applications can safely hide Client Secrets.
+
+✅ Any secret embedded in client-side software should be considered exposed.
+
+:::
+
+:::production-note
+
+Choosing whether a client is confidential or public determines which OAuth flows and security mechanisms should be used.
+
+:::
+
+## Client Secret
+
+A Client Secret is a credential used to authenticate a Confidential Client when communicating with the Authorization Server.
+
+Unlike user credentials, the Client Secret identifies the application itself.
+
+Because Public Clients cannot securely store secrets, they should not rely on Client Secrets for security.
+
+Instead, they use PKCE to prove possession during the Authorization Code Flow.
+
+:::at-a-glance
+
+### Client Secret
+
+- Identifies the Client.
+- Used only by Confidential Clients.
+- Never embedded in Public Clients.
+
+:::
+
+:::misconceptions
+
+❌ Every OAuth Client should have a Client Secret.
+
+✅ Only Confidential Clients can securely protect Client Secrets.
+
+:::
+
+:::production-note
+
+Treat Client Secrets like passwords.
+
+They should never be exposed to browsers, mobile applications, or publicly distributed software.
+
+:::
+
 ## Access Token
 
 An **Access Token** is a credential representing the permissions granted to a Client.
@@ -234,6 +379,69 @@ The Resource Server validates the token before processing the request.
 :::
 
 ---
+
+## Bearer Tokens
+
+Most OAuth Access Tokens are used as Bearer Tokens.
+
+A Bearer Token grants access simply because the client possesses it.
+
+The Resource Server does not verify who originally obtained the token.
+
+It only verifies that the token is valid.
+
+```text
+Client
+
+↓
+
+Authorization: Bearer <Access Token>
+
+↓
+
+Resource Server
+
+↓
+
+Token Validation
+
+↓
+
+Protected Resource
+```
+
+Because possession is sufficient to access protected resources, Bearer Tokens must be protected during storage and transmission.
+
+For this reason, OAuth requires HTTPS when transmitting tokens.
+
+:::at-a-glance
+
+### Bearer Tokens
+
+- Possession grants access.
+- Sent with every protected request.
+- Require secure transport.
+- Typically carried in the Authorization header.
+
+:::
+
+:::misconceptions
+
+❌ The server knows who is sending the token.
+
+✅ The server only verifies that the presented token is valid.
+
+Whoever possesses a valid Bearer Token can use it until it expires or is revoked.
+
+:::
+
+:::production-note
+
+Bearer Tokens should never appear in URLs, browser history, logs, or unsecured network traffic.
+
+Always transmit them over HTTPS.
+
+:::
 
 ## Refresh Token
 
@@ -400,6 +608,58 @@ Resource Server
 :::
 
 ---
+
+## Redirect URI
+
+The Redirect URI defines where the Authorization Server returns the user after the authorization process.
+
+Before issuing an Authorization Code, the Authorization Server verifies that the requested Redirect URI matches one of the Client's registered redirect destinations.
+
+```text
+Client
+
+↓
+
+Authorization Server
+
+↓
+
+Registered Redirect URI?
+
+↓
+
+Yes → Authorization Code
+
+No → Reject Request
+```
+
+This validation prevents attackers from receiving Authorization Codes through malicious redirect destinations.
+
+:::at-a-glance
+
+### Redirect URI
+
+- Pre-registered.
+- Validated by the Authorization Server.
+- Receives the Authorization Code.
+
+:::
+
+:::misconceptions
+
+❌ The Client may redirect users to any URL.
+
+✅ Authorization Servers only redirect to previously registered Redirect URIs.
+
+:::
+
+:::production-note
+
+Redirect URI validation is one of the most important protections against authorization code interception attacks.
+
+Combined with PKCE, it significantly strengthens the Authorization Code Flow.
+
+:::
 
 ## PKCE
 
