@@ -215,6 +215,145 @@ main()
 
 ---
 
+## Hoisting
+
+Hoisting is JavaScript's behavior of registering declarations during the Creation Phase of an Execution Context before any code executes.
+
+This does **not** mean variables or functions are physically moved within the source code.
+
+Instead, JavaScript prepares the Execution Context by allocating memory for declarations before entering the Execution Phase.
+
+Different declarations behave differently during hoisting:
+
+| Declaration          | Hoisted | Initialized |
+| -------------------- | ------- | ----------- |
+| Function Declaration | ✅      | ✅          |
+| var                  | ✅      | `undefined` |
+| let                  | ✅      | ❌          |
+| const                | ✅      | ❌          |
+
+:::at-a-glance
+
+### Hoisting
+
+- Happens during Creation Phase.
+- Registers declarations.
+- Different declaration types behave differently.
+- Foundation for TDZ.
+
+:::
+
+:::misconceptions
+
+❌ JavaScript moves code to the top of the file.
+
+✅ JavaScript creates bindings during the Creation Phase before executing the code.
+
+:::
+
+:::production-note
+
+Understanding Hoisting helps explain variable visibility, initialization behavior, and why `let` and `const` differ from `var`.
+
+:::
+
+## Temporal Dead Zone (TDZ)
+
+The Temporal Dead Zone is the period between the creation of a variable binding and its initialization.
+
+Variables declared with `let` and `const` exist during the Creation Phase but cannot be accessed until execution reaches their declaration.
+
+```text
+Creation Phase
+
+↓
+
+Binding Created
+
+↓
+
+Execution Starts
+
+↓
+
+Declaration Reached
+
+↓
+
+Variable Initialized
+```
+
+Attempting to access the variable before initialization results in a runtime error.
+
+:::at-a-glance
+
+### Temporal Dead Zone
+
+- Applies to `let` and `const`.
+- Binding exists.
+- Variable not yet initialized.
+- Prevents accidental access.
+
+:::
+
+:::misconceptions
+
+❌ `let` variables are not hoisted.
+
+✅ They are hoisted, but remain uninitialized until execution reaches their declaration.
+
+:::
+
+:::production-note
+
+The TDZ helps catch programming mistakes by preventing the use of variables before they have been intentionally initialized.
+
+:::
+
+## var vs let vs const
+
+JavaScript provides three ways to declare variables.
+
+Although they appear similar, they differ in scope, initialization, reassignment, and interaction with Hoisting.
+
+| Feature                 | var         | let   | const |
+| ----------------------- | ----------- | ----- | ----- |
+| Scope                   | Function    | Block | Block |
+| Hoisted                 | ✅          | ✅    | ✅    |
+| Initialized Immediately | `undefined` | ❌    | ❌    |
+| Reassignment            | ✅          | ✅    | ❌    |
+| Redeclaration           | ✅          | ❌    | ❌    |
+
+General guidelines:
+
+- Use `const` whenever the binding should not change.
+- Use `let` when reassignment is required.
+- Avoid `var` in modern JavaScript.
+
+:::at-a-glance
+
+### Variable Declarations
+
+- `const` by default.
+- `let` for mutable bindings.
+- Avoid `var`.
+
+:::
+
+:::misconceptions
+
+❌ `const` makes objects immutable.
+
+✅ `const` prevents reassignment of the variable binding, not mutation of the referenced object.
+
+:::
+
+:::production-note
+
+Modern JavaScript codebases almost exclusively use `const` and `let`, reserving `var` only for legacy code.
+
+:::
+
 ## Lexical Environment
 
 A **Lexical Environment** is the internal structure JavaScript uses to resolve variables and functions.
@@ -422,6 +561,113 @@ The returned function continues accessing `count` because it closes over its Lex
 :::
 
 ---
+
+## Primitive vs Reference Types
+
+JavaScript values are divided into two categories.
+
+### Primitive Values
+
+Examples:
+
+- Number
+- String
+- Boolean
+- BigInt
+- Symbol
+- Null
+- Undefined
+
+Primitive values are copied by value.
+
+---
+
+### Reference Values
+
+Examples:
+
+- Objects
+- Arrays
+- Functions
+
+Reference values are copied by reference.
+
+Multiple variables may reference the same object in memory.
+
+:::at-a-glance
+
+### Value Categories
+
+- Primitive values copy their value.
+- Objects share references.
+- Important for memory and mutation.
+
+:::
+
+:::misconceptions
+
+❌ Objects are copied when assigned.
+
+✅ Object assignment copies the reference, not the object itself.
+
+:::
+
+:::production-note
+
+Understanding reference semantics is essential for reasoning about object mutation, React state updates, and memory behavior.
+
+:::
+
+## Equality
+
+JavaScript provides multiple ways to compare values.
+
+The most common are:
+
+- `===` (Strict Equality)
+- `==` (Loose Equality)
+- `Object.is()`
+
+Strict equality compares values without type coercion.
+
+Loose equality performs implicit type conversion before comparison.
+
+`Object.is()` behaves similarly to strict equality but correctly distinguishes special cases such as `NaN` and signed zero.
+
+Reference values compare their references rather than their contents.
+
+```js
+{} === {}      // false
+
+[] === []      // false
+```
+
+Even though two objects contain identical data, they occupy different locations in memory.
+
+:::at-a-glance
+
+### Equality
+
+- Strict equality.
+- Loose equality.
+- Reference comparison.
+- Object identity.
+
+:::
+
+:::misconceptions
+
+❌ Two identical objects are equal.
+
+✅ Objects are equal only when both variables reference the same object.
+
+:::
+
+:::production-note
+
+Prefer strict equality (`===`) unless implicit type coercion is explicitly required.
+
+:::
 
 ## Objects
 
@@ -1416,114 +1662,6 @@ Typical use cases include:
 ❌ WeakMap is simply a faster Map.
 
 ✅ WeakMap exists primarily to support memory-safe object associations.
-
-:::
-
----
-
-## Modules
-
-Modules allow JavaScript applications to organize code into reusable, maintainable, and isolated units.
-
-Each module has its own scope, preventing variables and functions from leaking into the global namespace.
-
-Modern JavaScript uses the ES Module (ESM) system.
-
-Common syntax includes:
-
-```javascript
-// math.js
-export function add(a, b) {
-  return a + b;
-}
-```
-
-```javascript
-// app.js
-import { add } from './math.js';
-
-console.log(add(2, 3));
-```
-
-Node.js also supports CommonJS for backward compatibility.
-
-```javascript
-const math = require('./math');
-
-module.exports = math;
-```
-
-Today, ES Modules are the recommended standard for modern JavaScript development.
-
-:::at-a-glance
-
-### Modules
-
-- Organize code.
-- Isolated scope.
-- Reusable.
-- ES Modules are the modern standard.
-
-:::
-
-:::misconceptions
-
-❌ Every JavaScript file shares the same scope.
-
-✅ Each module has its own scope.
-
-:::
-
-:::practical-note
-
-Modern backend applications should prefer ES Modules unless compatibility with legacy CommonJS packages is required.
-
-Many build tools and frameworks now assume ESM by default.
-
-:::
-
----
-
-## Performance
-
-JavaScript performance is influenced far more by application design than by individual language features.
-
-Common optimization strategies include:
-
-- Avoid unnecessary object allocations.
-- Reuse expensive computations.
-- Minimize synchronous blocking work.
-- Process large datasets incrementally.
-- Prefer asynchronous I/O over synchronous APIs.
-- Avoid unnecessary deep object cloning.
-- Use efficient data structures.
-
-Performance bottlenecks are typically identified through profiling rather than intuition.
-
-:::at-a-glance
-
-### Performance
-
-- Measure before optimizing.
-- Minimize allocations.
-- Prefer asynchronous operations.
-- Profile real workloads.
-
-:::
-
-:::misconceptions
-
-❌ Small syntax changes usually produce significant performance improvements.
-
-✅ Algorithm choice and application architecture have a much greater impact.
-
-:::
-
-:::production-note
-
-Premature optimization often increases complexity without measurable benefits.
-
-Always profile the application before optimizing critical paths.
 
 :::
 
