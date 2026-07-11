@@ -1,13 +1,79 @@
 import Link from 'next/link';
 
 import { getNavigation } from '@/lib/content';
+import type { ContentDirectory, ContentNavigationNode } from '@/lib/content';
 
 type DocsLayoutProps = {
   children: React.ReactNode;
 };
 
+function hasDocuments(node: ContentNavigationNode): boolean {
+  if (node.type === 'document') {
+    return true;
+  }
+
+  return node.children.some(hasDocuments);
+}
+
+function NavigationTree({
+  nodes,
+  depth = 0,
+}: {
+  nodes: ContentNavigationNode[];
+  depth?: number;
+}) {
+  const visibleNodes = nodes.filter(hasDocuments);
+
+  if (visibleNodes.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={depth === 0 ? 'space-y-3' : 'mt-2 space-y-2'}>
+      {visibleNodes.map((node) => {
+        const key = node.path.join('/');
+
+        if (node.type === 'document') {
+          return (
+            <Link
+              key={key}
+              href={`/docs/${key}`}
+              className="block rounded-md px-3 py-1.5 text-sm text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-100"
+            >
+              {node.title}
+            </Link>
+          );
+        }
+
+        return (
+          <div key={key}>
+            <p
+              className={
+                depth === 0
+                  ? 'text-sm font-medium text-zinc-300'
+                  : 'text-sm font-medium text-zinc-400'
+              }
+            >
+              {node.title}
+            </p>
+
+            <div className="ml-3 border-l border-zinc-800 pl-3">
+              <NavigationTree nodes={node.children} depth={depth + 1} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export async function DocsLayout({ children }: DocsLayoutProps) {
   const navigation = await getNavigation();
+
+  const categories = navigation.filter(
+    (node): node is ContentDirectory =>
+      node.type === 'directory' && hasDocuments(node),
+  );
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -18,31 +84,13 @@ export async function DocsLayout({ children }: DocsLayoutProps) {
           </Link>
 
           <nav className="mt-8 space-y-8">
-            {navigation.map((category) => (
-              <section key={category.slug}>
+            {categories.map((category) => (
+              <section key={category.path.join('/')}>
                 <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   {category.title}
                 </h2>
 
-                <div className="space-y-3">
-                  {category.technologies.map((technology) => (
-                    <div key={technology.slug}>
-                      <p className="text-sm font-medium text-zinc-300">{technology.title}</p>
-
-                      <div className="mt-2 space-y-1">
-                        {technology.documents.map((document) => (
-                          <Link
-                            key={document.slug}
-                            href={`/docs/${category.slug}/${technology.slug}/${document.slug}`}
-                            className="block rounded-md px-3 py-1.5 text-sm text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-100"
-                          >
-                            {document.title}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <NavigationTree nodes={category.children} />
               </section>
             ))}
           </nav>

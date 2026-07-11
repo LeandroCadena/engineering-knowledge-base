@@ -2,11 +2,11 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { formatTitle } from './format-title';
-import type { ContentCategory, ContentDocument, ContentTechnology } from './types';
+import type { ContentDirectory, ContentDocument, ContentNavigationNode } from './types';
 
 const CONTENT_ROOT = path.join(process.cwd(), 'content');
 
-async function pathExists(targetPath: string) {
+async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await fs.access(targetPath);
     return true;
@@ -15,67 +15,69 @@ async function pathExists(targetPath: string) {
   }
 }
 
-async function getDirectories(targetPath: string) {
-  const entries = await fs.readdir(targetPath, { withFileTypes: true });
+function sortNavigationNodes(nodes: ContentNavigationNode[]): ContentNavigationNode[] {
+  return nodes.sort((first, second) => {
+    // Directories should appear before documents.
+    if (first.type !== second.type) {
+      return first.type === 'directory' ? -1 : 1;
+    }
 
-  return entries
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
+    return first.title.localeCompare(second.title);
+  });
 }
 
-async function getMarkdownFiles(targetPath: string) {
-  const entries = await fs.readdir(targetPath, { withFileTypes: true });
+async function buildNavigationTree(
+  directoryPath: string,
+  parentPath: string[] = [],
+): Promise<ContentNavigationNode[]> {
+  const entries = await fs.readdir(directoryPath, {
+    withFileTypes: true,
+  });
 
-  return entries
-    .filter((entry) => entry.isFile())
-    .map((entry) => entry.name)
-    .filter((fileName) => fileName.endsWith('.md'))
-    .sort();
+  const nodes = await Promise.all(
+    entries
+      .filter((entry) => entry.isDirectory() || (entry.isFile() && entry.name.endsWith('.md')))
+      .map(async (entry): Promise<ContentNavigationNode> => {
+        if (entry.isDirectory()) {
+          const directorySlug = entry.name;
+          const directoryContentPath = [...parentPath, directorySlug];
+
+          const directory: ContentDirectory = {
+            type: 'directory',
+            slug: directorySlug,
+            title: formatTitle(directorySlug),
+            path: directoryContentPath,
+            children: await buildNavigationTree(
+              path.join(directoryPath, directorySlug),
+              directoryContentPath,
+            ),
+          };
+
+          return directory;
+        }
+
+        const documentSlug = entry.name.replace(/\.md$/, '');
+        const documentContentPath = [...parentPath, documentSlug];
+
+        const document: ContentDocument = {
+          type: 'document',
+          slug: documentSlug,
+          title: formatTitle(documentSlug),
+          fileName: entry.name,
+          path: documentContentPath,
+        };
+
+        return document;
+      }),
+  );
+
+  return sortNavigationNodes(nodes);
 }
 
-export async function getNavigation(): Promise<ContentCategory[]> {
+export async function getNavigation(): Promise<ContentNavigationNode[]> {
   if (!(await pathExists(CONTENT_ROOT))) {
     return [];
   }
 
-  const categorySlugs = await getDirectories(CONTENT_ROOT);
-
-  const categories = await Promise.all(
-    categorySlugs.map(async (categorySlug) => {
-      const categoryPath = path.join(CONTENT_ROOT, categorySlug);
-      const technologySlugs = await getDirectories(categoryPath);
-
-      const technologies = await Promise.all(
-        technologySlugs.map(async (technologySlug): Promise<ContentTechnology> => {
-          const technologyPath = path.join(categoryPath, technologySlug);
-          const markdownFiles = await getMarkdownFiles(technologyPath);
-
-          const documents: ContentDocument[] = markdownFiles.map((fileName) => {
-            const slug = fileName.replace(/\.md$/, '');
-
-            return {
-              slug,
-              title: formatTitle(slug),
-              fileName,
-            };
-          });
-
-          return {
-            slug: technologySlug,
-            title: formatTitle(technologySlug),
-            documents,
-          };
-        }),
-      );
-
-      return {
-        slug: categorySlug,
-        title: formatTitle(categorySlug),
-        technologies,
-      };
-    }),
-  );
-
-  return categories;
+  return buildNavigationTree(CONTENT_ROOT);
 }

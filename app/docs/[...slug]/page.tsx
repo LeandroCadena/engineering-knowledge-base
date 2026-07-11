@@ -1,13 +1,11 @@
 import { notFound } from 'next/navigation';
 
 import { MarkdownRenderer } from '@/components/markdown/markdown-renderer';
-import { getDocument, getMarkdownMetadata } from '@/lib/content';
+import { getDocumentBySlug, getMarkdownMetadata } from '@/lib/content';
 
 type DocumentPageProps = {
   params: Promise<{
-    category: string;
-    technology: string;
-    document: string;
+    slug: string[];
   }>;
 };
 
@@ -24,9 +22,13 @@ function formatUpdatedAt(updatedAt: unknown) {
 }
 
 export default async function DocumentPage({ params }: DocumentPageProps) {
-  const { category, technology, document } = await params;
+  const { slug } = await params;
 
-  const markdown = await getDocument(category, technology, document);
+  if (!slug || slug.length < 2) {
+    notFound();
+  }
+
+  const markdown = await getDocumentBySlug(slug);
 
   if (!markdown) {
     notFound();
@@ -38,7 +40,9 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
   return (
     <article className="mx-auto max-w-3xl">
       {metadata.description ? (
-        <p className="mb-10 text-lg leading-8 text-zinc-400">{metadata.description}</p>
+        <p className="mb-10 text-lg leading-8 text-zinc-400">
+          {metadata.description}
+        </p>
       ) : null}
 
       <MarkdownRenderer content={content} />

@@ -1,17 +1,17 @@
 export type ContentDocument = {
+  type: 'document';
   slug: string;
   title: string;
   fileName: string;
+  path: string[];
 };
 
-export type ContentTechnology = {
+export type ContentDirectory = {
+  type: 'directory';
   slug: string;
   title: string;
-  documents: ContentDocument[];
+  path: string[];
+  children: ContentNavigationNode[];
 };
 
-export type ContentCategory = {
-  slug: string;
-  title: string;
-  technologies: ContentTechnology[];
-};
+export type ContentNavigationNode = ContentDirectory | ContentDocument;
