@@ -198,11 +198,3 @@ Thousands of connected devices continuously publish telemetry.
 Kafka stores every event.
 
 Analytics systems, monitoring platforms, dashboards, and machine learning pipelines consume the same event stream at different speeds.
-
----
-
-## What's Next?
-
-This overview introduced Kafka as a distributed event streaming platform built around immutable event logs rather than traditional message queues.
-
-The Kafka Deep Dive explores topics, partitions, offsets, consumer groups, retention, replay, ordering guarantees, performance, and production best practices for building scalable event-driven systems.

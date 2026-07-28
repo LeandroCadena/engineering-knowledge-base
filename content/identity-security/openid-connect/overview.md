@@ -167,11 +167,3 @@ The ID Token identifies the user.
 The Access Token authorizes API access.
 
 The Refresh Token allows new Access Tokens to be issued without requiring another login.
-
----
-
-## What's Next?
-
-This overview introduced OpenID Connect as the identity layer built on top of OAuth 2.0.
-
-The OpenID Connect Deep Dive explains Identity Providers, ID Tokens, authentication flows, the UserInfo endpoint, scopes, standard claims, and production best practices for implementing secure user authentication.

@@ -37,7 +37,7 @@ Learning should feel like a continuous conversation instead of a collection of i
 
 ---
 
-## 10. Each Section Should Answer Only Its Own Questions
+## 3. Each Section Should Answer Only Its Own Questions
 
 Every section has a single learning objective.
 
@@ -173,6 +173,31 @@ The purpose of an Overview is not to summarize a technology.
 Its purpose is to provide enough understanding that readers naturally reach the most important conclusions by themselves.
 
 If the Overview is written correctly, a separate "Key Takeaways" section should not be necessary.
+
+---
+
+## 11. At a Glance
+
+The purpose of an **At a Glance** section is not to summarize the content.
+
+Its purpose is to reinforce the reader's mental model after the concept has been fully explained.
+
+An At a Glance should condense the most important ideas into a format that can be understood in seconds without replacing the detailed explanation.
+
+Whenever possible, represent the concept using one of the following:
+
+- Comparisons
+- Responsibility tables
+- Classifications
+- Decision matrices
+- Execution flows
+- Key characteristics
+
+Use an At a Glance only when the concept can be represented more effectively than with prose alone.
+
+Do not repeat information from the previous paragraphs.
+
+Instead, distill the concept into its essential structure so readers can quickly reinforce what they have learned.
 
 ---
 
@@ -320,11 +345,35 @@ Each concept should be developed independently, following the same writing princ
 - Maintain high knowledge density.
 - Build understanding progressively.
 
+Avoid Meta-Narration
+
+Never describe the learning process.
+
+Do not write sentences such as:
+
+Now that we understand...
+The next question is...
+To understand this...
+At this point...
+As we have seen...
+Before continuing...
+We must first understand...
+The following section explains...
+
+Instead, introduce the concept directly.
+
+The reader should naturally infer why the concept appears from the progression of the document.
+
 The goal is not to memorize implementation details.
 
 The goal is to understand how the technology works well enough to reason about it.
 
 Typical reading time: **30–60 minutes**, distributed across independent concepts.
+
+Every Deep Dive should end with two chapters:
+
+Putting Everything Together → reconnects all previously introduced concepts without introducing new ones.
+Final Perspective → steps back from the implementation details and explains the broader architectural significance of the technology.
 
 ---
 

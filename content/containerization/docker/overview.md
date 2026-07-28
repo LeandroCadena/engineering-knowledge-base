@@ -163,11 +163,3 @@ Every service has:
 - Its own lifecycle.
 
 Although all services share the same operating system kernel, they remain isolated from one another.
-
----
-
-## What's Next?
-
-This overview introduced Docker as a platform for packaging and executing applications consistently across different environments.
-
-The Docker Deep Dive explains how containers, images, layers, namespaces, cgroups, volumes, networks, Dockerfiles, image registries, Docker Compose, and multi-stage builds work together to create lightweight and portable execution environments.

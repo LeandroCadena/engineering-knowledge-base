@@ -160,11 +160,3 @@ An employee logs into an internal company portal.
 The application stores the authenticated user's session in Redis.
 
 Every request retrieves the user's session before authorizing access to protected resources.
-
----
-
-## What's Next?
-
-This overview introduced Sessions as a server-side mechanism for maintaining user state across multiple HTTP requests.
-
-The Sessions & Cookies Deep Dive explains Session IDs, Cookies, Session Stores, Sticky Sessions, scaling challenges, session security, and best practices, as well as how session-based authentication compares to stateless JWT-based architectures.

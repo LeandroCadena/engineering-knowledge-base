@@ -202,11 +202,3 @@ An API stores request counters in Redis.
 Each incoming request increments the counter.
 
 If the configured limit is exceeded, the API rejects additional requests until the counter resets.
-
----
-
-## What's Next?
-
-This overview introduced Redis as an in-memory data store optimized for low-latency access.
-
-The Redis Deep Dive explores key-value storage, Redis data structures, expiration policies, eviction strategies, Pub/Sub messaging, persistence options, distributed caching, and production best practices.

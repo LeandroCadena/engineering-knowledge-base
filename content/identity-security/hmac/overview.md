@@ -170,11 +170,3 @@ Every request includes an HMAC signature.
 The receiving service independently verifies the signature before processing the request.
 
 This ensures that only trusted services can successfully send valid requests.
-
----
-
-## What's Next?
-
-This overview introduced HMAC as a mechanism for verifying message integrity and authenticity using a shared secret.
-
-The HMAC Deep Dive explains how signatures are generated and verified, how replay attacks are prevented, why timestamps are commonly included, and the security practices required when implementing HMAC in production systems.

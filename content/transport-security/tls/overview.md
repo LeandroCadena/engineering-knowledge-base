@@ -165,11 +165,3 @@ https://api.example.com
 Although the developer interacts with HTTP, the underlying communication is protected by TLS.
 
 Without TLS, every request and response could potentially be intercepted or modified.
-
----
-
-## What's Next?
-
-This overview introduced TLS as the protocol responsible for establishing secure communication channels across untrusted networks.
-
-The TLS Deep Dive explains how asymmetric and symmetric cryptography work together, how certificates establish trust, how Certificate Authorities validate identities, how the TLS Handshake negotiates secure connections, and why TLS has become the foundation of modern Internet security.

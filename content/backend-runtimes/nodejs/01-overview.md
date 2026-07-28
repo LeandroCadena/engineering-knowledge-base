@@ -244,11 +244,3 @@ Serverless Function
   ▼
 Database
 ```
-
----
-
-## What's Next?
-
-This overview introduced the purpose of Node.js, its execution model, its role within modern software systems, and the situations where it provides the greatest value.
-
-The **Node.js Deep Dive** expands these concepts by explaining the internal architecture of the Node.js Runtime, including the Event Loop, libuv, Worker Pool, Streams, Buffers, EventEmitter, memory management, and other concepts expected from experienced software engineers.

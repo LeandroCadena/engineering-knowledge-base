@@ -161,11 +161,3 @@ An OAuth Authorization Server issues a JWT Access Token.
 Every protected API verifies the JWT signature before processing the request.
 
 The API does not need to contact the Authorization Server for every request because the required claims already exist inside the token.
-
----
-
-## What's Next?
-
-This overview introduced JWT as a secure format for transporting trusted claims between distributed systems.
-
-The JWT Deep Dive explains how claims, headers, payloads, signatures, signing algorithms, verification, expiration, refresh tokens, and production best practices work together to create secure and efficient token-based systems.

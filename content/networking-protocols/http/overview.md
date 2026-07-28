@@ -169,11 +169,3 @@ HTTP Response
        ▼
 Backend Service
 ```
-
----
-
-## What's Next?
-
-This overview introduced HTTP as the communication protocol that enables clients and servers to exchange information across modern distributed systems.
-
-The **HTTP Deep Dive** explains how requests and responses are structured, how methods, headers, status codes, cookies, caching, HTTPS, and protocol versions work, and why understanding these concepts is essential for designing reliable APIs and distributed applications.

@@ -143,11 +143,3 @@ Google identifies which application issued the request and applies any configure
 A reporting service communicates with an internal analytics API.
 
 Rather than authenticating a human user, the reporting service authenticates itself using an API Key issued specifically for that integration.
-
----
-
-## What's Next?
-
-This overview introduced API Keys as one of the simplest mechanisms for identifying client applications.
-
-The API Keys Deep Dive explains how API Keys are transmitted, stored, rotated, restricted, and protected, as well as the limitations of API Keys compared to stronger authentication and authorization mechanisms.

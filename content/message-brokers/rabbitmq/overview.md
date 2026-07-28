@@ -195,11 +195,3 @@ A user uploads an image.
 The API immediately stores the file and publishes an image-processing message.
 
 Background workers generate thumbnails, optimize images, and update metadata without delaying the user's request.
-
----
-
-## What's Next?
-
-This overview introduced RabbitMQ as a message broker that enables asynchronous communication between distributed systems.
-
-The RabbitMQ Deep Dive explores producers, consumers, queues, acknowledgements, retries, dead-letter queues, exchanges, routing keys, and production best practices for building reliable message-driven architectures.

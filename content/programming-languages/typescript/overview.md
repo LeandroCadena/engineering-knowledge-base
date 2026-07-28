@@ -150,11 +150,3 @@ Instead of manually searching through the project, developers receive immediate 
 A large application renames a property used by hundreds of files.
 
 The TypeScript Compiler identifies every affected location before the application is deployed, making large refactors significantly safer.
-
----
-
-## What's Next?
-
-This overview introduced TypeScript as a statically typed language that extends JavaScript without changing how JavaScript executes.
-
-The TypeScript Deep Dive explains how the type system works, how TypeScript infers types, and how concepts such as interfaces, type aliases, generics, unions, narrowing, structural typing, and utility types help developers build safer and more maintainable applications.

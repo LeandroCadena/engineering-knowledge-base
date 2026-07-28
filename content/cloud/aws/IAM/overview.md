@@ -161,31 +161,3 @@ s3:ListBucket
 ```
 
 The command succeeds only if the required permission has been granted.
-
----
-
-## What's Next?
-
-The IAM Deep Dive explores how AWS evaluates permissions and secures cloud environments.
-
-Topics include:
-
-- Why IAM Exists
-- Identity
-- Authentication
-- Authorization
-- Principals
-- Policies
-- Permission Evaluation
-- Roles
-- Trust Relationships
-- Temporary Credentials
-- Users
-- Groups
-- Resource-based Policies
-- Least Privilege
-- Cross-Account Access
-- Common Architecture
-- Best Practices
-
-By the end of the Deep Dive, you'll understand not only how IAM grants permissions, but also how nearly every AWS service depends on IAM to securely evaluate requests before accessing cloud resources.

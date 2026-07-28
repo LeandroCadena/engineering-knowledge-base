@@ -165,11 +165,3 @@ All of these entities are connected using relational references.
 An employee receives a promotion.
 
 Rather than duplicating employee information, PostgreSQL updates the employee record while maintaining relationships with departments, payroll, managers, and historical records.
-
----
-
-## What's Next?
-
-This overview introduced PostgreSQL as a relational database management system responsible for persistent and reliable data storage.
-
-The PostgreSQL Deep Dive explores relational modeling, tables, keys, relationships, indexes, transactions, ACID properties, isolation levels, query planning, and production best practices.

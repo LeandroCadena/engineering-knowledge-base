@@ -135,11 +135,3 @@ The JavaScript application processes the business logic, updates the database, a
 ### Example 3 — Real-Time Dashboard
 
 A WebSocket server written in JavaScript receives events from Kafka and broadcasts live updates to connected clients.
-
----
-
-## What's Next?
-
-This overview introduced JavaScript as the language that powers modern full-stack applications across multiple runtime environments.
-
-The JavaScript Deep Dive explores the language's execution model, lexical environments, closures, prototype chain, asynchronous programming, event loop, memory management, modules, performance characteristics, and production best practices.

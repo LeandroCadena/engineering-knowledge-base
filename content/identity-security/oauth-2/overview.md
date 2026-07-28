@@ -178,11 +178,3 @@ Instead of storing employee credentials, the CRM requests authorization through 
 Microsoft issues an Access Token representing the approved permissions.
 
 The CRM uses that token whenever it communicates with Microsoft Graph.
-
----
-
-## What's Next?
-
-This overview introduced OAuth as a framework for delegated authorization.
-
-The OAuth Deep Dive explains how Access Tokens, Refresh Tokens, Scopes, Authorization Flows, PKCE, Client Credentials, Token Expiration, Token Revocation, and OpenID Connect work together to secure communication between modern distributed systems.
