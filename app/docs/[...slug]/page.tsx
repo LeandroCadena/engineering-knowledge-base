@@ -38,8 +38,17 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
   const { metadata, content } = getMarkdownMetadata(markdown);
   const updatedAt = formatUpdatedAt(metadata.updatedAt);
 
-  const currentDocument = slug.at(-1);
-  const technologyPath = slug.slice(0, -1);
+  const isExplicitDocument =
+    slug.at(-1) === 'overview' ||
+    slug.at(-1) === 'deep-dive';
+
+  const currentDocument = isExplicitDocument
+    ? slug.at(-1)!
+    : 'overview';
+
+  const technologyPath = isExplicitDocument
+    ? slug.slice(0, -1)
+    : slug;
 
   const siblingDocument =
     currentDocument === 'overview'

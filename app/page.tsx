@@ -7,26 +7,23 @@ import type {
   ContentNavigationNode,
 } from '@/lib/content';
 
-function findFirstDocument(
-  node: ContentNavigationNode,
+function findDirectOverview(
+  directory: ContentDirectory,
 ): ContentDocument | null {
-  if (node.type === 'document') {
-    return node;
-  }
-
-  for (const child of node.children) {
-    const document = findFirstDocument(child);
-
-    if (document) {
-      return document;
-    }
-  }
-
-  return null;
+  return (
+    directory.children.find(
+      (child): child is ContentDocument =>
+        child.type === 'document' && child.slug === 'overview',
+    ) ?? null
+  );
 }
 
 function hasDocuments(node: ContentNavigationNode): boolean {
-  return findFirstDocument(node) !== null;
+  if (node.type === 'document') {
+    return true;
+  }
+
+  return node.children.some(hasDocuments);
 }
 
 function DirectoryContent({
@@ -34,47 +31,42 @@ function DirectoryContent({
 }: {
   directory: ContentDirectory;
 }) {
-  const visibleChildren = directory.children.filter(hasDocuments);
+  const visibleDirectories = directory.children.filter(
+    (child): child is ContentDirectory =>
+      child.type === 'directory' && hasDocuments(child),
+  );
 
-  if (visibleChildren.length === 0) {
+  if (visibleDirectories.length === 0) {
     return null;
   }
 
   return (
     <div className="mt-4 space-y-2">
-      {visibleChildren.map((child) => {
-        if (child.type === 'document') {
-          return (
-            <Link
-              key={child.path.join('/')}
-              href={`/docs/${child.path.join('/')}`}
-              className="block rounded-lg px-3 py-2 text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100"
-            >
-              {child.title}
-            </Link>
-          );
-        }
+      {visibleDirectories.map((child) => {
+        const overview = findDirectOverview(child);
 
-        const firstDocument = findFirstDocument(child);
-
-        if (!firstDocument) {
-          return null;
-        }
+        const hasNestedDirectories = child.children.some(
+          (nestedChild) =>
+            nestedChild.type === 'directory' &&
+            hasDocuments(nestedChild),
+        );
 
         return (
           <div key={child.path.join('/')} className="space-y-2">
-            <Link
-              href={`/docs/${firstDocument.path.join('/')}`}
-              className="block rounded-lg px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100"
-            >
-              {child.title}
-            </Link>
+            {overview ? (
+              <Link
+                href={`/docs/${child.path.join('/')}`}
+                className="block rounded-lg px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                {child.title}
+              </Link>
+            ) : (
+              <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                {child.title}
+              </p>
+            )}
 
-            {child.children.some(
-              (nestedChild) =>
-                nestedChild.type === 'directory' &&
-                hasDocuments(nestedChild),
-            ) ? (
+            {hasNestedDirectories ? (
               <div className="ml-3 border-l border-zinc-800 pl-3">
                 <DirectoryContent directory={child} />
               </div>
