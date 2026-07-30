@@ -99,6 +99,8 @@ Readers should naturally reach conclusions through understanding.
 
 The document should never ask the reader to memorize rules.
 
+Never teach decisions directly. Teach the understanding that naturally leads to those decisions.
+
 ---
 
 ## 5. Teach Systems, Not Isolated Technologies

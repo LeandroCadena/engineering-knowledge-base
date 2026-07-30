@@ -3,6 +3,7 @@ import path from 'path';
 
 import { formatTitle } from './format-title';
 import type { ContentDirectory, ContentDocument, ContentNavigationNode } from './types';
+import { getMarkdownMetadata } from './get-metadata';
 
 const CONTENT_ROOT = path.join(process.cwd(), 'content');
 
@@ -59,10 +60,15 @@ async function buildNavigationTree(
         const documentSlug = entry.name.replace(/\.md$/, '');
         const documentContentPath = [...parentPath, documentSlug];
 
+        const markdown = await fs.readFile(path.join(directoryPath, entry.name), 'utf8');
+
+        const { metadata } = getMarkdownMetadata(markdown);
+
         const document: ContentDocument = {
           type: 'document',
           slug: documentSlug,
           title: formatTitle(documentSlug),
+          icon: metadata.icon,
           fileName: entry.name,
           path: documentContentPath,
         };

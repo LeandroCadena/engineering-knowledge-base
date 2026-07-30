@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from 'next/link';
 
 import { getNavigation } from '@/lib/content';
@@ -58,7 +59,19 @@ function DirectoryContent({
                 href={`/docs/${child.path.join('/')}`}
                 className="block rounded-lg px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100"
               >
-                {child.title}
+                <div className="flex items-center gap-2">
+                  {overview.icon ? (
+                    <Image
+                      src={`/icons/${overview.icon}`}
+                      alt=""
+                      width={38}
+                      height={38}
+                      className="h-7 w-7 shrink-0 object-contain"
+                    />
+                  ) : null}
+
+                  <span>{child.title}</span>
+                </div>
               </Link>
             ) : (
               <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">

@@ -1,6 +1,7 @@
 ---
 title: AWS Lambda Deep Dive
 description: Build a deep understanding of how AWS Lambda works internally, the architectural decisions behind serverless computing, and the concepts required to reason about modern event-driven systems.
+icon: aws-lambda.png
 order: 2
 updatedAt: 2026-07-28
 ---

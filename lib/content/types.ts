@@ -2,6 +2,7 @@ export type ContentDocument = {
   type: 'document';
   slug: string;
   title: string;
+  icon?: string;
   fileName: string;
   path: string[];
 };

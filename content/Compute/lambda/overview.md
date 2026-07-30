@@ -1,6 +1,7 @@
 ---
 title: AWS Lambda Overview
 description: Learn what AWS Lambda is, why it exists, how serverless computing works, and how Lambda fits into modern cloud architectures.
+icon: aws-lambda.png
 order: 1
 updatedAt: 2026-07-28
 ---
