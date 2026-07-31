@@ -99,8 +99,6 @@ This environment is called an **execution environment**.
 
 An execution environment includes the function code, the configured runtime, allocated memory, temporary storage, and the resources required while the function is running.
 
-![Execution environment containing the runtime, function code, memory, and temporary storage.](/docs/aws-lambda/execution-environment.png)
-
 Every function invocation runs inside one execution environment.
 
 If several invocations execute at the same time, AWS creates additional execution environments so that each invocation can run independently.

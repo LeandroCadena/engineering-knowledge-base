@@ -1,187 +1,107 @@
 ---
 title: API Gateway Overview
-description: Understand what AWS API Gateway is, why it exists, and how it securely exposes backend services through a single managed entry point.
+description: Learn what Amazon API Gateway is, why it exists, how it manages API traffic, and how it fits into modern cloud architectures.
+icon: api-gateway.png
 order: 1
-updatedAt: 2026-07-28
+updatedAt: 2026-07-30
 ---
 
-# API Gateway
+# API Gateway Overview
 
 ## Definition
 
-AWS API Gateway is a fully managed AWS service that acts as the public entry point for applications and APIs.
+Amazon API Gateway is a fully managed AWS service for creating, publishing, securing, monitoring, and managing APIs.
 
-Rather than allowing clients to communicate directly with backend services, API Gateway receives incoming **HTTP** requests, determines how they should be handled, and forwards them to the appropriate backend.
+As applications became increasingly distributed, exposing backend services directly to clients introduced challenges around authentication, authorization, traffic management, monitoring, scalability, and API lifecycle management. Implementing these capabilities independently within every backend service increased complexity, duplicated responsibilities, and made systems more difficult to maintain.
 
-A backend is any application responsible for executing business logic. Depending on the architecture, it may be a **Lambda** function, a service running on **ECS**, or another HTTP application.
+API Gateway was created to solve this problem by providing a single managed entry point through which API requests can be received and controlled before reaching backend services.
 
-By introducing a single entry point, API Gateway centralizes how APIs are exposed to the outside world. This allows backend services to remain private, independent, and focused solely on implementing business logic.
+Its primary responsibility is to expose APIs while managing the cross-cutting concerns involved in delivering them securely, reliably, and at scale. This allows backend services to focus on implementing business logic rather than the infrastructure required to expose and manage public APIs.
 
-API Gateway does not execute business logic itself. Its responsibility is to receive requests, apply the rules that govern the API, invoke the correct backend, and return the resulting response to the client.
+API Gateway is not an application server, nor does it execute business logic. Instead, it acts as the managed boundary between API consumers and backend services, controlling how requests enter the system without replacing the services that ultimately process them.
 
----
-
-## How it Works
-
-Every request sent by a client reaches API Gateway before it reaches the application itself.
-
-When a request arrives, API Gateway evaluates how it should be processed. It identifies the requested route, applies any configured API rules, selects the appropriate backend integration, forwards the request, and finally returns the backend's response to the client.
-
-```text
-Client
-
-↓
-
-API Gateway
-
-↓
-
-Route Selection
-
-↓
-
-Backend Service
-
-↓
-
-Response
-
-↓
-
-Client
-```
-
-API Gateway acts as an intermediary between clients and backend services.
-
-This separation allows backend applications to focus on business logic while API Gateway manages how external requests enter the system.
+![API Gateway sits between clients and backend services, managing incoming API requests.](/docs/api-gateway/api-gateway-overview.png)
 
 ---
 
-## How it Fits into the Ecosystem
+## How It Works
 
-Modern applications rarely consist of a single server.
+API Gateway operates by acting as the managed entry point for incoming API requests.
 
-A typical cloud application may include multiple backend services responsible for different parts of the system, such as authentication, payments, notifications, reporting, or data processing.
+When a client sends an HTTP request, API Gateway matches it against the configured API, stage, route, and HTTP method. Before forwarding the request, it can execute a series of configurable request-processing steps, such as authentication, authorization, request validation, throttling, request transformation, caching, or usage plan enforcement.
 
-Rather than exposing each service directly to the internet, applications commonly expose only API Gateway.
+Once request processing is complete, API Gateway invokes the configured backend integration. Depending on the architecture, this integration may target services such as AWS Lambda, ECS, EC2, Application Load Balancers, or external HTTP endpoints.
 
-```text
-Client
+After the backend returns a response, API Gateway can optionally transform the response, apply response mappings, add headers, or enforce response policies before returning the final result to the client.
 
-↓
+Throughout this process, API Gateway collects metrics, generates logs, and integrates with AWS monitoring services, allowing API traffic to be observed and managed without requiring these capabilities to be implemented by the backend itself.
 
-API Gateway
-
-↓
-
-Backend Services
-
-↓
-
-AWS Resources
-```
-
-API Gateway becomes the single public interface through which clients communicate with the application.
-
-Behind it, requests may be forwarded to **Lambda**, **ECS**, **Load Balancers**, or other HTTP services without clients needing to know where those systems are running.
-
-This separation makes backend services easier to evolve, replace, or scale independently while preserving a stable public API.
+![High-level request lifecycle inside Amazon API Gateway.](/docs/api-gateway/api-gateway-request-lifecycle.png)
 
 ---
 
-## Real-World Usage
+## How It Fits into the Ecosystem
 
-API Gateway is commonly used whenever applications expose APIs to external consumers.
+API Gateway sits at the boundary between API consumers and backend services, acting as the public entry point for HTTP-based communication.
 
-Typical examples include:
+On one side, it receives requests from clients such as web applications, mobile applications, third-party integrations, and other services. On the other, it communicates with backend integrations including AWS Lambda, containerized applications running on ECS or EC2, Application Load Balancers, and external HTTP services.
 
-- Mobile applications communicating with cloud backends.
-- Single-page web applications calling REST APIs.
-- Serverless applications built with **Lambda**.
-- Microservice architectures exposing a unified public API.
-- Third-party integrations consuming public APIs.
-- Internal company APIs shared across multiple teams.
+By centralizing API exposure, API Gateway separates API management from business logic. Backend services no longer need to implement concerns such as authentication, authorization, traffic management, request validation, or monitoring independently, allowing them to focus on their core responsibilities.
 
-In many AWS architectures, API Gateway is the first AWS service that receives requests from users before those requests reach the application's business logic.
+This separation also makes architectures easier to evolve. Backend services can be modified, replaced, or scaled independently while maintaining a consistent public API for clients.
 
 ---
 
-## Practical Examples
+## What It Looks Like
 
-### Example 1 — Mobile Application Calling a Serverless Backend
+Most interaction with API Gateway happens through the AWS Management Console.
 
-A mobile application sends a request to retrieve a user's profile.
+Developers use the console to create and manage APIs, define routes, configure integrations, deploy stages, monitor traffic, and review API settings. The same concepts are also available through the AWS CLI, SDKs, CloudFormation, CDK, and Terraform, but the Management Console provides the clearest visual representation of how an API is organized.
 
-Instead of invoking a **Lambda** function directly, the request is sent to API Gateway.
+The screenshot below shows the typical interface used to configure and manage an API in Amazon API Gateway.
 
-API Gateway receives the request, matches it to the appropriate route, invokes the Lambda function, and returns the generated response to the mobile application.
-
-```text
-Mobile App
-
-↓
-
-API Gateway
-
-↓
-
-Lambda
-
-↓
-
-Response
-```
-
-The mobile application only communicates with API Gateway and remains completely unaware of how the backend is implemented.
+![Amazon API Gateway Management Console.](/docs/api-gateway/api-gateway-console.png)
 
 ---
 
-### Example 2 — Public REST API for a Microservice Architecture
+## Common Use Cases
 
-An e-commerce platform exposes a public REST API for customers.
+API Gateway is used whenever applications need a managed, secure, and scalable way to expose APIs. Although it is commonly associated with serverless architectures, it can serve as the entry point for many different types of backend systems.
 
-Although the platform consists of multiple independent services, such as products, orders, payments, and users, clients communicate with a single public endpoint.
+### Serverless Applications
 
-API Gateway routes each request to the appropriate backend service.
+A common use case is exposing AWS Lambda functions as HTTP APIs.
 
-```text
-Customer
-
-↓
-
-API Gateway
-
-↓
-
-Products Service
-
-Orders Service
-
-Payments Service
-```
-
-This provides a consistent interface while allowing each backend service to evolve independently.
+API Gateway receives requests from clients, applies API management capabilities, invokes the appropriate Lambda function, and returns the response without requiring developers to manage web servers.
 
 ---
 
-### Example 3 — Protecting Private Infrastructure
+### Microservices
 
-A company runs its backend services inside a private network.
+Organizations often place API Gateway in front of multiple microservices to provide a single public API.
 
-Instead of exposing those services directly to the internet, only API Gateway is publicly accessible.
+Instead of exposing every service independently, clients communicate with API Gateway, which routes requests to the appropriate backend while applying consistent security and traffic management policies.
 
-Every incoming request passes through API Gateway before reaching the internal infrastructure.
+---
 
-```text
-Internet
+### Mobile and Web Backends
 
-↓
+Mobile and web applications frequently communicate with backend services through API Gateway.
 
-API Gateway
+This allows authentication, authorization, request validation, throttling, and monitoring to be managed centrally instead of being implemented separately by each backend service.
 
-↓
+---
 
-Private Backend Services
-```
+### Public APIs
 
-This architecture reduces the attack surface by preventing clients from communicating directly with internal services.
+Companies commonly expose APIs for customers, partners, or third-party developers using API Gateway.
+
+By centralizing API management, organizations can securely publish APIs while controlling authentication, rate limits, monitoring, and access policies from a single service.
+
+---
+
+### Hybrid Cloud Architectures
+
+API Gateway can expose APIs backed by a mixture of AWS services and external systems.
+
+Requests can be routed to AWS Lambda, containerized applications, virtual machines, on-premises services, or external HTTP endpoints while presenting clients with a consistent public API.

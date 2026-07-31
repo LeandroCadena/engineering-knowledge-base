@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 
 import { MarkdownRenderer } from '@/components/markdown/markdown-renderer';
 import { getDocumentBySlug, getMarkdownMetadata } from '@/lib/content';
-import Image from "next/image";
 
 type DocumentPageProps = {
   params: Promise<{
