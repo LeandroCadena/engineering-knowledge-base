@@ -568,9 +568,7 @@ Although each feature can be configured independently, every request follows a p
 
 The exact flow depends on the API configuration, but the sequence below represents a typical request lifecycle.
 
-[Image]
-
-![API Gateway Request Lifecycle.](/docs/cloud/aws/api-gateway/images/request-lifecycle.png)
+![API Gateway Request Lifecycle.](/docs/api-gateway/request-lifecycle.png)
 
 After a request reaches API Gateway, it is routed through the configured domain, stage, and deployment before a matching route is located. Security mechanisms determine whether the request is allowed to continue, validation ensures the request satisfies the expected contract, optional transformations adapt the payload, and the integration forwards the request to the configured backend.
 

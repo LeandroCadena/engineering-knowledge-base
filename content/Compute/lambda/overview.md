@@ -10,29 +10,27 @@ updatedAt: 2026-07-28
 
 ## Definition
 
-AWS Lambda is a **serverless compute service** that allows developers to run code without provisioning or managing servers.
+AWS Lambda is a **serverless compute service** that executes application code in response to events without requiring developers to provision or manage servers.
 
-Instead of deploying applications to virtual machines or containers, developers upload individual functions that execute only when they are triggered.
+Traditionally, running backend applications required continuously provisioned infrastructure, even when no requests were being processed. Lambda was designed to eliminate this operational overhead by automatically managing compute resources and executing code only when it is needed.
 
-Lambda automatically provides the infrastructure required to execute those functions, including provisioning compute resources, scaling the execution environment, and handling availability.
-
-Its primary responsibility is executing application code in response to events.
-
-Lambda is **not** responsible for storing data, exposing public APIs, authenticating users, or orchestrating distributed systems. Instead, it integrates with other AWS services that provide those capabilities.
+Developers upload individual functions, define the events that trigger them, and AWS handles infrastructure provisioning, scaling, availability, and execution. This allows teams to focus on business logic rather than server administration.
 
 ---
 
 ## How it Works
 
-A Lambda function is executed whenever an event occurs.
+Every Lambda invocation follows the execution lifecycle illustrated below.
 
-An **event** is any action that triggers the execution of a function.
+Execution begins when an AWS service or external application generates an event that invokes the function. Lambda then determines whether an existing execution environment can be reused or whether a new one must be created. If a new environment is required, Lambda initializes the runtime before executing the function handler.
 
-When an event is received, AWS creates an execution environment if necessary, runs the function, returns the result, and keeps the environment available for future requests when possible.
+Once the handler completes, Lambda returns the response and may keep the execution environment available for future invocations. Reusing existing environments reduces initialization time and helps minimize cold starts.
 
-![How it works](/docs/aws-lambda/how-it-works.png)
+As demand increases, Lambda automatically creates additional execution environments, allowing multiple function invocations to run concurrently without requiring infrastructure management.
 
-Because compute resources exist only while the function is executing, applications automatically scale according to demand without requiring developers to manage servers.
+Throughout the entire lifecycle, Lambda continuously publishes logs and metrics to Amazon CloudWatch, providing visibility into function execution and performance.
+
+![How it Works.](/docs/aws-lambda/how-it-works.png)
 
 ---
 
