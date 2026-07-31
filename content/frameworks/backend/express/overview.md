@@ -46,6 +46,8 @@ This separation of responsibilities allows Express to remain focused on HTTP req
 
 ![Express within a typical backend architecture.](/docs/express/express-in-the-backend-ecosystem.png)
 
+---
+
 ## What It Looks Like
 
 Unlike many developer platforms, Express does not provide a graphical interface or management console.
@@ -57,6 +59,8 @@ A typical Express application consists of an application entry point, route defi
 The exact project structure varies depending on the application's size and architectural style, but Express applications generally share the same responsibility: coordinating how incoming HTTP requests are processed and how responses are returned to clients.
 
 ![Typical structure of an Express application.](/docs/express/typical-express-project-structure.png)
+
+---
 
 ## Common Use Cases
 
