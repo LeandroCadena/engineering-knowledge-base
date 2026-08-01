@@ -20,7 +20,7 @@ Although a Lambda function primarily consists of application code, it also inclu
 
 Understanding the role of a Lambda function is essential because nearly every concept introduced throughout this guide—including runtimes, handlers, execution environments, scaling, concurrency, deployments, and permissions—is ultimately associated with how Lambda manages and executes functions.
 
-![Anatomy of a lambda function.](/docs/api-gateway/lambda-function-anatomy.png)
+![Anatomy of a lambda function.](/docs/aws-lambda/lambda-function-anatomy.png)
 
 ---
 
@@ -36,7 +36,7 @@ For specialized use cases, Lambda also supports **custom runtimes**. Instead of 
 
 Because the runtime is initialized before your application begins executing, its startup process directly influences invocation performance. Runtime initialization is one of the primary contributors to cold start latency and plays a central role in understanding how Lambda executes functions efficiently.
 
-![Runtime inside the execution environment.](/docs/api-gateway/runtime-inside-the-execution-environment.png)
+![Runtime inside the execution environment.](/docs/aws-lambda/runtime-inside-the-execution-environment.png)
 
 ---
 
@@ -62,7 +62,7 @@ The invocation model directly influences how applications behave. It determines 
 
 Although every invocation eventually results in the execution of a handler, the path taken to reach that handler depends on the service that triggered the function. AWS abstracts these differences, allowing developers to focus on application logic while Lambda manages the underlying invocation process.
 
-![Lambda Invocation Models.](/docs/api-gateway/lambda-invocation-models.png)
+![Lambda Invocation Models.](/docs/aws-lambda/lambda-invocation-models.png)
 
 ---
 
@@ -78,7 +78,7 @@ This reuse behavior is one of the defining characteristics of AWS Lambda. Object
 
 Eventually, when an execution environment remains inactive for an unspecified period, AWS may freeze and later destroy it. Because the lifecycle of an execution environment is entirely managed by Lambda, applications should never depend on a specific environment continuing to exist between invocations.
 
-![Execution Environment Lifecycle.](/docs/api-gateway/execution-environment-lifecycle.png)
+![Execution Environment Lifecycle.](/docs/aws-lambda/execution-environment-lifecycle.png)
 
 ---
 
@@ -102,7 +102,7 @@ Although warm starts are common, AWS Lambda does not guarantee that a previous e
 
 For this reason, expensive initialization work should generally be performed outside the handler whenever possible. If the execution environment is reused, those resources are initialized only once and remain available for subsequent invocations, reducing execution time and resource consumption.
 
-![Cold Start vs Warm Start.](/docs/api-gateway/cold-start-vs-warm-start.png)
+![Cold Start vs Warm Start.](/docs/aws-lambda/cold-start-vs-warm-start.png)
 
 ---
 
@@ -150,7 +150,7 @@ Every AWS account has a concurrency quota.
 
 If all available concurrent executions are in use and no additional capacity is available, Lambda throttles new invocations until execution environments become available again or the account concurrency limit is increased.
 
-![Lambda Concurrency Controls.](/docs/api-gateway/lambda-concurrency-controls.png)
+![Lambda Concurrency Controls.](/docs/aws-lambda/lambda-concurrency-controls.png)
 
 ---
 
@@ -243,7 +243,7 @@ Instead of invoking versions directly, applications typically invoke aliases suc
 
 Multiple functions can reference the same layer, reducing duplicated dependencies and simplifying maintenance across large serverless applications.
 
-![Lambda Deployment Model.](/docs/api-gateway/lambda-deployment-model.png)
+![Lambda Deployment Model.](/docs/aws-lambda/lambda-deployment-model.png)
 
 ---
 
