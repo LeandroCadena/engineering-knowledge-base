@@ -1,530 +1,303 @@
 ---
 title: TypeScript Deep Dive
-description: Master the engineering concepts that explain how TypeScript improves JavaScript through static analysis and its type system.
+description: Build a deep understanding of TypeScript's type system, type inference, object modeling, generics, narrowing, utility types, compiler configuration, and the concepts required to design safe and maintainable applications.
+icon: typescript.png
 order: 2
-updatedAt: 2026-07-05
+updatedAt: 2026-08-01
 ---
 
-# TypeScript Deep Dive
+# Type System
 
-## Compile Time
+The TypeScript type system is the foundation of the language.
 
-**Compile Time** is the phase during which TypeScript analyzes source code before the application is executed.
+A type describes the shape of a value, defining what operations are valid and what kind of data a variable, function, or object is expected to contain.
 
-During this phase, the TypeScript Compiler validates the program, infers types, checks compatibility, and reports potential errors.
-
-No JavaScript code has been executed yet.
-
-Instead, the compiler is reasoning about the program using only its source code.
-
-Compile-time analysis allows many programming mistakes to be detected before the application is deployed.
-
-:::at-a-glance
-
-### Compile Time
-
-- Static analysis.
-- Type validation.
-- Error detection.
-- JavaScript generation.
-
-:::
-
-:::misconceptions
-
-❌ TypeScript executes the application during compilation.
-
-✅ The compiler only analyzes the source code and generates JavaScript.
-
-:::
-
----
-
-## Runtime
-
-**Runtime** begins after the generated JavaScript starts executing.
-
-At this point, TypeScript no longer exists.
-
-The JavaScript Runtime—such as Node.js or a browser—executes the generated JavaScript exactly as it would execute any handwritten JavaScript.
-
-Because TypeScript is removed during compilation, it cannot perform runtime validation or enforce types while the application is running.
-
-Any guarantees provided by TypeScript exist only because the code successfully passed compile-time analysis.
-
-:::at-a-glance
-
-| Compile Time        | Runtime              |
-| ------------------- | -------------------- |
-| TypeScript          | JavaScript           |
-| Static analysis     | Code execution       |
-| Detects type errors | Executes application |
-
-:::
-
-:::misconceptions
-
-❌ TypeScript performs runtime type checking.
-
-✅ Type information is removed before execution.
-
-:::
-
----
-
-## Static Typing
-
-**Static Typing** means that the types of values are analyzed before the application executes.
-
-Instead of discovering type-related problems while the program is running, the compiler verifies type compatibility during compilation.
-
-Static typing improves reliability because many invalid operations are rejected before deployment.
-
-It also improves maintainability by making the intended structure of the program explicit.
-
-:::at-a-glance
-
-### Benefits
-
-- Earlier error detection.
-- Better tooling.
-- Safer refactoring.
-- Easier maintenance.
-
-:::
-
-:::misconceptions
-
-❌ Static typing prevents every bug.
-
-✅ It prevents many categories of type-related bugs, but logical errors can still occur.
-
-:::
-
----
-
-## Dynamic Typing
-
-**Dynamic Typing** determines types while the application is executing.
-
-JavaScript follows a dynamic typing model.
-
-Variables are not permanently associated with a specific type.
-
-Their values determine their type at runtime.
-
-This flexibility makes JavaScript easy to write, but also allows certain programming mistakes to remain undetected until execution.
-
-TypeScript preserves JavaScript's flexibility while adding compile-time analysis that identifies many of these problems earlier.
-
-:::at-a-glance
-
-| Static Typing      | Dynamic Typing   |
-| ------------------ | ---------------- |
-| Compile Time       | Runtime          |
-| Earlier validation | Later validation |
-| More predictable   | More flexible    |
-
-:::
-
-:::misconceptions
-
-❌ Dynamic typing means variables have no type.
-
-✅ Every value has a type. The type is determined while the program executes.
-
-:::
-
----
-
-## Type System
-
-A **Type System** is the set of rules that defines how a programming language classifies values and determines whether operations between those values are valid.
-
-Rather than simply assigning labels to variables, a type system allows the compiler to reason about the structure and behavior of a program before it executes.
-
-TypeScript's type system analyzes relationships between values, objects, functions, and interfaces to determine whether code is type-safe.
-
-A stronger type system allows more programming mistakes to be detected during compilation while providing better tooling and documentation.
-
-:::at-a-glance
-
-### Responsibilities
-
-- Classify values.
-- Validate operations.
-- Check compatibility.
-- Improve tooling.
-- Detect type errors.
-
-:::
-
-:::misconceptions
-
-❌ Types only describe variables.
-
-✅ The Type System reasons about the entire program, including objects, functions, interfaces, and generic relationships.
-
-:::
-
----
-
-## Type Inference
-
-**Type Inference** is the ability of the TypeScript Compiler to automatically determine the type of a value without requiring explicit type annotations.
-
-Instead of forcing developers to specify every type manually, the compiler analyzes assignments, function returns, expressions, and object structures to infer the most appropriate type.
-
-Type inference keeps code concise while preserving the benefits of static typing.
-
-Whenever sufficient information is available, explicit annotations become unnecessary.
-
-:::at-a-glance
-
-### TypeScript can infer
-
-- Variables.
-- Function return types.
-- Object properties.
-- Array element types.
-- Generic parameters.
-
-:::
-
-:::misconceptions
-
-❌ Every variable requires an explicit type annotation.
-
-✅ TypeScript automatically infers types whenever enough information is available.
-
-:::
-
-:::example
+Unlike JavaScript, which checks values only while the program is running, TypeScript analyzes types during compilation to detect potential errors before the application executes.
 
 ```ts
-const age = 30;
-```
+let age: number = 25;
 
-The compiler infers:
+age = 30;
+```
 
 ```ts
-const age: number;
+age = 'thirty';
+// Error
 ```
 
-No explicit annotation is required.
+The type system exists only during development.
 
-:::
+Once compilation finishes, all type information is removed, producing standard JavaScript that can execute in any JavaScript environment.
 
----
+## Static vs Runtime
 
-## Primitive Types
+One of the most important concepts in TypeScript is the distinction between compile time and runtime.
 
-Primitive Types represent single immutable values.
+During compilation, TypeScript validates the program using its type system.
 
-They form the foundation of every TypeScript program.
+After compilation, only JavaScript remains.
 
-The most commonly used primitive types are:
+```text
+Development
 
-- string
-- number
-- boolean
-- bigint
-- symbol
-- null
-- undefined
+↓
 
-Every complex type in TypeScript is ultimately composed of these primitive building blocks.
+TypeScript
 
-:::at-a-glance
+↓
 
-### Primitive Types
+Type Checking
 
-| Type      | Example   |
-| --------- | --------- |
-| string    | "John"    |
-| number    | 42        |
-| boolean   | true      |
-| bigint    | 123n      |
-| symbol    | Symbol()  |
-| null      | null      |
-| undefined | undefined |
+↓
 
-:::
+JavaScript
 
-:::example
+↓
 
-```ts
-const username: string = 'Alice';
-const age: number = 30;
-const active: boolean = true;
+Runtime
 ```
 
-:::
+Because the generated JavaScript contains no type information, TypeScript cannot prevent runtime errors caused by invalid external data or incorrect assumptions about values.
 
----
+Its purpose is to detect mistakes before the application is executed.
 
-## Object Types
+## Structural Typing
 
-Object Types describe the structure of objects.
+TypeScript uses **structural typing**.
 
-Instead of focusing on the object's name, TypeScript focuses on the properties an object contains.
-
-Every property has its own type, allowing the compiler to verify that objects satisfy the expected structure.
-
-Object Types become the foundation for interfaces, type aliases, and structural typing.
-
-:::at-a-glance
-
-### Object Types describe
-
-- Properties.
-- Property types.
-- Nested structures.
-- Optional properties.
-
-:::
-
-:::example
-
-```ts
-const user = {
-  id: 1,
-  name: 'Alice',
-  active: true,
-};
-```
-
-The compiler infers:
-
-```ts
-{
-  id: number;
-  name: string;
-  active: boolean;
-}
-```
-
-:::
-
----
-
-## Interfaces
-
-An **Interface** defines the expected structure of an object without providing its implementation.
-
-Rather than creating objects, interfaces describe the properties and methods an object must contain to satisfy a particular contract.
-
-Interfaces improve maintainability by allowing different implementations to share the same expected structure.
-
-Because TypeScript uses structural typing, an object satisfies an interface if its structure matches the interface definition.
-
-:::at-a-glance
-
-### Interfaces
-
-- Describe object structures.
-- Define contracts.
-- Improve maintainability.
-- Support multiple implementations.
-
-:::
-
-:::misconceptions
-
-❌ Interfaces create objects.
-
-✅ Interfaces only describe the structure objects must satisfy.
-
-:::
-
-:::example
+Instead of comparing types by their names, TypeScript compares the structure of their members.
 
 ```ts
 interface User {
-  id: number;
   name: string;
 }
 
-const user: User = {
-  id: 1,
+const admin = {
   name: 'Alice',
+  role: 'admin',
 };
+
+const user: User = admin;
 ```
 
-:::
+Although `admin` has additional properties, it satisfies the required structure and is therefore compatible with `User`.
+
+This differs from nominal type systems, where compatibility depends on explicit declarations rather than the shape of a value.
+
+## Type Safety
+
+The primary goal of the type system is improving correctness during development.
+
+Type checking allows TypeScript to detect many common mistakes before the application runs, making code easier to understand, refactor, and maintain.
+
+Rather than replacing testing, the type system complements it by eliminating an entire category of programming errors before execution.
+
+![TypeScript Type System](/docs/typescript/typescript-type-system.png)
+
+![Type Categories](/docs/typescript/typescript-type-categories.png)
 
 ---
 
-## Type Aliases
+# Primitive Types
 
-A **Type Alias** assigns a reusable name to any valid TypeScript type.
+Primitive types represent the simplest values that can exist in a TypeScript program.
 
-Unlike interfaces, type aliases are not limited to object structures.
+They are the building blocks used to construct more complex types such as objects, arrays, functions, and generics.
 
-They can represent primitive types, unions, intersections, tuples, function signatures, and many other complex type expressions.
+## Basic Primitive Types
 
-Both interfaces and type aliases describe types, but they serve different purposes depending on the scenario.
-
-:::at-a-glance
-
-### Type Aliases can represent
-
-- Primitive types.
-- Objects.
-- Unions.
-- Intersections.
-- Tuples.
-- Functions.
-
-:::
-
-:::misconceptions
-
-❌ Type aliases are simply another way to write interfaces.
-
-✅ Interfaces specialize in describing object contracts, while type aliases can represent any type expression.
-
-:::
-
-:::example
+TypeScript provides the same primitive values available in JavaScript while allowing developers to describe them explicitly.
 
 ```ts
-type UserId = number;
+let username: string = 'Alice';
+let age: number = 30;
+let active: boolean = true;
+```
 
+TypeScript includes several primitive types beyond string, number, and boolean
+
+## void
+
+The `void` type represents the absence of a meaningful return value.
+
+It is commonly used as the return type of functions that perform an action without producing a result.
+
+```ts
+function log(message: string): void {
+  console.log(message);
+}
+```
+
+## any
+
+The `any` type disables type checking.
+
+```ts
+let value: any = 42;
+
+value = 'hello';
+
+value = false;
+```
+
+Because `any` allows any operation, TypeScript cannot detect mistakes involving that value.
+
+Although useful when migrating JavaScript projects or interacting with unknown APIs, excessive use of `any` removes many of the language's safety guarantees.
+
+## unknown
+
+`unknown` represents a value whose type is not yet known.
+
+Unlike `any`, TypeScript requires the value to be checked before it can be used.
+
+```ts
+let value: unknown;
+
+if (typeof value === 'string') {
+  console.log(value.toUpperCase());
+}
+```
+
+This makes `unknown` the safer choice whenever the actual type must be determined at runtime.
+
+## never
+
+The `never` type represents values that can never exist.
+
+It commonly appears in functions that never return normally or in exhaustive type checking.
+
+```ts
+function fail(message: string): never {
+  throw new Error(message);
+}
+```
+
+Because no value can have the type `never`, it is useful for expressing impossible situations in the type system.
+
+![Primitive Types Quick Reference](/docs/typescript/typescript-primitive-types-cheatsheet.png)
+
+---
+
+# Objects
+
+Objects allow multiple related values to be grouped together under a single type.
+
+Each property can define its own type, allowing TypeScript to validate the complete structure of an object.
+
+```ts
+const user = {
+  name: 'Alice',
+  age: 30,
+};
+```
+
+## Object Types
+
+Object types describe the expected structure of an object.
+
+```ts
+const user: {
+  name: string;
+  age: number;
+} = {
+  name: 'Alice',
+  age: 30,
+};
+```
+
+## Optional Properties
+
+Properties can be marked as optional using the `?` modifier.
+
+```ts
 type User = {
-  id: UserId;
+  name: string;
+  age?: number;
+};
+```
+
+Optional properties may be omitted while still satisfying the object's type.
+
+## Readonly Properties
+
+The `readonly` modifier prevents a property from being reassigned after the object has been created.
+
+```ts
+type User = {
+  readonly id: number;
   name: string;
 };
 ```
 
-:::
+Attempting to modify a readonly property produces a compile-time error.
+
+![Object Types Quick Reference](/docs/typescript/typescript-object-types-cheatsheet.png)
 
 ---
 
-## Union Types
+# Arrays & Tuples
 
-A **Union Type** allows a value to belong to one of several possible types.
+Arrays and tuples both represent ordered collections of values, but they serve different purposes.
 
-Instead of restricting a variable to a single type, unions express multiple valid alternatives.
+Arrays store collections whose elements share the same type, while tuples describe collections with a fixed length and known types at each position.
 
-Union Types are especially useful when modeling real-world scenarios where data may legitimately exist in different forms.
+## Arrays
 
-:::at-a-glance
-
-### Syntax
+An array stores zero or more values of the same type.
 
 ```ts
-A | B;
+const scores: number[] = [10, 20, 30];
 ```
 
-Represents:
+## Readonly Arrays
 
-- A
-- or B
-
-:::
-
-:::misconceptions
-
-❌ A Union combines all types simultaneously.
-
-✅ A value belongs to only one member of the union at any given time.
-
-:::
-
-:::example
+Readonly arrays prevent elements from being modified after creation.
 
 ```ts
-type Id = string | number;
+const scores: readonly number[] = [10, 20, 30];
 ```
 
-Both are valid:
+This guarantees that the collection cannot be changed through that reference.
+
+## Tuples
+
+A tuple defines both the number of elements and the type stored at each position.
 
 ```ts
-const id1: Id = 42;
-const id2: Id = 'abc';
+const user: [string, number] = ['Alice', 30];
 ```
 
-:::
+Unlike arrays, each position has a predefined meaning and type.
+
+## Variadic Tuples
+
+TypeScript also supports variadic tuples, allowing tuples to contain a variable number of elements while preserving type information.
+
+```ts
+type User = [string, ...number[]];
+```
+
+This feature is commonly used when modeling function parameters and advanced generic types.
+
+![Arrays & Tuples Quick Reference](/docs/typescript/typescript-arrays-tuples-cheatsheet.png)
 
 ---
 
-## Intersection Types
+# Functions
 
-An **Intersection Type** combines multiple types into a single type that satisfies all of them simultaneously.
+Functions describe reusable behavior.
 
-Instead of choosing between types, intersections merge their requirements.
-
-The resulting type must include every property defined by each participating type.
-
-:::at-a-glance
-
-### Syntax
+In TypeScript, functions can specify the types of their parameters and return values, allowing the compiler to validate every function call before execution.
 
 ```ts
-A & B;
+function greet(name: string): string {
+  return `Hello ${name}`;
+}
 ```
 
-Represents:
+## Parameter Types
 
-- A
-- and B
-
-:::
-
-:::misconceptions
-
-❌ An Intersection chooses one type.
-
-✅ An Intersection combines all participating types.
-
-:::
-
-:::example
-
-```ts
-type Person = {
-  name: string;
-};
-
-type Employee = {
-  company: string;
-};
-
-type EmployeeProfile = Person & Employee;
-```
-
-The resulting type contains both properties.
-
-:::
-
----
-
-## Functions
-
-Functions in TypeScript are fully typed.
-
-The compiler validates:
-
-- Parameters.
-- Return values.
-- Optional parameters.
-- Default parameters.
-- Function signatures.
-
-Typed functions improve reliability by ensuring callers and implementations agree on the expected contract.
-
-:::at-a-glance
-
-### TypeScript validates
-
-- Parameter types.
-- Return types.
-- Function compatibility.
-
-:::
-
-:::example
+Each parameter may define its expected type.
 
 ```ts
 function add(a: number, b: number): number {
@@ -532,133 +305,298 @@ function add(a: number, b: number): number {
 }
 ```
 
-The compiler guarantees that both parameters and the returned value satisfy the declared types.
+## Optional and Default Parameters
 
-:::
+Optional parameters use the `?` modifier.
+
+```ts
+function greet(name?: string) {}
+```
+
+Default parameters provide a value when none is supplied.
+
+```ts
+function greet(name = 'Guest') {}
+```
+
+## Rest Parameters
+
+Rest parameters allow functions to receive a variable number of arguments.
+
+```ts
+function sum(...values: number[]) {}
+```
+
+## Function Overloads
+
+Some functions support multiple valid call signatures.
+
+TypeScript models this behavior using overloads.
+
+```ts
+function format(value: string): string;
+function format(value: number): string;
+```
+
+Overloads allow a single implementation to support multiple strongly typed interfaces while preserving accurate type checking.
+
+![Function Types Quick Reference](/docs/typescript/typescript-function-types-cheatsheet.png)
 
 ---
 
-## Generics
+# Type Inference
 
-**Generics** allow types to be parameterized.
+TypeScript can often determine the type of a value without requiring explicit type annotations.
 
-Instead of creating functions, classes, or interfaces that work with only one specific type, generics allow the same implementation to operate safely with many different types.
+This capability is known as **type inference**.
 
-Rather than sacrificing type safety by using `any`, generics preserve the exact type information throughout the entire operation.
-
-Generics make code more reusable while maintaining compile-time type checking.
-
-:::at-a-glance
-
-### Benefits
-
-- Reusable code.
-- Preserve type information.
-- Eliminate unnecessary duplication.
-- Safer than `any`.
-
-:::
-
-:::misconceptions
-
-❌ Generics remove type safety.
-
-✅ Generics preserve type safety while making code reusable.
-
-:::
-
-:::example
+Rather than forcing developers to annotate every variable, function, or expression, TypeScript analyzes the code and infers the most appropriate type automatically.
 
 ```ts
-function identity<T>(value: T): T {
-  return value;
+let age = 30;
+```
+
+In this example, TypeScript infers that `age` is a `number`.
+
+## Variable Inference
+
+When a variable is initialized, TypeScript usually infers its type from the assigned value.
+
+```ts
+const username = 'Alice';
+```
+
+The compiler infers:
+
+```ts
+const username: string;
+```
+
+Explicit annotations are only necessary when inference cannot determine the intended type or when developers want to constrain future assignments.
+
+## Function Return Type Inference
+
+TypeScript can also infer the return type of functions.
+
+```ts
+function isAdult(age: number) {
+  return age >= 18;
 }
 ```
 
-The compiler automatically infers `T`.
+The compiler infers:
 
 ```ts
-identity('hello'); // string
-identity(42); // number
+function isAdult(age: number): boolean;
 ```
 
-:::
+Explicit return types are often recommended for public APIs because they improve readability and prevent accidental changes.
+
+## Literal Widening
+
+TypeScript does not always preserve literal values when inferring types.
+
+```ts
+const role = 'admin';
+```
+
+## Contextual Typing
+
+The surrounding context often provides enough information for TypeScript to infer the correct type.
+
+```ts
+const users = ['Alice', 'Bob'];
+
+users.forEach((user) => {
+  console.log(user.toUpperCase());
+});
+```
+
+## Best Common Type
+
+When multiple values appear together, TypeScript attempts to infer a type that is compatible with all of them.
+
+```ts
+const values = [1, 2, 3];
+```
+
+The inferred type is:
+
+```ts
+number[]
+```
+
+![Type Inference](/docs/typescript/typescript-type-inference.png)
+
+![Type Inference Quick Reference](/docs/typescript/typescript-type-inference-cheatsheet.png)
 
 ---
 
-## Generic Constraints
+# Interfaces
 
-Sometimes a generic type must satisfy certain requirements.
+Interfaces define the expected structure of objects.
 
-A **Generic Constraint** restricts the types that may be used as generic arguments.
-
-This allows generic code to remain flexible while guaranteeing that specific properties or methods are available.
-
-:::at-a-glance
-
-### Purpose
-
-- Restrict generic types.
-- Preserve flexibility.
-- Improve type safety.
-
-:::
-
-:::misconceptions
-
-❌ Generic constraints reduce the usefulness of generics.
-
-✅ Constraints make generic code safer by preventing invalid type arguments.
-
-:::
-
-:::example
+Rather than describing specific values, an interface specifies the properties and methods that an object must provide to satisfy a particular contract.
 
 ```ts
-interface HasId {
-  id: number;
-}
-
-function printId<T extends HasId>(value: T) {
-  console.log(value.id);
+interface User {
+  name: string;
+  age: number;
 }
 ```
 
-Only objects containing an `id` property are accepted.
+## Implementing an Interface
 
-:::
+Any object whose structure satisfies the interface is considered compatible.
+
+```ts
+const user: User = {
+  name: 'Alice',
+  age: 30,
+};
+```
+
+## Extending Interfaces
+
+Interfaces can inherit members from other interfaces.
+
+```ts
+interface Person {
+  name: string;
+}
+
+interface Employee extends Person {
+  department: string;
+}
+```
+
+This allows larger models to be built by combining smaller ones.
+
+## Declaration Merging
+
+Interfaces support declaration merging.
+
+```ts
+interface User {
+  name: string;
+}
+
+interface User {
+  age: number;
+}
+```
+
+The compiler automatically combines both declarations into a single interface.
+
+This behavior is unique to interfaces and is commonly used by libraries to extend existing types.
+
+![Interfaces Quick Reference](/docs/typescript/typescript-interfaces-cheatsheet.png)
 
 ---
 
-## Narrowing
+# Type Aliases
 
-**Type Narrowing** is the process of reducing a broader type into a more specific one based on runtime information.
+Type aliases create reusable names for existing types.
 
-When a variable belongs to multiple possible types, TypeScript analyzes the surrounding code to determine which type is actually being used.
+Unlike interfaces, type aliases can represent primitive types, unions, intersections, tuples, and many other complex type expressions.
 
-This allows developers to safely access members that exist only on the narrowed type.
+```ts
+type Username = string;
+```
 
-:::at-a-glance
+## Literal Types
 
-### Narrowing occurs through
+A type may represent one or more exact values.
 
-- `typeof`
-- `instanceof`
-- Equality checks
-- Property checks
-- User-defined Type Guards
+```ts
+type Direction = 'left' | 'right';
+```
 
-:::
+Literal types restrict values to a predefined set of possibilities.
 
-:::misconceptions
+## Interface vs Type
 
-❌ Union types must always be manually cast.
+Interfaces and type aliases overlap in many scenarios.
 
-✅ TypeScript automatically narrows types whenever sufficient information is available.
+Interfaces are primarily intended for describing object shapes and support declaration merging.
 
-:::
+Type aliases are more flexible because they can represent nearly any type expression.
 
-:::example
+![Type Aliases Quick Reference](/docs/typescript/typescript-type-aliases-cheatsheet.png)
+
+---
+
+# Union & Intersection Types
+
+TypeScript allows multiple types to be combined into more expressive models.
+
+Union types represent values that may belong to one of several types.
+
+Intersection types combine multiple types into a single type containing all of their members.
+
+## Union Types
+
+Union types use the `|` operator.
+
+```ts
+type Id = number | string;
+```
+
+A value of this type may contain either a number or a string.
+
+## Intersection Types
+
+Intersection types use the `&` operator.
+
+```ts
+type Person = {
+  name: string;
+};
+
+type Employee = {
+  department: string;
+};
+
+type Staff = Person & Employee;
+```
+
+The resulting type contains every property from both types.
+
+## Literal Unions
+
+Union types frequently combine literal values.
+
+```ts
+type Status = 'loading' | 'success' | 'error';
+```
+
+Literal unions make invalid states impossible to represent.
+
+## Discriminated Unions
+
+A discriminated union contains a common property whose value identifies the active variant.
+
+```ts
+type Shape = { kind: 'circle'; radius: number } | { kind: 'square'; size: number };
+```
+
+This pattern allows TypeScript to automatically narrow values during control flow.
+
+![Union & Intersection Types](/docs/typescript/typescript-union-intersection.png)
+
+![Union Types Quick Reference](/docs/typescript/typescript-union-intersection-cheatsheet.png)
+
+---
+
+# Narrowing
+
+Narrowing is the process of reducing a broader type into a more specific one.
+
+When a variable may contain multiple possible types, TypeScript analyzes the surrounding code to determine which type is valid at a particular point.
+
+## typeof
+
+The `typeof` operator narrows primitive types.
 
 ```ts
 function print(value: string | number) {
@@ -668,401 +606,332 @@ function print(value: string | number) {
 }
 ```
 
-Inside the `if`, `value` is inferred as `string`.
+## instanceof
 
-:::
+`instanceof` narrows values created from classes.
 
----
+```ts
+if (error instanceof Error) {
+  console.log(error.message);
+}
+```
 
-## Type Guards
+## in
 
-A **Type Guard** is a runtime check that allows TypeScript to narrow a variable to a more specific type.
+The `in` operator narrows object types based on the existence of a property.
 
-Type Guards provide additional information to the compiler, allowing safer access to properties and methods.
+```ts
+if ('radius' in shape) {
+  console.log(shape.radius);
+}
+```
 
-They can be built using JavaScript operators or implemented as custom functions.
+## User-Defined Type Guards
 
-:::at-a-glance
-
-### Common Type Guards
-
-- `typeof`
-- `instanceof`
-- `in`
-- User-defined guards
-
-:::
-
-:::misconceptions
-
-❌ Type Guards change the runtime type.
-
-✅ They help the compiler understand the runtime type.
-
-:::
-
-:::example
+Developers can create their own narrowing functions.
 
 ```ts
 function isUser(value: unknown): value is User {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object';
 }
 ```
 
-The return type `value is User` tells TypeScript how to narrow the variable.
+The `is` keyword tells TypeScript which type is guaranteed when the function returns `true`.
 
-:::
+## Control Flow Analysis
+
+TypeScript continuously narrows types while analyzing the execution path of a program.
+
+As conditions become more specific, the compiler automatically reduces the possible types available for a value.
+
+This analysis allows developers to write expressive code while preserving strong type safety.
+
+![Type Narrowing](/docs/typescript/typescript-type-narrowing.png)
+
+![Narrowing Quick Reference](/docs/typescript/typescript-type-narrowing-cheatsheet.png)
 
 ---
 
-## Utility Types
+# Advanced Types
 
-Utility Types are predefined generic types provided by TypeScript to transform existing types.
+Beyond basic types, TypeScript provides advanced type operators that allow developers to inspect, transform, and compose types.
 
-Instead of redefining object structures, Utility Types derive new types from existing ones.
+These operators make it possible to build expressive type definitions without affecting the generated JavaScript.
 
-They reduce duplication while keeping related types synchronized.
+## keyof
 
-:::at-a-glance
-
-### Common Utility Types
-
-- `Partial<T>`
-- `Required<T>`
-- `Readonly<T>`
-- `Pick<T>`
-- `Omit<T>`
-- `Record<K, T>`
-- `Exclude<T, U>`
-- `Extract<T, U>`
-
-:::
-
-:::misconceptions
-
-❌ Utility Types create new runtime objects.
-
-✅ Utility Types exist only during compilation.
-
-:::
-
-:::example
+The `keyof` operator produces a union containing the property names of a type.
 
 ```ts
-interface User {
-  id: number;
+type User = {
   name: string;
-}
+  age: number;
+};
 
-type UserUpdate = Partial<User>;
+type Keys = keyof User;
 ```
 
-Every property becomes optional.
-
-:::
-
----
-
-## Structural Typing
-
-TypeScript uses a **Structural Type System**.
-
-Compatibility is determined by an object's structure rather than its explicit declaration.
-
-If two objects have the same required properties, they are considered compatible regardless of how they were declared.
-
-This differs from nominal type systems, where compatibility depends on explicit type declarations.
-
-Structural typing provides flexibility while maintaining strong compile-time guarantees.
-
-:::at-a-glance
-
-### Structural Typing
-
-Compatibility depends on:
-
-- Properties.
-- Property types.
-- Method signatures.
-
-Not on type names.
-
-:::
-
-:::misconceptions
-
-❌ Two objects must share the same interface to be compatible.
-
-✅ Objects are compatible if their structures match.
-
-:::
-
-:::example
+The resulting type is:
 
 ```ts
-interface Person {
-  name: string;
-}
+'name' | 'age';
+```
 
+## typeof
+
+Within the type system, `typeof` extracts the type of an existing value.
+
+```ts
 const user = {
   name: 'Alice',
 };
 
-const person: Person = user;
+type User = typeof user;
 ```
 
-The assignment is valid because both structures match.
+## Indexed Access Types
 
-:::
+Indexed access types retrieve the type of a specific property.
+
+```ts
+type Name = User['name'];
+```
+
+## Mapped Types
+
+Mapped types create new object types by transforming existing ones.
+
+```ts
+type ReadonlyUser = {
+  readonly [K in keyof User]: User[K];
+};
+```
+
+## Conditional Types
+
+Conditional types select one type or another depending on a condition.
+
+```ts
+type IsString<T> = T extends string ? true : false;
+```
+
+## infer
+
+The `infer` keyword captures part of another type while evaluating a conditional type.
+
+## Template Literal Types
+
+Template literal types combine string literal types into new string patterns.
+
+```ts
+type Event = `on${string}`;
+```
+
+![Advanced Type Operators Quick Reference](/docs/typescript/typescript-advanced-types-cheatsheet.png)
 
 ---
 
-## Special Types
+# Utility Types
 
-TypeScript provides several special types that represent unique situations within the type system.
+TypeScript includes a collection of built-in utility types that simplify common type transformations.
 
-Although they are used less frequently than primitive or object types, understanding their purpose is essential for writing expressive and type-safe applications.
+Rather than rewriting existing type definitions, utility types derive new ones automatically.
 
-### `any`
+## Object Utility Types
 
-The `any` type disables TypeScript's type checking.
-
-Values of type `any` can be assigned to any other type, and any operation can be performed on them without compiler validation.
-
-While `any` improves flexibility, it also removes many of the safety guarantees provided by the type system.
-
-For this reason, its usage should generally be minimized.
-
-:::at-a-glance
-
-### any
-
-- Disables type checking.
-- Maximum flexibility.
-- Lowest type safety.
-
-:::
-
-:::misconceptions
-
-❌ `any` is the same as JavaScript.
-
-✅ JavaScript has no compile-time type checking. `any` explicitly tells TypeScript to ignore it.
-
-:::
-
-:::example
+Some utility types transform object structures.
 
 ```ts
-let value: any = 'hello';
+Partial<User>;
 
-value = 42;
-value.toUpperCase();
-value.nonExistingMethod();
+Required<User>;
+
+Readonly<User>;
+
+Pick<User, 'name'>;
+
+Omit<User, 'age'>;
+
+Record<string, User>;
 ```
 
-The compiler reports no errors.
+## Union Utility Types
 
-:::
+Utility types can also filter union types.
+
+```ts
+Exclude<A, B>;
+
+Extract<A, B>;
+
+NonNullable<T>;
+```
+
+## Function Utility Types
+
+Several utility types extract information from functions.
+
+```ts
+Parameters<typeof greet>;
+
+ReturnType<typeof greet>;
+
+ConstructorParameters<typeof User>;
+
+InstanceType<typeof User>;
+```
+
+## Promise Utility Types
+
+`Awaited<T>` extracts the resolved value of a Promise.
+
+```ts
+type Result = Awaited<Promise<string>>;
+```
+
+The resulting type is:
+
+```ts
+string;
+```
+
+![Utility Types Quick Reference](/docs/typescript/typescript-utility-types-cheatsheet.png)
 
 ---
 
-### `unknown`
+# Modules
 
-The `unknown` type represents a value whose type is not yet known.
+Modules organize code into reusable, independent files.
 
-Unlike `any`, `unknown` preserves type safety by requiring developers to narrow the type before using it.
+Rather than placing every declaration in the global scope, modules expose only the values and types that should be shared with other parts of the application.
 
-Because of this, `unknown` is generally preferred over `any` whenever the type cannot be determined in advance.
+## Exporting
 
-:::at-a-glance
-
-### unknown
-
-- Unknown type.
-- Requires narrowing.
-- Preserves type safety.
-
-:::
-
-:::misconceptions
-
-❌ `unknown` is simply a safer `any`.
-
-✅ `unknown` forces the compiler to verify the type before it can be used.
-
-:::
-
-:::example
+Values and types become available to other modules through the `export` keyword.
 
 ```ts
-let value: unknown = getData();
+export function greet() {}
+```
 
-if (typeof value === 'string') {
-  console.log(value.toUpperCase());
+```ts
+export interface User {}
+```
+
+## Importing
+
+Other modules access exported members using `import`.
+
+```ts
+import { greet } from './greet';
+```
+
+## Default Exports
+
+A module may expose a single default export.
+
+```ts
+export default class User {}
+```
+
+```ts
+import User from './User';
+```
+
+## Re-exports
+
+Modules may re-export declarations from other files.
+
+```ts
+export * from './users';
+```
+
+This pattern is commonly used to create barrel files that simplify imports across large projects.
+
+![Modules Quick Reference](/docs/typescript/typescript-modules-cheatsheet.png)
+
+---
+
+# tsconfig.json
+
+The `tsconfig.json` file controls how the TypeScript compiler analyzes and transpiles a project.
+
+It defines compiler behavior, project structure, and the language features available during compilation.
+
+## Compiler Options
+
+Most configuration lives inside the `compilerOptions` object.
+
+Common options include:
+
+- `strict`
+- `target`
+- `module`
+- `moduleResolution`
+- `baseUrl`
+- `paths`
+- `rootDir`
+- `outDir`
+
+These settings determine how TypeScript validates source code and generates JavaScript.
+
+## Project Structure
+
+The configuration also specifies which files belong to the project.
+
+Common options include:
+
+- `include`
+- `exclude`
+- `files`
+
+## Strict Mode
+
+The `strict` option enables the compiler's strongest type-checking rules.
+
+It is recommended for almost every modern TypeScript project because it helps detect potential errors as early as possible.
+
+```json
+{
+  "compilerOptions": {
+    "strict": true
+  }
 }
 ```
 
-The compiler allows access only after narrowing.
+A stricter configuration generally leads to safer and more maintainable code.
 
-:::
-
----
-
-### `never`
-
-The `never` type represents values that can never exist.
-
-It commonly appears when:
-
-- A function never returns.
-- Every possible union member has already been handled.
-- Execution always terminates by throwing an exception.
-
-`never` helps TypeScript verify that impossible situations truly remain impossible.
-
-:::at-a-glance
-
-### never
-
-- No possible value.
-- Used for unreachable code.
-- Useful for exhaustive checks.
-
-:::
-
-:::misconceptions
-
-❌ `never` is the same as `void`.
-
-✅ `void` means "no meaningful return value." `never` means execution never successfully completes.
-
-:::
-
-:::example
-
-```ts
-function fail(message: string): never {
-  throw new Error(message);
-}
-```
-
-The function never returns.
-
-:::
-
----
-
-## Declaration Files
-
-Declaration Files (`.d.ts`) describe the types of JavaScript code without providing its implementation.
-
-They allow TypeScript to understand libraries that were originally written in JavaScript.
-
-Rather than containing executable code, declaration files contain only type information.
-
-This enables features such as:
-
-- Autocompletion.
-- Compile-time validation.
-- Documentation.
-- Type inference.
-
-Many popular JavaScript libraries provide declaration files through the `@types` ecosystem or bundle them directly with the package.
-
-:::at-a-glance
-
-### Declaration Files
-
-- Describe existing JavaScript.
-- No runtime code.
-- Enable editor tooling.
-- Improve interoperability.
-
-:::
-
-:::misconceptions
-
-❌ `.d.ts` files execute at runtime.
-
-✅ They exist only for the TypeScript Compiler.
-
-:::
-
-:::example
-
-```ts
-declare function fetchUser(id: number): User;
-```
-
-The compiler understands the function signature even though no implementation exists.
-
-:::
+![tsconfig.json Quick Reference](/docs/typescript/typescript-tsconfig-cheatsheet.png)
 
 ---
 
 # Putting Everything Together
 
-The following sequence summarizes how TypeScript analyzes source code before JavaScript is executed.
+A TypeScript application combines the language's type system, compiler, and language features to produce safe JavaScript without changing the runtime environment.
 
-```text
-                 Developer
-                      │
-                      ▼
-             TypeScript Source
-                      │
-                      ▼
-             TypeScript Compiler
-                      │
-      ┌───────────────┼────────────────┐
-      │               │                │
-      ▼               ▼                ▼
- Type Inference   Type Checking   Static Analysis
-      │               │                │
-      └───────────────┼────────────────┘
-                      ▼
-              Type System Rules
-                      │
-                      ▼
-         Compile-Time Validation
-                      │
-             No Errors Found
-                      ▼
-          JavaScript Generated
-                      │
-                      ▼
-          Node.js / Browser Runtime
-                      │
-                      ▼
-              Application Executes
-```
+Types describe values.
 
-The development process begins when a developer writes TypeScript source code.
+The compiler validates those types.
 
-Before any code executes, the TypeScript Compiler analyzes the entire program.
+Advanced language features make types more expressive.
 
-During this analysis, the compiler infers types, validates assignments, checks function signatures, verifies generic constraints, performs narrowing, and applies the rules of the TypeScript Type System.
+Finally, the compiler removes every type annotation, producing standard JavaScript that executes exactly like handwritten JavaScript.
 
-If incompatible types are detected, the compiler reports errors before the application is executed.
+Understanding how these concepts work together is more valuable than memorizing individual keywords or operators.
 
-Once the program passes compile-time validation, every TypeScript-specific construct is removed and standard JavaScript is generated.
+## End-to-End Flow
 
-From that point onward, the JavaScript Runtime executes the generated code exactly as it would execute handwritten JavaScript.
+A typical TypeScript development workflow follows a predictable sequence.
 
-TypeScript's responsibility ends once compilation has completed.
+1. The developer writes TypeScript code.
+2. Types describe values, objects, functions, and APIs.
+3. The compiler analyzes the entire program.
+4. Type checking validates compatibility and reports errors.
+5. Generic, utility, and advanced types improve correctness during compilation.
+6. The compiler transpiles the program into standard JavaScript.
+7. The generated JavaScript executes in the browser or Node.js.
 
----
+Although TypeScript introduces many language features during development, every type exists only at compile time.
 
-## Final Perspective
+The runtime executes plain JavaScript.
 
-TypeScript is not a replacement for JavaScript.
-
-TypeScript is not a runtime.
-
-TypeScript is not responsible for executing applications.
-
-TypeScript is a language and a static analysis tool that helps developers detect many categories of programming errors before code reaches production.
-
-Its type system improves reliability, maintainability, tooling, and refactoring while preserving complete compatibility with the JavaScript ecosystem.
-
-Understanding the principles behind the Type System, rather than memorizing individual language features, provides a much stronger foundation for designing scalable and maintainable software.
+![TypeScript Compilation Flow](/docs/typescript/typescript-complete-compilation-flow.png)
