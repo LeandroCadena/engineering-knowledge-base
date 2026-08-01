@@ -1,156 +1,80 @@
 ---
 title: React Overview
-description: Understand what React is, how component-based UI works, and why React became one of the most important libraries for building modern web applications.
+description: Learn what React is, how it builds user interfaces from reusable components, where it fits within frontend architectures, and the most common ways it is used in modern applications.
+icon: react.png
 order: 1
-updatedAt: 2026-07-06
+updatedAt: 2026-07-31
 ---
 
-# React
+# React Overview
 
 ## Definition
 
-React is a JavaScript library for building user interfaces using reusable components.
+React is an open-source JavaScript library for building user interfaces.
 
-Instead of manually updating the DOM whenever application state changes, React allows developers to describe what the UI should look like for a given state.
+Rather than generating complete web pages on the server, React focuses on creating interactive interfaces in the browser by composing small, reusable pieces of UI called **components**.
 
-React then updates the UI efficiently when that state changes.
+Instead of manually updating the page whenever data changes, developers describe how the interface should look for a given state, and React updates the rendered output automatically.
 
-React is commonly used to build:
+React is commonly used to build everything from small interface components to large single-page applications (SPAs), and serves as the foundation for many modern frontend frameworks and ecosystems.
 
-- Single Page Applications
-- Dashboards
-- Admin panels
-- E-commerce interfaces
-- SaaS products
-- Interactive forms
-- Mobile applications through React Native
-
-React is not a full framework by itself.
-
-It focuses primarily on the view layer of an application: rendering UI and managing how components update over time.
+![React Component Model](/docs/react/react-component-model.png)
 
 ---
 
-## How it Works
+## How It Fits into the Ecosystem
+
+React is responsible for rendering and updating the user interface, but it does not provide a complete application framework by itself.
+
+A typical React application combines React with additional libraries for routing, state management, data fetching, styling, and build tooling.
+
+Frameworks such as Next.js build on top of React by providing features like server-side rendering, routing, and backend integration.
+
+---
+
+## How It Works
+
+React applications are built by combining reusable components.
+
+Each component describes how a portion of the user interface should appear based on its current data. When that data changes, React determines what needs to be updated and refreshes the interface accordingly.
+
+Instead of manually manipulating the page, developers describe the desired UI, while React handles keeping the rendered output synchronized with the application's state.
+
+This declarative approach allows developers to focus on describing the interface rather than managing individual DOM updates.
+
+---
+
+## What It Looks Like
 
 React applications are built from components.
 
-A component is a reusable piece of UI that receives input, manages state, and returns UI output.
+Each component defines a portion of the user interface and can be reused throughout the application.
 
-```text
-Application
-
-↓
-
-Components
-
-↓
-
-State + Props
-
-↓
-
-Render UI
-
-↓
-
-User Interaction
-
-↓
-
-State Update
-
-↓
-
-Re-render
+```jsx
+function Welcome() {
+  return <h1>Hello, World!</h1>;
+}
 ```
 
----
-
-## How it Fits into the Ecosystem
-
-React sits between application state and the browser's user interface.
-
-Rather than manipulating the DOM directly, applications describe the desired UI through components. React determines the minimum set of DOM updates required to reflect state changes.
-
-```text
-Business Logic
-        │
-        ▼
-Application State
-        │
-        ▼
-      React
-        │
-        ▼
-  Browser DOM
-        │
-        ▼
-     User Interface
-```
-
-React is commonly used together with:
-
-- JavaScript
-- TypeScript
-- Next.js
-- React Router
-- TanStack Query
-- Redux
-- Zustand
-- Tailwind CSS
-- Vite
-
-Although React focuses on building user interfaces, it integrates naturally with backend technologies such as REST APIs, GraphQL, WebSockets, and server-side frameworks.
+As applications grow, components are composed together to create increasingly complex interfaces.
 
 ---
 
-## Real-World Usage
+**Image: React Component Tree**
 
-React powers many modern web applications that require dynamic, interactive user interfaces.
+The following diagram illustrates how individual React components combine to form a complete application interface through composition.
 
-Typical use cases include:
-
-- SaaS platforms.
-- E-commerce applications.
-- Dashboards.
-- Admin panels.
-- Customer portals.
-- Social platforms.
-- Real-time applications.
-- Data visualization tools.
-
-Because React promotes reusable components, it scales well from small projects to large enterprise applications.
+![React Component Tree](/docs/react/react-component-tree.png)
 
 ---
 
-## Practical Examples
+## Common Use Cases
 
-### Example 1 — Dashboard
+React is commonly used to build:
 
-A dashboard may contain dozens of independent components such as charts, tables, filters, notifications, and navigation menus.
-
-Each component manages its own rendering while contributing to the overall application.
-
----
-
-### Example 2 — E-commerce Product Page
-
-A product page can be composed from reusable components such as:
-
-- Product Gallery
-- Product Information
-- Price
-- Reviews
-- Add to Cart Button
-- Related Products
-
-Each component can evolve independently without affecting the rest of the page.
-
----
-
-### Example 3 — Real-Time Application
-
-A monitoring dashboard receives updates through WebSockets.
-
-When new data arrives, React automatically re-renders only the components whose state has changed, avoiding unnecessary DOM updates.
+- Single-page applications (SPAs)
+- Interactive dashboards
+- E-commerce frontends
+- Admin panels
+- SaaS applications
+- Mobile applications through React Native
