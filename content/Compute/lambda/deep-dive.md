@@ -6,313 +6,316 @@ order: 2
 updatedAt: 2026-07-28
 ---
 
-# AWS Lambda Deep Dive
+# Serverless Computing
 
-# Functions
+AWS Lambda is built on the **serverless computing** model.
 
-A **Lambda function** is the fundamental building block of AWS Lambda. Every workload executed by the service is packaged and deployed as an independent function.
+Serverless computing is a cloud execution model in which developers deploy application code without provisioning, configuring, or maintaining the underlying servers.
 
-Unlike traditional applications, where multiple business capabilities often run together inside a single long-lived process, Lambda treats each function as a self-contained execution unit. Every function contains its own code, configuration, runtime settings, permissions, and execution parameters, allowing AWS to invoke, scale, and manage it independently from every other function.
+Instead of creating virtual machines, configuring operating systems, installing runtimes, and managing capacity, developers simply upload functions that execute whenever an event occurs.
 
-This design enables applications to be decomposed into smaller, focused components, where each function is responsible for a specific task. Because functions are deployed independently, changes to one function do not require redeploying the rest of the application. Likewise, each function can scale according to its own workload, rather than sharing resources with unrelated components.
+AWS automatically provisions the required infrastructure, executes the function, scales it according to demand, and releases the resources once execution finishes.
 
-Although a Lambda function primarily consists of application code, it also includes the configuration required to execute that code correctly. This includes the runtime, the handler that serves as the entry point, memory allocation, timeout settings, environment variables, the execution role used to access AWS services, and optionally shared layers. Together, these elements define everything AWS Lambda needs to execute the function.
+Although the name suggests otherwise, servers still exist.
 
-Understanding the role of a Lambda function is essential because nearly every concept introduced throughout this guide—including runtimes, handlers, execution environments, scaling, concurrency, deployments, and permissions—is ultimately associated with how Lambda manages and executes functions.
+The difference is that infrastructure becomes the cloud provider's responsibility rather than the application's.
 
-![Anatomy of a lambda function.](/docs/aws-lambda/lambda-function-anatomy.png)
+This allows development teams to focus entirely on business logic while AWS manages infrastructure provisioning, operating system maintenance, scaling, availability, and fault tolerance.
 
----
+Unlike traditional servers, where applications often remain running continuously, serverless functions execute only when needed.
 
-# Runtime
+Each invocation is independent, meaning functions should not rely on local state remaining available between executions.
 
-A **runtime** is the software environment that AWS Lambda uses to execute your function. It provides everything required to start your application, initialize the language environment, and invoke your handler whenever the function is executed.
+This execution model enables applications to react to events efficiently while paying only for the compute time consumed during execution.
 
-When a Lambda function is invoked, AWS first creates (or reuses) an execution environment. Inside that environment, the runtime is responsible for loading your application, initializing dependencies, and calling the configured handler with the incoming event. Once the runtime has finished executing the handler, it returns the response to Lambda, which completes the invocation.
-
-AWS provides a collection of **managed runtimes** for the most commonly used programming languages, including Node.js, Python, Java, .NET, Ruby, and Go. These managed runtimes are maintained by AWS, allowing developers to focus on writing application code rather than managing the underlying execution environment.
-
-For specialized use cases, Lambda also supports **custom runtimes**. Instead of relying on an AWS-managed language runtime, developers can provide their own runtime implementation, making it possible to execute applications written in languages or frameworks that are not officially supported.
-
-Because the runtime is initialized before your application begins executing, its startup process directly influences invocation performance. Runtime initialization is one of the primary contributors to cold start latency and plays a central role in understanding how Lambda executes functions efficiently.
-
-![Runtime inside the execution environment.](/docs/aws-lambda/runtime-inside-the-execution-environment.png)
+![Serverless Computing Model](/docs/aws-lambda/lambda-serverless-computing-model.png)
 
 ---
 
-# Handler
+# Lambda Functions
 
-A **handler** is the entry point that AWS Lambda invokes whenever a function is executed. Rather than executing your application directly, Lambda delegates control to the configured handler, making it the bridge between the Lambda service and your application code.
+A Lambda function is the fundamental execution unit of AWS Lambda.
 
-When a function is invoked, the runtime loads your application and locates the configured handler. Lambda then passes two pieces of information to it: the incoming **event**, which contains the data that triggered the invocation, and the **context**, which provides metadata about the current execution environment. After processing the request, the handler returns a response that Lambda sends back to the caller or to the service that initiated the invocation.
+Each function represents an independent piece of application logic that executes in response to an invocation.
 
-Although the handler is responsible for receiving events and returning responses, it should generally contain as little business logic as possible. A well-designed handler acts primarily as an orchestration layer, validating the incoming request, invoking the appropriate application components, and formatting the final response. Keeping business logic outside the handler improves maintainability, testing, and code reuse.
+Functions are designed to perform a specific task rather than hosting an entire application.
 
-Because every Lambda invocation begins with the handler, understanding its role is essential before exploring how events trigger functions and how Lambda manages the complete execution lifecycle.
+This encourages applications to be divided into small, focused units that can evolve, scale, and execute independently.
+
+## Function Anatomy
+
+Every Lambda function follows a well-defined execution contract.
+
+![Lambda Function Anatomy](/docs/aws-lambda/lambda-function-anatomy.png)
 
 ---
 
-# Invocations
+## Function Handler
 
-An **invocation** is the process of executing a Lambda function. Every time AWS Lambda runs your code, a new invocation begins. Regardless of the event source, every invocation follows the same goal: receive an event, execute the configured handler, and produce a result.
+The handler is the entry point of every Lambda function.
 
-Lambda functions can be invoked in several ways depending on the AWS service or client initiating the request. Some services invoke functions synchronously and wait for an immediate response, while others invoke them asynchronously, allowing the caller to continue without waiting for the function to complete. Queue-based services introduce a third model, where Lambda continuously polls the event source and invokes functions as new messages become available.
+Whenever Lambda invokes a function, the runtime calls the configured handler, passing both the incoming event and the execution context.
 
-The invocation model directly influences how applications behave. It determines whether a caller waits for a response, how events are delivered to the function, and how Lambda coordinates execution with the event source. Understanding these models is essential before exploring execution environments, scaling, and failure handling in later chapters.
+The handler is responsible for receiving the request, executing the application's business logic, and returning the appropriate result.
 
-Although every invocation eventually results in the execution of a handler, the path taken to reach that handler depends on the service that triggered the function. AWS abstracts these differences, allowing developers to focus on application logic while Lambda manages the underlying invocation process.
+![Handler & Function Anatomy Cheat Sheet](/docs/aws-lambda/lambda-handler-cheatsheet.png)
 
-![Lambda Invocation Models.](/docs/aws-lambda/lambda-invocation-models.png)
+---
+
+## Event Object
+
+The event object contains the data that triggered the function.
+
+Its structure depends entirely on the event source.
+
+Lambda forwards the event directly to the handler, allowing the application to process it according to its business logic.
+
+## Context Object
+
+Alongside the event, Lambda also provides a context object.
+
+The context contains metadata about the current execution, such as the function name, request identifier, configured timeout, remaining execution time, and runtime information.
+
+Although many functions only use a small portion of this information, the context becomes particularly useful for logging, tracing, diagnostics, and advanced execution scenarios.
+
+## Function Runtimes
+
+Lambda supports multiple managed runtimes that provide the execution environment required for different programming languages.
+
+Although implementations differ, every runtime follows the same Lambda execution model.
+
+---
+
+# Invocation Model
+
+A Lambda function executes only when it is invoked.
+
+Unlike traditional applications that continuously listen for incoming requests, Lambda remains idle until an event source or another application requests its execution.
+
+Every invocation contains the information required for the function to perform its work, making each execution independent from previous ones.
+
+## Invocation Types
+
+Lambda supports multiple invocation models depending on how the caller expects the function to behave.
+
+![Invocation Types Cheat Sheet](/docs/aws-lambda/lambda-invocation-types-cheatsheet.png)
+
+---
+
+## Event Payload
+
+Every invocation delivers an event payload to the function.
+
+The payload contains all the information required for the function to execute its business logic.
+
+Lambda treats this payload as opaque data.
+
+Its structure depends entirely on the service or application that initiated the invocation.
+
+As a result, the same Lambda function model can process HTTP requests, queue messages, object storage events, scheduled executions, or custom application events without changing the execution model itself.
+
+## Invocation Failures
+
+If an invocation cannot be completed successfully, the behavior depends on the invocation model being used.
+
+Some invocation types automatically retry failed executions, while others return the error directly to the caller or rely on the event source to attempt delivery again.
+
+Lambda also supports mechanisms that preserve failed events for later analysis or reprocessing.
+
+The exact retry strategy depends on the service responsible for invoking the function, but the Lambda execution model remains unchanged.
 
 ---
 
 # Execution Environment
 
-An **execution environment** is the isolated environment that AWS Lambda creates to run a function. It contains everything required for execution, including the runtime, your application code, initialized dependencies, environment variables, and any resources created during the initialization phase.
+Every Lambda invocation executes inside an **execution environment**.
 
-When a function is invoked for the first time, Lambda creates a new execution environment and prepares it for execution. During this initialization process, the runtime starts, your application is loaded into memory, global variables are initialized, and any code outside the handler is executed. Once initialization completes, Lambda invokes the handler to process the incoming event.
+The execution environment is an isolated runtime managed entirely by AWS.
 
-Unlike traditional servers, execution environments are not permanently running. After an invocation finishes, Lambda may keep the environment available for future requests. If another invocation arrives, Lambda can reuse the existing environment instead of creating a new one, avoiding the cost of repeating the initialization process.
+It contains the runtime, application code, initialized dependencies, temporary storage, and all resources required to execute the function.
 
-This reuse behavior is one of the defining characteristics of AWS Lambda. Objects created during initialization—such as SDK clients, database connections, or cached configuration—can remain available for subsequent invocations executed within the same environment. However, Lambda does not guarantee that an existing environment will always be reused, and developers must assume that a completely new environment can be created at any time.
+Rather than creating a new environment for every invocation, Lambda attempts to reuse existing environments whenever possible.
 
-Eventually, when an execution environment remains inactive for an unspecified period, AWS may freeze and later destroy it. Because the lifecycle of an execution environment is entirely managed by Lambda, applications should never depend on a specific environment continuing to exist between invocations.
+This optimization reduces initialization time and improves overall performance.
 
-![Execution Environment Lifecycle.](/docs/aws-lambda/execution-environment-lifecycle.png)
+## Execution Lifecycle
 
----
+Each execution environment progresses through several phases during its lifetime.
 
-# Cold Starts
+The complete lifecycle is illustrated below.
 
-A **cold start** occurs when AWS Lambda must create a new execution environment before invoking a function. Because no reusable environment is available, Lambda performs the complete initialization process before your handler can begin executing.
-
-During a cold start, Lambda provisions a new execution environment, initializes the runtime, loads your application code into memory, and executes any initialization code defined outside the handler. Only after these steps are complete does Lambda invoke the handler to process the incoming event.
-
-Cold starts do not occur on every invocation. Once an execution environment has been initialized, Lambda may reuse it for future invocations, allowing subsequent requests to skip the initialization phase and begin executing the handler almost immediately.
-
-The duration of a cold start depends on several factors, including the selected runtime, the amount of initialization code, application size, dependency loading, and any external resources initialized during startup. While cold starts cannot always be avoided, understanding what causes them allows developers to design functions that minimize their impact.
-
-# Warm Starts
-
-A **warm start** occurs when AWS Lambda reuses an existing execution environment instead of creating a new one. Because the runtime and application have already been initialized, Lambda can immediately invoke the handler without repeating the initialization phase.
-
-During a warm start, objects created during initialization—such as SDK clients, database connections, cached configuration, and other global resources—remain available within the reused execution environment. Reusing these resources significantly reduces invocation latency and improves overall performance.
-
-Although warm starts are common, AWS Lambda does not guarantee that a previous execution environment will always be reused. At any time, Lambda may create a completely new execution environment, causing the next invocation to experience a cold start instead. Applications must therefore be designed to benefit from reuse without depending on it.
-
-For this reason, expensive initialization work should generally be performed outside the handler whenever possible. If the execution environment is reused, those resources are initialized only once and remain available for subsequent invocations, reducing execution time and resource consumption.
-
-![Cold Start vs Warm Start.](/docs/aws-lambda/cold-start-vs-warm-start.png)
+![Execution Environment Lifecycle](/docs/aws-lambda/lambda-execution-environment-lifecycle.png)
 
 ---
 
-# Stateless Execution
+## Cold Starts
 
-Although AWS Lambda may reuse execution environments, Lambda functions are considered **stateless**. Every invocation must be able to execute independently without assuming that information from previous invocations will still be available.
+A cold start occurs when Lambda must initialize a new execution environment before executing the handler.
 
-Resources created during initialization—such as SDK clients, database connections, or cached configuration—may remain in memory while an execution environment is reused. However, this reuse is an optimization, not a guarantee. At any time, Lambda may create a new execution environment, causing all in-memory data from previous executions to be lost.
+Because these initialization steps occur before the business logic starts, cold starts generally increase the latency of the first invocation executed within a new environment.
 
-For this reason, application state should never be stored inside the execution environment. Any data that must survive beyond a single invocation should be persisted in external services such as databases, object storage, caches, or other durable systems.
+## Warm Starts
 
-Designing Lambda functions as stateless units improves scalability, reliability, and fault tolerance. Because every invocation is independent, AWS Lambda can freely create, reuse, or destroy execution environments without affecting application correctness.
+If Lambda is able to reuse an existing execution environment, the initialization phase can be skipped.
 
-## Key Takeaways
+This is commonly referred to as a warm start.
 
-- Lambda functions are designed to be stateless.
-- Execution environment reuse is an optimization, not a persistence mechanism.
-- In-memory data may disappear at any time.
-- Persistent application state should be stored outside Lambda.
-- Stateless functions enable Lambda to scale and manage execution environments transparently.
+Warm starts are one of the primary reasons why subsequent invocations of the same function often execute faster than the initial invocation.
+
+![Cold vs Warm Starts Cheat Sheet](/docs/aws-lambda/lambda-cold-vs-warm-cheatsheet.png)
+
+---
+
+## Execution Context Reuse
+
+When an execution environment is reused, certain resources initialized outside the handler may remain available for subsequent invocations.
+
+This allows applications to reuse objects such as database connections, SDK clients, configuration data, and other expensive resources without recreating them for every execution.
+
+However, developers should never assume that an execution environment will always be reused.
+
+Every invocation must remain functionally correct even if Lambda creates a completely new environment.
 
 ---
 
 # Concurrency
 
-AWS Lambda automatically manages concurrency by controlling how many function invocations can execute simultaneously. Each execution environment can process only a single invocation at a time, so additional concurrent requests require Lambda to create additional execution environments.
+One of AWS Lambda's defining characteristics is its ability to execute many function invocations simultaneously.
 
-Although Lambda scales automatically, developers can influence this behavior through concurrency controls. These controls help guarantee execution capacity for critical workloads, reduce cold start latency, and protect both Lambda functions and downstream services from excessive traffic.
+Rather than processing requests sequentially, Lambda automatically allocates additional execution environments as concurrent demand increases.
+
+This dynamic scaling model allows applications to adapt automatically to changing workloads without requiring developers to provision or manage additional infrastructure.
+
+![Concurrency Scaling](/docs/aws-lambda/lambda-concurrency-scaling.png)
+
+---
 
 ## Reserved Concurrency
 
-**Reserved Concurrency** allocates a fixed number of concurrent executions exclusively to a specific Lambda function.
+Lambda allows functions to reserve a specific portion of the available concurrent executions.
 
-This guarantees that the function always has execution capacity available while also preventing it from consuming all of the account's concurrency. Reserved Concurrency is commonly used to isolate critical workloads or protect downstream systems that cannot handle unlimited parallel requests.
+Reserved concurrency guarantees execution capacity while simultaneously limiting the maximum concurrency available to the function.
 
 ## Provisioned Concurrency
 
-**Provisioned Concurrency** keeps a configured number of execution environments initialized and ready to receive requests.
+Provisioned concurrency keeps execution environments initialized and ready to receive requests.
 
-Because these execution environments are already initialized before traffic arrives, invocations can begin immediately without experiencing the initialization delay associated with cold starts. Provisioned Concurrency is typically used for latency-sensitive applications where predictable response times are required.
+Because these environments are already prepared, functions can begin executing immediately, significantly reducing cold start latency.
 
-## Throttling
+![Concurrency Reference Cheat Sheet](/docs/aws-lambda/lambda-concurrency-reference.png)
 
-Every AWS account has a concurrency quota.
+---
 
-If all available concurrent executions are in use and no additional capacity is available, Lambda throttles new invocations until execution environments become available again or the account concurrency limit is increased.
+# Event Sources
 
-![Lambda Concurrency Controls.](/docs/aws-lambda/lambda-concurrency-controls.png)
+Lambda can be invoked by AWS services or external applications.
+
+These integrations allow applications to react automatically whenever new events occur.
+
+![Event Sources Ecosystem](/docs/aws-lambda/lambda-event-sources-ecosystem.png)
+
+---
+
+## Event-Driven Architecture
+
+Because Lambda reacts to events rather than continuously running application processes, it naturally fits within event-driven architectures.
+
+Services remain loosely coupled by communicating through events instead of direct dependencies, improving scalability and allowing applications to evolve independently.
+
+---
+
+# Execution Permissions
+
+Every Lambda function executes using an AWS identity.
+
+Rather than inheriting the permissions of the user who created the function, Lambda assumes a dedicated execution role whenever the function begins running.
+
+This execution role determines which AWS resources the function is allowed to access during execution.
+
+![Execution Permissions Flow](/docs/aws-lambda/lambda-execution-permissions-flow.png)
+
+---
+
+## Resource-based Permissions
+
+Resource-based permissions define which principals are allowed to invoke a Lambda function.
+
+Together, execution roles and resource-based permissions determine both what a function can access and who is allowed to invoke it.
+
+## Least Privilege
+
+Lambda functions should always execute with only the permissions required to perform their intended work.
+
+Restricting permissions minimizes unnecessary access while reducing the impact of accidental errors or compromised application code.
+
+![Execution Permissions Cheat Sheet](/docs/aws-lambda/lambda-execution-permissions-cheatsheet.png)
 
 ---
 
 # Configuration
 
-Every Lambda function includes a set of configuration options that control how it executes, how many resources it receives, and how it interacts with the execution environment. Although these settings do not change the function's business logic, they have a direct impact on performance, reliability, latency, and cost.
+Lambda exposes several configuration options that determine how a function executes.
 
-## Memory and CPU
+These settings define the runtime environment independently from the application code.
 
-Lambda allocates CPU proportionally to the amount of memory assigned to a function. Increasing the memory configuration therefore increases both the available RAM and the CPU resources, often reducing execution time for compute-intensive workloads.
-
-Choosing the appropriate memory size is a balance between performance and cost. A function configured with more memory may complete significantly faster, sometimes reducing the overall cost despite using more resources.
-
-## Timeout
-
-Every Lambda invocation has a maximum execution time defined by the function's timeout configuration.
-
-If the function does not complete before the timeout expires, Lambda immediately terminates the execution and reports a timeout error. Selecting an appropriate timeout helps prevent runaway executions while allowing sufficient time for legitimate workloads to complete.
-
-## Environment Variables
-
-Environment variables provide configuration values that are available to the function at runtime.
-
-They are commonly used for application settings, feature flags, resource identifiers, API endpoints, and other values that should remain separate from the application code. This allows the same deployment package to be reused across multiple environments without modifying the source code.
-
-## Ephemeral Storage
-
-Each execution environment provides temporary local storage mounted at **`/tmp`**.
-
-This storage is intended for temporary files created during execution, such as downloaded objects, generated documents, or intermediate processing results. Although the contents may remain available while the execution environment is reused, they should never be considered persistent storage because Lambda may destroy the execution environment at any time.
-
----
-
-# Failure Handling
-
-Lambda functions do not always execute successfully. Application exceptions, downstream service failures, timeouts, or infrastructure issues may cause an invocation to fail. How Lambda handles these failures depends primarily on the invocation model used to execute the function.
-
-## Retries
-
-Lambda automatically retries failed invocations only for supported **asynchronous** invocation models. For **synchronous** invocations, Lambda immediately returns the error to the caller, allowing the client to decide how to handle the failure. For **poll-based** invocations, retry behavior is determined by the event source service rather than by Lambda itself.
-
-## Dead Letter Queues (DLQs)
-
-A **Dead Letter Queue (DLQ)** stores events that could not be processed successfully after all retry attempts have been exhausted.
-
-Instead of discarding failed events, Lambda forwards them to the configured queue or topic, allowing developers to inspect, troubleshoot, and reprocess them later without losing the original event.
-
-## Lambda Destinations
-
-**Lambda Destinations** route the outcome of an asynchronous invocation after execution completes.
-
-Unlike Dead Letter Queues, which capture only failed events, Destinations can be configured for both successful and failed executions, making them useful for triggering downstream workflows based on the final result of a function.
-
-## Idempotency
-
-Because Lambda may retry failed invocations or receive duplicate events from upstream services, functions should be designed to be **idempotent**.
-
-An idempotent function produces the same result regardless of how many times it processes the same event, preventing unintended side effects such as duplicate payments, repeated database writes, or inconsistent application state.
-
----
-
-# Deployment
-
-Deploying a Lambda function means publishing both its application code and execution configuration so that AWS Lambda can create execution environments and process incoming invocations.
-
-## Deployment Packages
-
-Lambda supports two deployment package formats:
-
-- **ZIP packages**, which contain the application code together with its dependencies.
-- **Container images**, which package the application as an OCI-compatible container image stored in Amazon ECR.
-
-Both deployment models provide the same execution experience once the function is running. The primary difference lies in how the application is packaged, distributed, and managed.
-
-## Versions
-
-A **Version** is an immutable snapshot of a Lambda function.
-
-Each published version permanently captures the function's code and configuration at a specific point in time, allowing applications to be deployed and referenced consistently without being affected by future changes.
-
-## Aliases
-
-An **Alias** provides a stable name that points to a specific published version.
-
-Instead of invoking versions directly, applications typically invoke aliases such as `dev`, `staging`, or `production`, allowing deployments to move between versions without changing client integrations.
-
-## Layers
-
-**Lambda Layers** allow dependencies, shared libraries, and common code to be packaged separately from individual functions.
-
-Multiple functions can reference the same layer, reducing duplicated dependencies and simplifying maintenance across large serverless applications.
-
-![Lambda Deployment Model.](/docs/aws-lambda/lambda-deployment-model.png)
-
----
-
-# Security & Permissions
-
-AWS Lambda functions do not execute using the credentials of the user who deployed them. Instead, every function executes using an **Execution Role**, which defines the AWS resources and operations that the function is allowed to access.
-
-## Execution Role
-
-An Execution Role is an IAM role assumed automatically by Lambda whenever a function is invoked.
-
-The permissions attached to this role determine which AWS services the function can interact with, such as Amazon S3, DynamoDB, SQS, or other AWS resources.
-
-## Least Privilege
-
-Execution roles should follow the **principle of least privilege**, granting only the permissions required for the function to perform its intended task.
-
-Restricting permissions reduces the impact of configuration errors or security vulnerabilities and is considered a fundamental security best practice.
-
-## Resource-Based Policies
-
-In addition to execution roles, Lambda supports **resource-based policies**.
-
-These policies define which AWS principals or services are allowed to invoke a specific Lambda function, making them useful for scenarios such as cross-account access or service integrations.
-
-## Cross-Account Invocation
-
-Resource-based policies enable Lambda functions to be invoked from other AWS accounts without sharing credentials.
-
-This capability is commonly used in multi-account architectures where applications, services, or teams operate in separate AWS accounts.
+![Configuration Cheat Sheet](/docs/aws-lambda/lambda-configuration-cheatsheet.png)
 
 ---
 
 # Observability
 
-Observability allows developers to understand how Lambda functions behave while running in production. AWS Lambda integrates with multiple monitoring services, providing visibility into function execution, performance, failures, and operational health without requiring additional instrumentation for basic metrics and logs.
+Because Lambda functions execute only when events occur, visibility into their behavior is essential.
 
-## Logs
+Rather than connecting directly to running servers, developers observe Lambda through execution logs, operational metrics, and distributed traces generated during every invocation.
 
-Every Lambda invocation can automatically generate logs that are sent to **Amazon CloudWatch Logs**.
-
-These logs typically include application output, runtime errors, initialization information, and execution details, making them the primary source for troubleshooting and debugging function behavior.
-
-## Metrics
-
-Lambda automatically publishes execution metrics to **Amazon CloudWatch Metrics**.
-
-These metrics include information such as invocation count, duration, errors, throttles, concurrent executions, and asynchronous delivery failures, allowing applications to be monitored over time and alerting to be configured when abnormal behavior is detected.
-
-## Tracing
-
-For distributed applications, Lambda supports request tracing through **AWS X-Ray**.
-
-Tracing helps visualize how requests flow across multiple services, making it easier to identify latency bottlenecks, downstream failures, and performance issues that are difficult to detect using logs alone.
-
-## Monitoring
-
-Logs, metrics, and traces complement each other.
-
-Logs explain what happened during an individual invocation, metrics reveal trends across many invocations, and traces show how requests travel between distributed components. Together, they provide the visibility required to operate Lambda functions reliably in production.
+![Observability Pipeline](/docs/aws-lambda/lambda-observability-pipeline.png)
 
 ---
 
-## Putting Everything Together
+Logs provide execution details, metrics describe the operational behavior of a function, and traces reveal how requests propagate through distributed systems.
 
-Throughout this document, each concept has been introduced independently to simplify learning.
+Together, these signals allow developers to monitor applications, troubleshoot failures, and understand runtime behavior without accessing the underlying infrastructure.
 
-In practice, however, these concepts work together as part of a single execution model.
+![Observability Cheat Sheet](/docs/aws-lambda/lambda-observability-cheatsheet.png)
 
-The following diagram illustrates how an event moves through AWS Lambda and how the different concepts interact during the complete lifecycle of a function invocation.
+---
 
-![Complete AWS Lambda execution model.](/docs/aws-lambda/putting-everything-together.png)
+# Versions & Aliases
+
+AWS Lambda allows functions to evolve without replacing existing deployments.
+
+Instead of modifying a single mutable function, Lambda supports immutable versions that preserve previous application states while allowing new versions to be published independently.
+
+This model enables safer deployments while simplifying rollback procedures.
+
+## Versions
+
+Publishing a version creates an immutable snapshot of the function and its configuration.
+
+Once published, a version cannot be modified.
+
+Future changes are deployed by publishing additional versions rather than replacing existing ones.
+
+## Aliases
+
+Aliases provide stable names that reference specific function versions.
+
+Applications invoke the alias rather than referencing version numbers directly.
+
+Because aliases can be updated independently from function versions, they simplify deployments while allowing traffic to be redirected between different versions without changing client integrations.
+
+![Version Routing Flow](/docs/aws-lambda/lambda-version-routing-flow.png)
+
+---
+
+# Putting Everything Together
+
+AWS Lambda is an event-driven execution platform.
+
+Rather than running applications continuously, Lambda executes independent functions on demand, automatically managing the infrastructure, execution environments, scaling, and operational lifecycle required to run them.
+
+Together, these capabilities allow developers to build scalable, loosely coupled applications without managing servers.
+
+The following diagram summarizes how every concept explored throughout this guide fits together into the complete Lambda execution lifecycle.
+
+![Complete Lambda Lifecycle](/docs/aws-lambda/lambda-complete-lifecycle.png)
