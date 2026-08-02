@@ -1,843 +1,316 @@
-# Writing Guidelines
+Tech From Zero — Documentation Creation Guidelines
 
-## Purpose
+This document describes the methodology used to create every new technology within the Tech From Zero knowledge base.
 
-The purpose of this knowledge base is not to simplify technologies.
+Its purpose is not to define how technologies work, but to define how they should be documented.
 
-The goal is to help readers truly understand them.
+The Writing Guidelines document remains the source of truth for writing philosophy, learning progression, concept classification, and visual communication.
 
-Every document should build an accurate mental model by explaining:
+This document explains the workflow for creating a new technology.
 
-- Why a technology exists.
-- How it works.
-- Where it fits within real software systems.
-- How it behaves in production.
+Workflow
 
-Understanding should always result from reasoning, never memorization.
+Every new technology should be created using the following workflow.
 
-## What Is a Mental Model?
+Never skip steps.
 
-A mental model is an internal explanation of how a technology works.
+Each step depends on the previous one.
 
-It allows readers to predict behavior, reason about architectural decisions, understand trade-offs, and explain new situations without memorizing isolated facts.
+Step 1 — Analyze the Technology
 
-Every document in this knowledge base exists to help readers progressively build this model.
+Before writing anything, identify what the technology actually introduces.
 
-If readers can explain _why_ a technology behaves the way it does, they have built the correct mental model.
+The objective is not to list features from the official documentation.
 
----
+Instead, identify:
 
-# 1. Learning Philosophy
+its responsibility;
+the problem it solves;
+its core concepts;
+its execution model;
+the objects it introduces;
+the behaviors it modifies;
+the architectural ideas unique to that technology.
 
-These principles define how every document in the knowledge base should teach.
+Only after understanding the technology should the document structure be proposed.
 
-They apply regardless of the technology being documented.
+Step 2 — Design the Overview
 
----
+The Overview always follows the structure defined in the Writing Guidelines.
 
-## Prefer Understanding Over Completeness
+Each section has a different purpose.
 
-The objective of a document is not to mention every feature, option, or capability of a technology.
+Definition
 
-Its objective is to build a mental model that allows readers to reason about the technology with confidence.
+Explain:
 
-A shorter document that produces deep understanding is more valuable than a comprehensive document that overwhelms readers with isolated information.
+what the technology is;
+why it exists;
+its responsibility;
+what it is not.
 
-Whenever a decision must be made between completeness and understanding, always choose understanding.
+Readers should understand why the technology exists before learning how it works.
 
-Readers should finish the document feeling that the technology became simpler, not that the document became longer.
+How It Works
 
----
+Explain the technology from a high level.
 
-## Never Assume Previous Knowledge
+Describe the major concepts involved without explaining their internal behavior.
 
-Never introduce an important concept without providing enough context for the reader to continue learning.
+Readers should recognize the vocabulary that will later appear in the Deep Dive.
 
-Readers should never stop because an unfamiliar term suddenly appears without explanation.
+Avoid implementation details.
 
-Introduce new concepts only after providing the minimum knowledge required to understand them.
+Avoid APIs.
 
----
+Avoid configuration.
 
-## Build Knowledge Progressively
+Avoid advanced workflows.
 
-Knowledge should be constructed one concept at a time.
+How It Fits into the Ecosystem
 
-Every section should answer the questions naturally created by the previous one.
-
-The reader should feel that each new concept is the logical consequence of everything already learned.
-
-Learning should resemble a conversation rather than a collection of independent chapters.
-
----
-
-## Explain Reasons Before Rules
-
-Never tell readers what to do before explaining why.
-
-Good documentation teaches reasoning instead of memorization.
-
-Readers should naturally reach conclusions through understanding rather than accepting recommendations without context.
-
-Whenever possible, explain the problem first.
-
-Then explain the design decision that solves it.
-
----
-
-## Teach Systems, Not Technologies
-
-Technologies never exist in isolation.
-
-Every document should explain:
-
-- why the technology exists;
-- what problem it solves;
-- where it fits inside a software architecture;
-- how it interacts with surrounding technologies.
-
-The objective is to build engineers who understand complete systems rather than isolated tools.
-
----
-
-## Explain Concepts Before Implementation
-
-Implementation is meaningful only after readers understand the concepts behind it.
-
-Introduce architecture before syntax.
-
-Introduce behavior before APIs.
-
-Introduce ideas before code.
-
-Readers who understand the model can easily learn the implementation.
-
-The opposite is rarely true.
-
----
-
-## Reduce Complexity Without Hiding It
-
-Complex ideas should never be oversimplified.
-
-Instead, divide them into smaller concepts that can be understood independently.
-
-Accuracy should never be sacrificed for simplicity.
-
-The objective is not to make technologies appear easy.
-
-The objective is to make complex technologies understandable.
-
----
-
-# 2. Learning Progression
-
-Understanding depends not only on what is explained, but also on the order in which concepts appear.
-
----
-
-## Every Section Answers One Question
-
-Every section should have one clear learning objective.
-
-Avoid answering questions that belong to future sections.
-
-A well-structured document naturally creates curiosity about the next concept without explicitly announcing it.
-
-Readers should feel that every new section answers the question they were already asking.
-
----
-
-## Every Paragraph Answers One Question
-
-Avoid isolated facts.
-
-Each paragraph should answer a question readers naturally have at that point.
-
-If a paragraph introduces information that does not answer an existing question, reconsider its placement.
-
----
-
-## Every Sentence Should Teach Something
-
-Every sentence must contribute new understanding.
-
-Remove any sentence whose only purpose is:
-
-- introducing the next section;
-- summarizing what was already explained;
-- filling space;
-- guiding readers through the document.
-
-If removing a sentence does not reduce understanding, it probably does not belong.
-
----
-
-## No Meta Narration
-
-Never describe the learning process.
-
-Avoid expressions such as:
-
-- Now that we understand...
-- The next section explains...
-- We will revisit this later...
-- Before continuing...
-- Keep this in mind...
-- As we have seen...
-
-The document itself should naturally guide readers through its progression.
-
-The writing should discuss the technology, never the document itself.
-
----
-
-## Build Curiosity Naturally
-
-Do not announce future concepts.
-
-Instead, organize the document so that every section naturally raises the question answered by the next one.
-
-Readers should never feel guided.
-
-They should feel that the document is unfolding naturally.
-
----
-
-## Comparisons Require Prior Knowledge
-
-Never compare concepts before introducing them individually.
-
-Comparisons reinforce understanding.
-
-They should never become the primary explanation.
-
-Introduce each concept independently.
-
-Only compare them after readers understand both.
-
----
-
-# 3. Scope and Concept Classification
-
-Every document has a limited responsibility.
-
-Its goal is to teach one technology as clearly as possible.
-
-A document should never expand its scope simply because related concepts are important.
-
-Readers should always be able to distinguish between concepts that belong to the technology itself and concepts that exist outside of it.
-
----
-
-## Keep the Scope Focused
-
-A document teaches one technology.
-
-Not every technology related to it.
-
-Whenever a new concept appears, ask:
-
-> Is this concept part of the technology I'm documenting, or does it only help explain it?
-
-The answer determines both how deeply it should be explained and where it belongs in the document.
-
----
-
-## Explaining External Concepts
-
-Most technologies depend on concepts that belong elsewhere.
-
-For example:
-
-- AWS Lambda depends on IAM.
-- Kubernetes depends on Linux containers.
-- Node.js depends on JavaScript.
-- React applications communicate using HTTP.
-
-These concepts should not be fully explained unless they are the subject of the current document.
-
-Instead:
-
-- define only what readers need to understand the current technology;
-- explain why the concept matters;
-- avoid implementation details;
-- avoid expanding the document's scope.
-
-If the concept deserves a complete explanation, create a dedicated document for it.
-
-The purpose of a document is to explain its own technology, not everything surrounding it.
-
----
-
-# Concept Classification
-
-Every concept introduced should first be classified.
-
-This determines both its level of explanation and its position within the document.
-
----
-
-## Core Concepts
-
-Core concepts belong to the technology being documented.
-
-Without understanding them, readers cannot correctly understand the technology itself.
-
-Core concepts should always receive a complete explanation before being used.
-
-Examples in an AWS Lambda Deep Dive:
-
-- Execution Environments
-- Cold Starts
-- Warm Starts
-- Concurrency
-- Invocation Types
-- Memory Allocation
-
-Examples in a Node.js Deep Dive:
-
-- Event Loop
-- V8
-- Non-blocking I/O
-- Worker Threads
-
----
-
-## Supporting Concepts
-
-Supporting concepts improve understanding but are not part of the technology's internal architecture.
-
-Explain only enough to understand their relationship with the current technology.
-
-Examples:
-
-- IAM inside AWS Lambda
-- HTTP inside Node.js
-- DNS inside HTTP
-- Kubernetes inside Docker
-
-Supporting concepts provide context.
-
-They do not become the focus of the document.
-
----
-
-## Independent Concepts
-
-Some concepts deserve their own dedicated documentation.
-
-When these concepts appear inside another document:
-
-- acknowledge them;
-- define them briefly;
-- explain why they matter;
-- avoid teaching them in depth.
-
-Examples:
-
-- Idempotency
-- OAuth
-- TLS
-- CAP Theorem
-- Event Sourcing
-
-Once dedicated documentation exists, reference it instead of expanding the explanation.
-
----
-
-# Heading Hierarchy
-
-Heading levels communicate scope.
-
-They are not merely visual.
-
----
-
-## Primary Sections (`##`)
-
-Use `##` for concepts that belong to the technology itself.
-
-These chapters define the primary learning path.
-
-Readers should expect every `##` section to teach part of the technology's architecture, execution model, or behavior.
-
----
-
-### Supporting Sections (`###`)
-
-Use `###` for concepts that support understanding but do not belong to the technology itself.
-
-Supporting sections exist to provide context without expanding the document's scope.
-
-For example, in an AWS Lambda Deep Dive:
-
-```text
-## Retry Behavior
-
-## Dead Letter Queues
-
-### Idempotency
-
-## Security Model
-```
-
-In this example:
-
-- Retry Behavior belongs to Lambda.
-- Dead Letter Queues belong to Lambda.
-- Idempotency is an independent architectural concept.
-- Security Model belongs to Lambda because it describes how Lambda integrates with IAM rather than explaining IAM itself.
-
-Readers should be able to understand the document hierarchy simply by looking at the heading levels.
-
----
-
-# 4. Visual Communication
-
-Diagrams are not decorative elements.
-
-They are another teaching medium.
-
-Every visual decision should be made with the same objective as every writing decision:
-
-Maximize understanding while minimizing cognitive load.
-
-Readers should learn because of the diagrams, not simply look at them.
-
----
-
-## Teach Using the Best Medium
-
-Before writing a section, decide which medium communicates the concept most effectively.
-
-The objective is not to maximize text or illustrations.
-
-The objective is to choose the medium that teaches the concept most clearly.
-
-Every section should begin with this question:
-
-> What is the best way to teach this concept?
-
-Only after answering that question should writing or diagramming begin.
-
----
-
-## Choosing Between Text and Images
-
-Use the following decision process for every section.
-
-### Step 1 — Can a diagram teach the entire concept?
-
-If a single illustration communicates the complete idea more clearly than prose, use only the diagram.
-
-Avoid adding paragraphs that merely describe what readers can already see.
-
-The diagram becomes the explanation.
-
-Example:
-
-- Lambda Invocation Types
-- Request/Response lifecycle
-- Component interaction diagrams
-
----
-
-### Step 2 — Can a diagram teach part of the concept better?
-
-If part of the explanation benefits from visualization while other parts require reasoning or context, use both.
-
-However:
-
-The text and the diagram must teach different things.
-
-The text should explain ideas.
-
-The diagram should explain relationships, interactions or execution.
-
-Neither should repeat the other.
-
----
-
-### Step 3 — Does the diagram simply repeat the text?
-
-If removing the diagram does not reduce understanding:
-
-Do not create the diagram.
-
-Likewise, if removing the surrounding paragraphs does not reduce understanding:
-
-Remove the paragraphs.
-
-Every teaching element must justify its existence.
-
----
-
-## Images Can Replace Text
-
-A diagram is allowed to become the primary explanation.
-
-If an illustration communicates the concept more effectively than prose, let it do so.
-
-Do not add paragraphs simply because the section "needs text."
-
-Some concepts are better explained visually.
-
-Others are better explained through reasoning.
-
-Choose the medium that teaches best.
-
----
-
-## Complexity Determines the Medium
-
-Not every concept deserves a diagram.
-
-Reserve diagrams for concepts that are difficult to visualize mentally.
-
-Typical examples include:
-
-- execution flows;
-- multiple actors;
-- component relationships;
-- distributed systems;
-- state transitions;
-- request lifecycles;
-- event propagation;
-- asynchronous workflows.
-
-Simple concepts usually remain as text.
-
-Examples include:
-
-- definitions;
-- responsibilities;
-- architectural decisions;
-- isolated behaviors;
-- design principles.
-
----
-
-## Diagrams Should Reduce Cognitive Load
-
-A diagram exists to make understanding easier.
-
-It should reduce the amount of mental work required to build the correct model.
-
-If readers can understand the concept equally well from concise text, a diagram adds no value.
-
-Do not create illustrations for visual balance.
-
-Create them only when they improve learning.
-
----
-
-## Never Describe a Diagram
-
-If a diagram already explains a concept, surrounding text should not narrate it.
-
-Instead, use the text to explain:
-
-- why the concept matters;
-- what readers should pay attention to;
-- how it relates to the rest of the technology;
-- architectural implications that are not immediately visible.
-
-Readers should never feel they are reading an image caption expanded into several paragraphs.
-
----
-
-## Every Visual Element Must Teach Something New
-
-Every illustration must introduce new understanding.
-
-If two diagrams explain the same concept, remove one.
-
-If text and a diagram communicate the same information, remove whichever teaches less effectively.
-
-Each element should have one clear teaching responsibility.
-
----
-
-## Maintain a Consistent Visual Language
-
-Every diagram in the knowledge base should immediately feel familiar.
-
-Maintain consistency across:
-
-- colors;
-- typography;
-- borders;
-- spacing;
-- icons;
-- arrows;
-- terminology;
-- layout;
-- visual hierarchy.
-
-Consistency allows readers to recognize recurring concepts without relearning the visual language in every document.
-
-The objective is not visual identity.
-
-The objective is reducing cognitive load across the entire knowledge base.
-
----
-
-# 5. Document Types
-
-The knowledge base is composed of two complementary document types.
-
-Each serves a different purpose and should be written with a different depth.
-
-Readers should never feel that one document repeats the other.
-
-Instead, each document should answer a different set of questions.
-
----
-
-# Overview
-
-## Purpose
-
-The purpose of an Overview is to build a correct mental model of a technology.
-
-By the end of an Overview, readers should understand:
-
-- why the technology exists;
-- what problem it solves;
-- how it works at a high level;
-- where it fits inside modern software systems;
-- what it looks like in real projects;
-- when it is commonly used.
-
-The Overview should provide understanding, not mastery.
-
-Its objective is to answer the questions every software engineer should be able to answer.
-
-Typical reading time:
-
-10–15 minutes.
-
----
-
-## Structure
-
-Every Overview should follow the same structure.
-
-1. Definition
-2. How it Works
-3. How it Fits into the Ecosystem
-4. What It Looks Like
-5. Common Use Cases
-
-Each section answers one specific learning objective.
-
-Do not introduce architectural details that belong in the Deep Dive.
-
----
-
-## Definition
-
-The Definition establishes the foundation for everything that follows.
-
-It should explain:
-
-- what the technology is;
-- why it exists;
-- the responsibility it has within a software system;
-- what it is not.
-
-Readers should finish this section understanding the purpose of the technology before learning how it works.
-
----
-
-## How It Works
-
-Explain the technology's high-level behavior.
-
-Describe how the technology behaves from a technical perspective, using the core concepts that define its operation.
-
-You may reference concepts that are explained later in the Deep Dive, but do not explain them here.
-
-The goal is to provide a concise technical overview that reinforces the reader's mental model without replacing the detailed explanations found in the Deep Dive.
-
-Avoid configuration details, implementation specifics, APIs, or advanced workflows.
-
-Readers should finish this section understanding how the technology operates, while recognizing the concepts that will be explored in depth later.
-
----
-
-## How it Fits into the Ecosystem
-
-Explain where the technology sits within a real architecture.
+Explain where the technology fits inside real software systems.
 
 Show:
 
-- what communicates with it;
-- what depends on it;
-- what problems it solves.
+what communicates with it;
+what depends on it;
+what problems it solves.
 
-Technologies should never appear isolated.
+Readers should understand where the technology belongs.
 
----
+What It Looks Like
 
-## What It Looks Like
+Whenever possible, include screenshots.
 
-Whenever the technology has a graphical interface, management console, desktop application, IDE, dashboard or visual environment, include this section.
+Readers should recognize the technology immediately when they encounter it professionally.
 
-Use real screenshots whenever possible.
+Use real interfaces instead of illustrations.
 
-Readers should recognize the technology when they encounter it professionally.
+Common Use Cases
 
-Help readers recognize the technology in professional environments.
-
----
-
-## Common Use Cases
-
-Demonstrate how the technology is applied in production.
-
-Prefer multiple focused workflows over one oversized architecture diagram.
+Present several small production scenarios.
 
 Each use case should explain:
 
-- the problem;
-- why the technology is appropriate;
-- the workflow at a high level.
+the problem;
+why the technology is appropriate;
+the high-level workflow.
 
----
+Avoid oversized architecture diagrams.
 
-# Deep Dive
+Several focused examples are usually more valuable than one large example.
 
-## Purpose
+Step 3 — Review the Overview
 
-A Deep Dive explains how a technology actually works.
+Before generating images, review the document.
 
-Its objective is not to teach implementation.
+Remove:
 
-Its objective is to develop the understanding required to reason about the technology like a senior engineer.
+repeated explanations;
+unnecessary paragraphs;
+concepts that belong in the Deep Dive;
+concepts that belong in another document.
 
-Readers should finish the document understanding the technology's internal behavior, architectural decisions and production characteristics.
+The Overview should answer only high-level questions.
 
-Typical reading time:
+Step 4 — Create the Frontmatter
 
-30–60 minutes.
+Every document begins with a frontmatter.
 
----
+It should contain only metadata.
 
-## Structure
+Typical fields include:
 
-Unlike an Overview, a Deep Dive is organized around concepts rather than features.
+title
+description
+icon
+order
+updatedAt
+
+The description should briefly explain what readers will learn.
+
+It should not repeat the title.
+
+Step 5 — Design the Overview Images
+
+After the text is complete, determine which sections benefit from visual explanations.
+
+Each image must have a single responsibility.
+
+Images should always have a dark theme.
+
+The proposed images should be placed where they should go with a reference like the following: ![React Component Model](/docs/react/react-component-model.png)
+
+Typical image types include:
+
+architecture diagrams;
+execution models;
+workflows;
+ecosystems;
+screenshots.
+
+Do not create images simply to decorate the page.
+
+Every image should reduce the amount of text required.
+
+Step 6 — Design the Deep Dive
+
+Unlike the Overview, the Deep Dive has no predefined chapter structure.
+
+Every technology introduces different concepts.
+
+The chapters must emerge naturally from the technology itself.
+
+Begin by identifying every important internal concept.
+
+Examples include:
+
+execution environments;
+image layers;
+event loops;
+runtimes;
+indexes;
+transactions;
+reconciliation;
+rendering pipelines.
+
+Do not group unrelated concepts simply because they are similar.
 
 Each chapter should answer one architectural question.
 
-Concepts should be introduced independently before being connected together.
+Arrange chapters so that each one prepares readers for the next.
 
-Typical topics include:
+Step 7 — Define the Visual Strategy
 
-- internal architecture;
-- execution model;
-- lifecycle;
-- concurrency;
-- memory;
-- performance;
-- reliability;
-- security;
-- operational behavior;
-- design decisions.
+Before writing the Deep Dive, determine how every concept will be taught.
 
-Not every technology requires every topic.
+Each concept should use the medium that teaches it most effectively.
 
-Choose the concepts that define how the technology works internally.
+Possible formats include:
 
----
+text only;
+diagram only;
+text plus diagram;
+text plus cheat sheet.
 
-## Chapter Patterns
+Avoid combining every format unnecessarily.
 
-Most Deep Dive chapters fall into one of four categories.
+Step 8 — Create Architecture Diagrams
 
-### Definition Chapters
+Architecture diagrams explain relationships.
 
-Introduce a single concept.
+Typical examples include:
 
-Usually text only.
+component interactions;
+execution pipelines;
+request lifecycles;
+distributed systems;
+resource allocation;
+internal architecture;
+execution flows.
 
-Examples:
+Architecture diagrams should replace paragraphs.
 
-- Event Loop
-- Execution Environment
-- Runtime
-- Thread
+Do not narrate the diagram inside the text.
 
----
+Step 9 — Create Cheat Sheets
 
-### Relationship Chapters
+Cheat sheets summarize information that readers frequently need to reference.
 
-Explain how multiple components interact.
+Typical contents include:
 
-These chapters often benefit from diagrams.
+commands;
+syntax;
+keywords;
+operators;
+configuration options;
+lifecycle states;
+CLI references;
+comparison tables.
 
-Examples:
+A cheat sheet should eliminate the need for long textual lists.
 
-- Node.js Architecture
-- Browser Rendering Pipeline
-- Kubernetes Control Plane
+Do not repeat its contents elsewhere.
 
----
+Step 10 — Write the Deep Dive
 
-### Workflow Chapters
+Write each chapter independently.
 
-Explain complete execution flows.
+Each chapter should teach one concept.
 
-These chapters frequently combine concise text with one meaningful diagram.
+Every paragraph should introduce new understanding.
 
-Examples:
+Do not summarize previous chapters.
 
-- Lambda Invocation Lifecycle
-- HTTP Request Lifecycle
-- OAuth Authorization Flow
+Do not anticipate future chapters.
 
----
+Do not include filler sentences.
 
-### Integration Chapters
+Allow readers to naturally build a mental model.
 
-The final objective of a Deep Dive is to reconnect every concept introduced throughout the document.
+Step 11 — Review for Redundancy
 
-These chapters should never introduce new knowledge.
+Before generating images, review the entire document.
 
-Their purpose is to demonstrate how all previously introduced concepts interact as part of one complete system.
+Ask:
 
----
+Does this paragraph repeat another paragraph?
+Does this paragraph explain what the image already explains?
+Does this diagram duplicate another diagram?
+Does this cheat sheet repeat information already written?
+Can this section be shorter without reducing understanding?
 
-## Putting Everything Together
+Remove everything that does not increase understanding.
 
-Every Deep Dive ends with a chapter named **Putting Everything Together**.
+Step 12 — Generate Images
 
-This chapter is not a summary.
+Generate images one at a time.
 
-Instead, it reconnects every concept introduced throughout the document into one complete workflow.
+Every image should use the same visual language.
 
-The chapter should answer one question:
+Requirements:
 
-> How do all these concepts work together in practice?
+dark theme;
+black or dark navy background;
+professional infographic style;
+neon accents;
+consistent typography;
+consistent iconography;
+clean spacing;
+high information density.
 
-Whenever possible:
+Images should feel like they belong to the same book.
 
-- use one comprehensive workflow diagram;
-- avoid introducing new concepts;
-- avoid repeating previous explanations;
-- let the illustration become the primary teaching element.
+Step 13 — Putting Everything Together
 
-The accompanying text should explain why the diagram exists, not narrate its contents.
+Every Deep Dive ends with a chapter named Putting Everything Together.
 
----
+This chapter has one objective:
 
-## Final Perspective
+Reconnect every concept introduced throughout the document.
 
-The final chapter steps back from implementation details.
+Do not introduce new knowledge.
 
-Its purpose is to reconnect the technology with software engineering as a whole.
+Do not summarize previous chapters.
 
-Rather than explaining how the technology works, explain why it matters.
+Instead, show how every concept works together as one complete system.
 
-Readers should finish the document understanding not only the technology itself, but also the architectural thinking behind it.
+Whenever possible, use one comprehensive workflow diagram as the primary teaching element.
+
+The accompanying text should explain the architectural significance of the complete workflow rather than narrating the diagram.
+
+Final Review Checklist
+
+Before considering the document complete, verify that:
+
+Every section answers one question.
+Every paragraph teaches something new.
+Every image adds new understanding.
+No diagram repeats another diagram.
+No cheat sheet duplicates the text.
+No chapter belongs in another document.
+The Overview remains high level.
+The Deep Dive explains internal behavior.
+The final workflow reconnects every concept without introducing new ones.
+The entire document builds one coherent mental model rather than a collection of isolated facts.
