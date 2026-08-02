@@ -1,918 +1,207 @@
 ---
 title: Docker Deep Dive
 description: Master the engineering concepts that explain how Docker uses operating system features to create lightweight, isolated, and portable execution environments.
+icon: docker.png
 order: 2
-updatedAt: 2026-07-05
+updatedAt: 2026-08-01
 ---
 
 # Docker Deep Dive
 
-## Operating System
+## Docker Architecture
 
-An **Operating System (OS)** is the software responsible for managing a computer's hardware resources and providing services to running applications.
+Docker is built around a client-server architecture that separates user interactions from container execution.
 
-Applications do not communicate directly with the CPU, memory, storage, or network devices.
+Developers interact with Docker through the Docker Client, which sends commands to the Docker Engine responsible for building images, creating containers, managing networks, handling storage, and coordinating the entire container lifecycle.
 
-Instead, they interact with the Operating System, which coordinates access to these resources.
+Although Docker appears to be a single application, it is composed of several components that work together behind the scenes to provide a consistent container platform.
 
-The Operating System is responsible for:
+This architecture also enables Docker to interact with remote hosts and container registries using the same interface, making local and remote workflows nearly identical.
 
-- Process management.
-- Memory management.
-- File systems.
-- Networking.
-- Device management.
-- Security and permissions.
-
-Docker relies heavily on operating system features rather than replacing the operating system itself.
-
-:::at-a-glance
-
-### Operating System Responsibilities
-
-- Manage hardware.
-- Schedule processes.
-- Allocate memory.
-- Provide networking.
-- Manage files.
-- Enforce isolation.
-
-:::
-
-:::misconceptions
-
-❌ Docker replaces the Operating System.
-
-✅ Docker runs on top of an Operating System and depends on many of its kernel features.
-
-:::
-
----
-
-## Processes
-
-A **Process** is a running instance of a program.
-
-Every application executed on an operating system runs as one or more processes.
-
-Each process receives its own:
-
-- Virtual memory.
-- Process identifier (PID).
-- Execution state.
-- Open file descriptors.
-- Network connections.
-
-The Operating System schedules processes independently, allowing many applications to execute concurrently.
-
-Containers do not execute applications in a special way.
-
-A container simply runs one or more ordinary operating system processes inside an isolated environment.
-
-:::at-a-glance
-
-### Every Process Has
-
-- PID
-- Memory space
-- Threads
-- File descriptors
-- Execution state
-
-:::
-
-:::misconceptions
-
-❌ A Docker Container is a virtual machine.
-
-✅ A Docker Container is primarily one or more isolated operating system processes.
-
-:::
-
-:::example
-
-Running:
-
-```bash
-node server.js
-```
-
-creates a normal operating system process.
-
-Running:
-
-```bash
-docker run my-api
-```
-
-also creates a normal operating system process.
-
-The difference is that Docker isolates that process.
-
-:::
-
----
-
-## Virtual Machines
-
-Before containers became popular, applications were commonly isolated using **Virtual Machines (VMs).**
-
-A Virtual Machine emulates an entire computer.
-
-Each VM includes:
-
-- Virtual hardware.
-- A complete Guest Operating System.
-- System services.
-- Applications.
-
-Because every VM contains its own operating system, virtual machines consume significantly more CPU, memory, and storage than containers.
-
-However, they provide very strong isolation because each VM runs an independent operating system.
-
-:::at-a-glance
-
-### Virtual Machine
-
-- Virtual hardware.
-- Guest Operating System.
-- Strong isolation.
-- Higher resource usage.
-
-:::
-
-:::misconceptions
-
-❌ Containers are lightweight virtual machines.
-
-✅ Containers share the host kernel, while virtual machines run independent operating systems.
-
-:::
-
----
-
-## Containers
-
-A **Container** is an isolated execution environment for one or more operating system processes.
-
-Unlike a Virtual Machine, a container does not include its own operating system kernel.
-
-Instead, containers share the host kernel while remaining isolated from other containers through operating system features such as namespaces and cgroups.
-
-Because containers reuse the host kernel instead of virtualizing an entire operating system, they start almost instantly and consume significantly fewer resources than virtual machines.
-
-From the application's perspective, the container behaves as though it has its own filesystem, network interfaces, process tree, and users.
-
-In reality, these resources are isolated views provided by the host operating system.
-
-:::at-a-glance
-
-### Containers
-
-- Isolated processes.
-- Share the host kernel.
-- Lightweight.
-- Portable.
-- Fast startup.
-
-:::
-
-:::misconceptions
-
-❌ A container contains an entire operating system.
-
-✅ A container shares the host operating system kernel.
-
----
-
-❌ Containers provide isolation by emulating hardware.
-
-✅ Containers rely on operating system isolation mechanisms.
-
-:::
-
-:::example
-
-Inside a container:
-
-```bash
-ps
-```
-
-may show:
-
-```text
-PID  COMMAND
-
-1    node server.js
-```
-
-Although the host machine may be running hundreds of other processes, the container sees only its own isolated process tree.
-
-:::
-
----
-
-## Docker
-
-Docker is the platform responsible for creating, managing, and executing containers.
-
-Rather than implementing isolation itself, Docker orchestrates operating system features and provides a developer-friendly interface for building, distributing, and running containers.
-
-Docker automates tasks such as:
-
-- Building images.
-- Creating containers.
-- Managing networks.
-- Mounting volumes.
-- Downloading images.
-- Starting and stopping containers.
-
-Without Docker, developers would need to manually configure the underlying operating system features required for containerization.
-
-:::at-a-glance
-
-### Docker Responsibilities
-
-- Build images.
-- Run containers.
-- Manage networking.
-- Manage storage.
-- Distribute images.
-
-:::
-
-:::misconceptions
-
-❌ Docker and containers are the same thing.
-
-✅ Docker is one platform for working with containers.
-
-Containers can also be managed by technologies such as containerd, CRI-O, or Podman.
-
-:::
+![Docker Architecture](/docs/docker/docker-architecture.png)
 
 ---
 
 ## Images
 
-A **Docker Image** is an immutable template used to create containers.
+Docker images are immutable templates that package everything required to run an application.
 
-Images contain everything required to start an application, including:
+Rather than representing a running process, an image serves as a reusable blueprint from which Docker can create one or many containers. Because images never change after they are built, every container created from the same image starts with an identical filesystem and execution environment.
 
-- Application code.
-- Runtime.
-- Libraries.
-- Dependencies.
-- Configuration.
-- Filesystem.
+Instead of storing duplicate data, Docker organizes images into reusable layers. Layers that have not changed can be shared across multiple images, reducing storage usage and significantly speeding up image builds and distribution.
 
-Every container begins from an image.
+Images can also be versioned, allowing multiple releases of the same application to coexist while remaining reproducible across different environments.
 
-Multiple containers can be created from the same image without modifying the image itself.
+![Docker Image Layers](/docs/docker/docker-image-layers.png)
 
-Because images never change after being built, they provide reproducible and predictable deployments.
-
-:::at-a-glance
-
-### Images
-
-- Immutable.
-- Reusable.
-- Portable.
-- Versioned.
-
-:::
-
-:::misconceptions
-
-❌ Containers and Images are interchangeable.
-
-✅ Images are templates.
-
-Containers are running instances created from those templates.
-
-:::
-
-:::example
-
-```bash
-docker run nginx
-```
-
-Execution flow:
-
-```text
-Docker Image
-
-↓
-
-Container
-
-↓
-
-Running Process
-```
-
-:::
+![Image Reference Cheat Sheet](/docs/docker/docker-image-reference-cheatsheet.png)
 
 ---
 
-## Layers
+## Dockerfiles
 
-Docker Images are composed of multiple **Layers**.
+Docker images are defined declaratively using Dockerfiles.
 
-Each instruction in a Dockerfile typically creates a new immutable layer.
+A Dockerfile is a plain text file that describes how an image should be constructed, including the application's dependencies, filesystem, configuration, startup behavior, and execution environment.
 
-Rather than rebuilding an entire image after every change, Docker reuses unchanged layers.
+Rather than executing manual installation steps, developers describe the desired final state of the image. Docker then processes these instructions sequentially to produce a reproducible build.
 
-Layer reuse significantly improves build performance while reducing storage requirements.
+Because Dockerfiles are version-controlled alongside application code, they become part of the project's infrastructure, allowing every build to be generated consistently across development, testing, and production environments.
 
-Because layers are immutable, multiple images can safely share the same underlying data.
+![Dockerfile Build Flow](/docs/docker/dockerfile-build-flow.png)
 
-:::at-a-glance
-
-### Benefits
-
-- Faster builds.
-- Shared storage.
-- Immutable filesystem.
-- Efficient caching.
-
-:::
-
-:::misconceptions
-
-❌ Docker rebuilds every image from scratch.
-
-✅ Docker reuses unchanged layers whenever possible.
-
-:::
-
-:::example
-
-```Dockerfile
-FROM node:22
-
-WORKDIR /app
-
-COPY package.json .
-
-RUN npm install
-
-COPY . .
-
-RUN npm run build
-```
-
-If only the application source code changes:
-
-```Dockerfile
-COPY . .
-```
-
-and
-
-```Docker
-RUN npm run build
-```
-
-need to be rebuilt.
-
-The previous layers remain cached.
-
-:::
+![Dockerfile Instructions Cheat Sheet](/docs/docker/dockerfile-instructions-cheatsheet.png)
 
 ---
 
-## Container Lifecycle
+## Image Build Process
 
-A **Container** has a lifecycle that begins when it is created and ends when it is removed.
+After a Dockerfile is defined, Docker transforms it into an executable image through the build process.
 
-Unlike Virtual Machines, containers are designed to be ephemeral.
+During a build, Docker evaluates each instruction, creates image layers, and assembles them into a single immutable artifact. Rather than rebuilding everything from scratch every time, Docker reuses previously generated layers whenever possible, significantly reducing build times.
 
-Rather than modifying running containers, modern containerized applications typically replace old containers with new ones built from updated images.
+The build process also defines which files are included in the image, making it possible to produce reproducible artifacts while avoiding unnecessary files and dependencies.
 
-This immutable deployment model improves consistency, reproducibility, and rollback capabilities.
+Understanding how Docker builds images is essential for creating efficient, maintainable, and optimized containerized applications.
 
-The typical lifecycle is:
+![Docker Build Pipeline](/docs/docker/docker-build-pipeline.png)
 
-```text
-Image
-
-↓
-
-Container Created
-
-↓
-
-Container Started
-
-↓
-
-Running
-
-↓
-
-Stopped
-
-↓
-
-Removed
-```
-
-A container may be started and stopped multiple times without being recreated, but once removed, its writable layer is lost unless persistent storage is used.
-
-:::at-a-glance
-
-### Lifecycle
-
-- Create
-- Start
-- Run
-- Stop
-- Remove
-
-:::
-
-:::misconceptions
-
-❌ Containers are long-lived servers.
-
-✅ Containers are generally disposable execution environments.
-
-:::
+![Build Process Cheat Sheet](/docs/docker/docker-build-process-cheatsheet.png)
 
 ---
 
-## Volumes
+## Containers
 
-Containers are designed to be ephemeral.
+Containers are the running instances of Docker images.
 
-When a container is removed, its writable filesystem is removed as well.
+When Docker starts a container, it creates an isolated execution environment based on the selected image. Although multiple containers can originate from the same image, each container has its own runtime state, processes, networking, and writable layer.
 
-A **Volume** provides persistent storage that exists independently of any individual container.
+Because images remain immutable, any changes made while a container is running are stored separately, allowing containers to execute independently without modifying their original image.
 
-Volumes allow applications to preserve important data such as:
+This separation between images and containers enables applications to be recreated, replaced, and scaled predictably while preserving consistent behavior across environments.
 
-- Databases
-- Uploaded files
-- Logs
-- Configuration
-- Shared application data
+![Container Lifecycle](/docs/docker/docker-container-lifecycle.png)
 
-Because volumes are managed independently, containers can be replaced without losing persistent data.
-
-:::at-a-glance
-
-### Volumes
-
-- Persistent storage.
-- Independent of containers.
-- Reusable.
-- Managed by Docker.
-
-:::
-
-:::misconceptions
-
-❌ Container storage survives container deletion.
-
-✅ Only external volumes survive container removal.
-
-:::
-
-:::example
-
-```text
-Container A
-      │
-      ▼
- Volume
-      ▲
-      │
-Container B
-```
-
-Both containers can access the same persistent storage.
-
-:::
+![Container Commands Cheat Sheet](/docs/docker/docker-container-commands-cheatsheet.png)
 
 ---
 
-## Networks
+## Container Isolation
 
-Containers communicate through Docker Networks.
+One of Docker's core capabilities is isolating applications while allowing them to share the same operating system kernel.
 
-Rather than exposing every container directly to the host operating system, Docker creates isolated virtual networks that allow containers to communicate securely.
+Instead of running each application inside a separate virtual machine, Docker relies on operating system features to isolate processes, filesystems, users, networking, and resource usage. As a result, each container behaves as though it were running independently, even though multiple containers coexist on the same host.
 
-Containers connected to the same network can communicate using their container names as hostnames.
+This lightweight isolation enables containers to start quickly, consume fewer resources than virtual machines, and execute multiple applications safely on the same system.
 
-Docker provides several network drivers, including:
-
-- Bridge
-- Host
-- Overlay
-- None
-
-The Bridge network is the default choice for most local applications.
-
-:::at-a-glance
-
-### Benefits
-
-- Container discovery.
-- Isolation.
-- Internal communication.
-- Flexible topologies.
-
-:::
-
-:::misconceptions
-
-❌ Containers automatically communicate with every other container.
-
-✅ Containers communicate only through configured Docker networks.
-
-:::
-
-:::example
-
-```text
-Frontend
-      │
-      ▼
-Docker Network
-      ▲
-      │
-Backend
-      │
-      ▼
-Database
-```
-
-The database remains inaccessible from outside the network.
-
-:::
+![Container Isolation Model](/docs/docker/docker-container-isolation-model.png)
 
 ---
 
-## Dockerfile
+## Persistent Storage
 
-A **Dockerfile** is a declarative specification describing how a Docker Image should be built.
+Containers are designed to be disposable, meaning their writable data disappears when they are removed.
 
-Rather than manually configuring environments, developers define every build step inside the Dockerfile.
+To preserve information independently from a container's lifecycle, Docker provides persistent storage mechanisms that allow data to survive container recreation and be shared when necessary.
 
-Because Dockerfiles are version-controlled alongside the application source code, every image can be reproduced consistently.
+By separating application execution from data storage, containers remain lightweight and replaceable while applications retain access to their persistent state across deployments, updates, and restarts.
 
-Common instructions include:
+Choosing the appropriate storage mechanism depends on how data should be managed, accessed, and shared between containers and the host system.
 
-- FROM
-- WORKDIR
-- COPY
-- RUN
-- ENV
-- EXPOSE
-- CMD
-- ENTRYPOINT
+![Docker Storage Architecture](/docs/docker/docker-storage-architecture.png)
 
-:::at-a-glance
-
-### Dockerfile
-
-Defines:
-
-- Base image.
-- Dependencies.
-- Files.
-- Environment.
-- Startup command.
-
-:::
-
-:::misconceptions
-
-❌ Dockerfiles execute applications.
-
-✅ Dockerfiles define how images are built.
-
-:::
-
-:::example
-
-```Dockerfile
-FROM node:22
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-CMD ["npm", "start"]
-```
-
-:::
+![Storage Reference Cheat Sheet](/docs/docker/docker-storage-reference-cheatsheet.png)
 
 ---
 
-## Build Context
+## Container Networking
 
-The **Build Context** is the collection of files Docker can access while building an image.
+Docker provides built-in networking capabilities that allow containers to communicate with one another and with external systems.
 
-When a build starts, Docker sends the Build Context to the Docker Engine.
+Rather than requiring applications to configure networking manually, Docker automatically creates virtual networks where containers can discover and communicate with each other while remaining isolated from unrelated workloads.
 
-Every `COPY` and `ADD` instruction can only reference files contained within that context.
+Networks can also expose selected services outside the host, making it possible to safely connect containerized applications to users, APIs, databases, and other infrastructure.
 
-Reducing the Build Context improves build performance because fewer files need to be transferred during every build.
+This networking model enables applications to be composed from multiple independent containers while maintaining secure and predictable communication.
 
-Files that are not required should be excluded using `.dockerignore`.
+![Container Networking Model](/docs/docker/docker-container-networking-model.png)
 
-:::at-a-glance
-
-### Build Context
-
-- Files available during build.
-- Used by `COPY` and `ADD`.
-- Impacts build performance.
-- Controlled by `.dockerignore`.
-
-:::
-
-:::misconceptions
-
-❌ Docker can copy any file from the host machine.
-
-✅ Docker can only access files included in the Build Context.
-
-:::
-
-:::example
-
-```text
-Project/
-
-├── Dockerfile
-├── package.json
-├── src/
-└── .dockerignore
-```
-
-Everything inside this directory becomes available during the image build.
-
-:::
+![Networking Reference Cheat Sheet](/docs/docker/docker-networking-reference-cheatsheet.png)
 
 ---
 
-## Image Registry
+## Container Configuration
 
-An **Image Registry** stores Docker Images so they can be shared and deployed across different environments.
+Docker allows containers to be configured independently from the images they are created from.
 
-Instead of building images separately on every machine, developers build an image once and publish it to a registry.
+Instead of modifying the image itself, runtime configuration defines how a container behaves once it starts. This includes providing application settings, exposing services, controlling startup behavior, defining recovery policies, and configuring operational metadata.
 
-Other environments download exactly the same immutable image.
+Separating configuration from the image makes the same application artifact reusable across multiple environments while allowing each deployment to operate with its own settings and operational requirements.
 
-Common registries include:
-
-- Docker Hub
-- GitHub Container Registry
-- Amazon ECR
-- Google Artifact Registry
-- Azure Container Registry
-
-Image registries make deployments reproducible because every environment executes the exact same image.
-
-:::at-a-glance
-
-### Registry Responsibilities
-
-- Store images.
-- Version images.
-- Share images.
-- Distribute deployments.
-
-:::
-
-:::misconceptions
-
-❌ Registries store running containers.
-
-✅ Registries store immutable Docker Images.
-
-:::
-
-:::example
-
-```text
-Developer
-
-↓
-
-Build Image
-
-↓
-
-Push
-
-↓
-
-Image Registry
-
-↓
-
-Pull
-
-↓
-
-Production
-```
-
-:::
+![Configuration Cheat Sheet](/docs/docker/docker-configuration-cheatsheet.png)
 
 ---
 
-## Docker Compose
+## Multi-Container Applications
 
-Docker Compose defines multi-container applications.
+Modern applications rarely consist of a single container. Instead, they are composed of multiple services that work together to provide a complete system.
 
-Rather than manually starting each container, network, and volume individually, Docker Compose describes the complete application using a single declarative configuration.
+Docker enables these applications to be defined declaratively, allowing services, networks, volumes, and their relationships to be managed as a single unit. As a result, an entire application stack can be created, started, updated, or removed through a unified workflow.
 
-Compose commonly manages:
+This approach simplifies local development, testing, and deployment by ensuring every environment runs the same multi-container application with consistent topology and configuration.
 
-- Multiple containers.
-- Networks.
-- Volumes.
-- Environment variables.
-- Startup dependencies.
+![Docker Compose Architecture](/docs/docker/docker-compose-architecture.png)
 
-It is primarily intended for local development and testing environments.
-
-:::at-a-glance
-
-### Docker Compose
-
-- Multi-container applications.
-- Declarative configuration.
-- Local development.
-- Repeatable environments.
-
-:::
-
-:::misconceptions
-
-❌ Docker Compose replaces Kubernetes.
-
-✅ Docker Compose simplifies local orchestration. Kubernetes manages production-scale container orchestration.
-
-:::
-
-:::example
-
-```text
-compose.yaml
-
-↓
-
-Frontend
-
-↓
-
-Backend
-
-↓
-
-PostgreSQL
-
-↓
-
-Redis
-```
-
-All components start together using a single configuration.
-
-:::
+![Docker Compose Reference Cheat Sheet](/docs/docker/docker-compose-reference-cheatsheet.png)
 
 ---
 
-## Multi-stage Builds
+## Container Registries
 
-A **Multi-stage Build** allows a Docker Image to be built using multiple independent build stages.
+Docker images are designed to be portable, allowing them to be shared and executed across different machines and environments.
 
-Earlier stages compile, test, or package the application.
+To make this possible, Docker uses container registries as centralized repositories where images can be stored, versioned, and distributed. Once an image is published, any authorized system can retrieve the exact same artifact, ensuring consistency throughout development, testing, and production.
 
-The final stage copies only the artifacts required at runtime.
+This distribution model enables CI/CD pipelines, cloud platforms, and development teams to work from identical application images regardless of where they are executed.
 
-This approach produces significantly smaller, more secure images because build tools and temporary files are excluded from the final image.
+![Container Registry Distribution Flow](/docs/docker/docker-container-registry-distribution-flow.png)
 
-Multi-stage builds are considered a best practice for production deployments.
-
-:::at-a-glance
-
-### Benefits
-
-- Smaller images.
-- Faster deployments.
-- Better security.
-- Reduced attack surface.
-
-:::
-
-:::misconceptions
-
-❌ Every build stage becomes part of the final image.
-
-✅ Only the explicitly copied artifacts are included in the final stage.
-
-:::
-
-:::example
-
-```Dockerfile
-FROM node:22 AS builder
-
-RUN npm install
-RUN npm run build
-
-FROM nginx:latest
-
-COPY --from=builder /app/dist /usr/share/nginx/html
-```
-
-The final image contains only the compiled application, not the Node.js build environment.
-
-:::
+![Container Registry Reference Cheat Sheet](/docs/docker/docker-container-registry-reference-cheatsheet.png)
 
 ---
 
-# Putting Everything Together
+## Multi-Stage Builds
 
-The following sequence summarizes how Docker packages, distributes, and executes an application.
+As applications grow, the requirements for building software often differ from those needed to run it.
 
-```text
-                Developer
-                     │
-                     ▼
-               Application Code
-                     │
-                     ▼
-                Dockerfile
-                     │
-                     ▼
-              Docker Build
-                     │
-                     ▼
-               Docker Image
-                     │
-              Push / Pull
-                     ▼
-             Image Registry
-                     │
-                     ▼
-              Docker Engine
-                     │
-                     ▼
-          Create Container
-                     │
-        ┌────────────┼────────────┐
-        │            │            │
-        ▼            ▼            ▼
-     Volumes     Networks     Processes
-        │            │            │
-        └────────────┼────────────┘
-                     ▼
-          Running Application
-```
+Docker supports multi-stage builds, allowing a single Dockerfile to use multiple build environments while producing a final image that contains only the files required at runtime.
 
-The development process begins when a developer defines the application's execution environment using a Dockerfile.
+By separating build-time dependencies from the runtime environment, images become significantly smaller, faster to distribute, and more secure because unnecessary tools and intermediate artifacts are excluded from the final application image.
 
-Docker builds an immutable image by executing each instruction and storing the resulting filesystem as a sequence of reusable layers.
-
-Once built, the image can be stored in an Image Registry, allowing the exact same artifact to be distributed across different environments.
-
-Whenever the image is executed, Docker creates a new container.
-
-The container runs one or more isolated operating system processes while sharing the host operating system kernel.
-
-If the application requires persistent data, Docker mounts one or more Volumes.
-
-If the application communicates with other containers, Docker connects them through Docker Networks.
-
-Because every container originates from the same immutable image, applications execute consistently regardless of the underlying machine.
+![Multi-Stage Build Flow](/docs/docker/docker-multi-stage-build-flow.png)
 
 ---
 
-## Final Perspective
+## Resource Management
 
-Docker is not a virtual machine.
+Containers share the resources of the host system, making efficient resource allocation an important part of running containerized applications.
 
-Docker is not an operating system.
+Docker allows resource usage to be controlled by defining execution limits and scheduling policies. These controls help prevent individual containers from consuming excessive CPU or memory while ensuring predictable behavior when multiple applications run on the same host.
 
-Docker is a container platform that packages applications into portable, reproducible execution environments.
+Managing resources effectively improves application stability, enables higher infrastructure utilization, and allows containerized workloads to scale more reliably under varying levels of demand.
 
-By combining immutable images, isolated containers, persistent storage, virtual networking, and reproducible builds, Docker eliminates many of the inconsistencies traditionally associated with software deployment.
+![Resource Allocation Model](/docs/docker/docker-resource-allocation-model.png)
 
-Understanding containers as isolated operating system processes—and understanding Docker as the platform that manages those processes—is far more valuable than memorizing Docker commands.
+![Resource Management Cheat Sheet](/docs/docker/docker-resource-management-cheatsheet.png)
 
-These concepts form the foundation of modern cloud-native software, continuous delivery pipelines, and container orchestration platforms such as Kubernetes.
+---
+
+## Putting Everything Together
+
+Docker transforms application delivery into a repeatable workflow that begins with source code and ends with one or more consistently running containers.
+
+Applications are defined declaratively, built into immutable images, executed as isolated containers, connected through virtual networks, configured for different environments, and distributed through container registries. Multiple services can then be orchestrated as a single application while sharing persistent storage and managed resources.
+
+Together, these capabilities provide a standardized platform for developing, shipping, and running applications consistently across local machines, testing environments, and production systems.
+
+![Complete Docker Workflow](/docs/docker/docker-complete-workflow.png)
