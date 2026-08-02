@@ -1,180 +1,85 @@
 ---
 title: OAuth 2.0 Overview
-description: Understand what OAuth 2.0 is, why it exists, how delegated authorization works, and where it fits in modern software systems.
+description: Learn what OAuth 2.0 is, why delegated authorization exists, how applications obtain limited access to protected resources, and where OAuth fits within modern software architectures.
+icon: oauth.png
 order: 1
-updatedAt: 2026-07-05
+updatedAt: 2026-08-02
 ---
 
 # OAuth 2.0
 
 ## Definition
 
-OAuth 2.0 is an authorization framework that allows one application to access protected resources on behalf of a user without requiring the user to share their password with that application.
+OAuth 2.0 is an authorization framework that allows an application to access protected resources on behalf of a user without requiring the user's credentials.
 
-Before OAuth, third-party applications often needed direct access to user credentials in order to interact with another service. This created a serious security problem because users had to trust every application with their username and password.
+Instead of sharing passwords with every application, users grant limited permissions, which are represented by access tokens issued by an authorization server.
 
-OAuth introduced a safer model based on delegated authorization.
+OAuth is responsible for delegated authorization. It does not define how users authenticate or how access tokens are internally represented.
 
-Delegated authorization means that a user can grant limited access to a third-party application without giving that application full control over their account.
-
-OAuth does not primarily answer the question **"Who is the user?"**
-
-OAuth answers the question **"What is this application allowed to access?"**
-
-This distinction is important because OAuth is about authorization, not authentication.
+![OAuth Delegated Authorization Model](/docs/oauth/oauth-delegated-authorization-model.png)
 
 ---
 
-## How it Works
+## How It Works
 
-OAuth introduces four primary participants that collaborate during the authorization process.
+OAuth introduces four roles that cooperate during authorization: the resource owner, client, authorization server, and resource server.
 
-### Resource Owner
+After authorization is granted, the client receives an access token that can be presented when requesting protected resources.
 
-The **Resource Owner** is the user who owns the protected resources.
+Different authorization flows exist for different types of applications, but they all follow this same delegation model.
 
-For example, if a user owns files stored in Google Drive, the user is the Resource Owner.
-
-### Client
-
-The **Client** is the application requesting access to the user's resources.
-
-Examples include:
-
-- A mobile application.
-- A web application.
-- A desktop application.
-- A backend service.
-
-The Client does not own the resources. It requests permission to access them.
-
-### Authorization Server
-
-The **Authorization Server** is responsible for authenticating the user, obtaining their consent, and issuing access tokens.
-
-It determines whether the Client should receive permission to access the requested resources.
-
-Examples include:
-
-- Google Accounts
-- Microsoft Entra ID
-- Auth0
-- Okta
-
-### Resource Server
-
-The **Resource Server** stores the protected resources.
-
-It validates incoming access tokens before allowing access to those resources.
-
-The Authorization Server issues tokens.
-
-The Resource Server consumes those tokens.
-
-```text
-        Resource Owner
-              │
-              ▼
-      Authorization Server
-              │
-      Access Token
-              │
-              ▼
-Client ───────────────► Resource Server
-```
-
-Although these roles are conceptually independent, some systems implement both the Authorization Server and the Resource Server within the same application.
+![OAuth High-Level Flow](/docs/oauth/oauth-high-level-flow.png)
 
 ---
 
-## How it Fits into the Ecosystem
+## How It Fits into the Ecosystem
 
-OAuth has become the standard authorization framework for modern distributed systems.
+OAuth enables secure communication between applications and protected APIs.
 
-It is commonly used whenever an application needs to access protected resources managed by another application.
+It is commonly used by web applications, mobile applications, backend services, CLI tools, and machine-to-machine integrations. OAuth relies on HTTP for communication and is frequently combined with OpenID Connect when user authentication is also required.
 
-Typical examples include:
-
-- Sign in with Google.
-- Sign in with Microsoft.
-- GitHub integrations.
-- Slack applications.
-- Google Drive integrations.
-- Microsoft Graph.
-- Spotify API.
-- GitHub API.
-
-OAuth enables these integrations without exposing user credentials to third-party applications.
-
-Because of this delegated authorization model, OAuth has become one of the foundational security standards of cloud computing and SaaS platforms.
+![OAuth Ecosystem](/docs/oauth/oauth-ecosystem.png)
 
 ---
 
-## Real-World Usage
+## What It Looks Like
 
-OAuth is used whenever applications need secure delegated access to protected resources.
+End users typically encounter OAuth through authorization and consent screens before granting permissions to an application.
 
-Examples include:
+Developers usually interact with OAuth through authorization endpoints, token exchanges, redirect URLs, and protected API requests carrying access tokens.
 
-- A calendar application accessing Google Calendar.
-- A CRM integrating with Microsoft 365.
-- A CI/CD platform accessing GitHub repositories.
-- A mobile application accessing cloud storage.
-- An AI assistant accessing a user's documents after explicit authorization.
+![OAuth Consent Screen](/docs/oauth/oauth-consent-screen.png)
 
-OAuth is particularly valuable because access can be limited through permissions and revoked at any time without requiring users to change their passwords.
+![OAuth Authorization Exchange](/docs/oauth/oauth-authorization-exchange.png)
 
 ---
 
-## Practical Examples
+## Common Use Cases
 
-### Example 1 — Google Drive Integration
+### Third-Party Integrations
 
-A document editor wants to access a user's Google Drive files.
-
-Instead of asking for the user's Google password, the application redirects the user to Google's Authorization Server.
-
-After the user grants permission, Google issues an Access Token that the application can use to access only the authorized resources.
-
-```text
-User
-   │
-   ▼
-Application
-   │
-   ▼
-Google Authorization Server
-   │
-Access Token
-   │
-   ▼
-Google Drive API
-```
-
-The application never knows the user's password.
+Applications request limited access to resources managed by another platform without collecting user credentials.
 
 ---
 
-### Example 2 — GitHub Integration
+### Social Sign-In
 
-A CI/CD platform needs access to a user's GitHub repositories.
-
-The user authorizes the application through GitHub.
-
-GitHub issues an Access Token containing the approved permissions.
-
-The platform uses that token whenever it communicates with the GitHub API.
-
-If the user revokes access, the token becomes invalid without requiring the user to change their GitHub password.
+Applications combine OAuth with OpenID Connect to authenticate users using an external identity provider.
 
 ---
 
-### Example 3 — Enterprise SaaS
+### API Authorization
 
-A CRM needs access to a company's Microsoft 365 calendar.
+Clients obtain access tokens before invoking protected REST or GraphQL APIs.
 
-Instead of storing employee credentials, the CRM requests authorization through Microsoft Entra ID.
+---
 
-Microsoft issues an Access Token representing the approved permissions.
+### Machine-to-Machine Communication
 
-The CRM uses that token whenever it communicates with Microsoft Graph.
+Backend services authorize themselves before accessing protected resources owned by another service.
+
+---
+
+### Limited Resource Access
+
+Applications receive permission to perform only the operations explicitly granted by the resource owner.
