@@ -102,8 +102,6 @@ Rather than describing application-specific results, status codes provide a stan
 
 ![HTTP Status Code Flow](/docs/http/http-status-code-flow.png)
 
-![HTTP Status Codes Cheat Sheet](/docs/http/http-status-codes-cheatsheet.png)
-
 ---
 
 # Content Negotiation
@@ -115,8 +113,6 @@ HTTP introduces content negotiation, allowing clients and servers to agree on th
 This mechanism enables applications to support multiple formats, languages, and compression algorithms without exposing different resources for each variation.
 
 ![HTTP Content Negotiation](/docs/http/http-content-negotiation.png)
-
-![HTTP Content Negotiation Cheat Sheet](/docs/http/http-content-negotiation-cheatsheet.png)
 
 ---
 
@@ -140,8 +136,6 @@ Reducing unnecessary transfers decreases latency, lowers bandwidth consumption, 
 
 ![HTTP Caching Workflow](/docs/http/http-caching-workflow.png)
 
-![HTTP Caching Cheat Sheet](/docs/http/http-caching-cheatsheet.png)
-
 ---
 
 # State Persistence
@@ -153,8 +147,6 @@ To support features such as user sessions and personalized experiences, HTTP int
 Rather than changing the protocol's stateless nature, cookies allow applications to associate otherwise independent requests with the same client over time.
 
 ![HTTP Cookies Workflow](/docs/http/http-cookies-workflow.png)
-
-![HTTP Cookies Cheat Sheet](/docs/http/http-cookies-cheatsheet.png)
 
 ---
 
@@ -179,8 +171,6 @@ HTTP allows clients and servers to negotiate compression algorithms before trans
 Because compression occurs transparently during transmission, applications exchange the same logical content while significantly reducing bandwidth usage and download times.
 
 ![HTTP Compression Workflow](/docs/http/http-compression-workflow.png)
-
-![HTTP Compression Cheat Sheet](/docs/http/http-compression-cheatsheet.png)
 
 ---
 

@@ -38,7 +38,7 @@ Unlike virtual machines, containers do not include their own operating system ke
 
 Because every container starts from the same image, applications behave consistently regardless of the machine on which they are executed.
 
-![Docker Container Lifecycle](./images/docker-overview-container-lifecycle.png)
+![Docker Container Lifecycle](/docs/docker/docker-overview-container-lifecycle.png)
 
 ---
 
@@ -50,7 +50,7 @@ Developers build Docker images locally, CI/CD pipelines automate their creation 
 
 This standardized workflow allows the same application package to move consistently from development to production without modification.
 
-![Docker Ecosystem](./images/docker-overview-ecosystem.png)
+![Docker Ecosystem](/docs/docker/docker-overview-ecosystem.png)
 
 ---
 
@@ -60,7 +60,7 @@ Docker is commonly managed through Docker Desktop, which provides a graphical in
 
 Although Docker is frequently operated from the command line, Docker Desktop helps developers visualize and manage containerized applications during local development.
 
-![Docker Desktop](./images/docker-overview-docker-desktop.png)
+![Docker Desktop](/docs/docker/docker-overview-docker-desktop.png)
 
 ---
 
