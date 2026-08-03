@@ -60,8 +60,6 @@ Although registration details vary between providers, the overall registration m
 
 ![OAuth Client Registration](/docs/oauth/oauth-client-registration.png)
 
-![OAuth Client Registration Cheat Sheet](/docs/oauth/oauth-client-registration-cheatsheet.png)
-
 ---
 
 # Authorization Endpoints
@@ -71,8 +69,6 @@ OAuth standardizes communication through a small set of endpoints, each responsi
 Because these endpoints have clearly separated responsibilities, different OAuth providers expose similar interfaces despite implementation differences.
 
 ![OAuth Authorization Endpoints](/docs/oauth/oauth-endpoints.png)
-
-![OAuth Endpoints Cheat Sheet](/docs/oauth/oauth-endpoints-cheatsheet.png)
 
 ---
 
@@ -98,8 +94,6 @@ PKCE proves that the client redeeming an authorization code is the same client t
 
 ![OAuth PKCE Flow](/docs/oauth/oauth-pkce-flow.png)
 
-![OAuth PKCE Cheat Sheet](/docs/oauth/oauth-pkce-cheatsheet.png)
-
 ---
 
 # User Consent
@@ -124,8 +118,6 @@ This separation allows authorization to remain independent from user authenticat
 
 ![OAuth Access Token Lifecycle](/docs/oauth/oauth-access-token-lifecycle.png)
 
-![OAuth Access Token Cheat Sheet](/docs/oauth/oauth-access-token-cheatsheet.png)
-
 ---
 
 # Permission Scoping
@@ -135,8 +127,6 @@ Not every authorized client should receive unrestricted access.
 OAuth introduces scopes to limit delegated permissions according to the operations and resources approved by the resource owner. This enables applications to request only the access required to perform their intended function.
 
 ![OAuth Scopes Model](/docs/oauth/oauth-scopes-model.png)
-
-![OAuth Scopes Cheat Sheet](/docs/oauth/oauth-scopes-cheatsheet.png)
 
 ---
 
@@ -149,8 +139,6 @@ Before granting access, resource servers validate the received authorization acc
 This validation process allows protected resources to remain independent from the authorization process itself.
 
 ![OAuth Token Validation](/docs/oauth/oauth-token-validation.png)
-
-![OAuth Token Validation Cheat Sheet](/docs/oauth/oauth-token-validation-cheatsheet.png)
 
 ---
 
@@ -184,8 +172,6 @@ These mechanisms allow OAuth to operate securely across browsers, mobile devices
 
 ![OAuth Security Model](/docs/oauth/oauth-security-model.png)
 
-![OAuth Security Cheat Sheet](/docs/oauth/oauth-security-cheatsheet.png)
-
 ---
 
 # Protocol Interoperability
@@ -195,8 +181,6 @@ OAuth focuses exclusively on delegated authorization.
 Modern identity platforms frequently combine OAuth with complementary technologies that provide authentication, identity information, token representations, and protected API access while preserving OAuth's authorization model.
 
 Understanding these relationships makes it easier to distinguish each technology's responsibility and avoid treating OAuth as a complete identity solution.
-
-![OAuth Ecosystem Relationships](/docs/oauth/oauth-ecosystem-relationships.png)
 
 ---
 

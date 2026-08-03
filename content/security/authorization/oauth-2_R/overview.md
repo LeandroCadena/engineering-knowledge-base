@@ -50,8 +50,6 @@ Developers usually interact with OAuth through authorization endpoints, token ex
 
 ![OAuth Consent Screen](/docs/oauth/oauth-consent-screen.png)
 
-![OAuth Authorization Exchange](/docs/oauth/oauth-authorization-exchange.png)
-
 ---
 
 ## Common Use Cases
