@@ -46,16 +46,6 @@ function Welcome({ name }) {
 
 Expressions can contain variables, function calls, calculations, or conditional logic, allowing the rendered interface to reflect the current application data.
 
-## Components
-
-JSX can render both native HTML elements and custom React components.
-
-```jsx
-<Button />
-```
-
-Component names must begin with a capital letter so React can distinguish them from standard HTML elements.
-
 ## Fragments
 
 A component may return multiple elements without introducing unnecessary wrapper elements by using a Fragment.
@@ -69,9 +59,24 @@ A component may return multiple elements without introducing unnecessary wrapper
 
 Fragments help keep the rendered DOM clean while allowing components to return multiple siblings.
 
-![JSX Transformation](/docs/react/react-jsx-transformation.png)
+## Rendering Lists
 
-![JSX Quick Reference](/docs/react/react-jsx-cheatsheet.png)
+Rendering lists simply means transforming data into components.
+
+```jsx
+const products = [
+  { id: 1, name: 'Keyboard' },
+  { id: 2, name: 'Mouse' },
+];
+```
+
+```jsx
+products.map((product) => <ProductCard key={product.id} product={product} />);
+```
+
+React renders one component for each item while preserving the relationship between the data and the rendered interface.
+
+![JSX Transformation](/docs/react/react-jsx-transformation.png)
 
 ---
 
@@ -137,8 +142,6 @@ Reusability reduces duplicated code, improves consistency, and simplifies mainte
 
 ![Component Composition](/docs/react/react-component-composition.png)
 
-![Component Hierarchy](/docs/react/react-component-hierarchy.png)
-
 ---
 
 # Props
@@ -189,19 +192,7 @@ It represents any elements placed between a component's opening and closing tags
 </Card>
 ```
 
-The `Card` component receives the heading through its `children` prop, allowing components to wrap and compose arbitrary user interface content.
-
-## Prop Destructuring
-
-Because props are ordinary JavaScript objects, components commonly use object destructuring to access only the values they need.
-
-```jsx
-function Button({ label, disabled }) {
-  return <button disabled={disabled}>{label}</button>;
-}
-```
-
-Destructuring improves readability and keeps component implementations concise.
+The `children` prop represents the elements placed between a component's opening and closing tags, allowing components to render nested content provided by their parent.
 
 ![One-Way Data Flow](/docs/react/react-one-way-data-flow.png)
 
@@ -269,115 +260,11 @@ Keeping state minimal reduces complexity and helps avoid inconsistencies.
 
 ---
 
-# Rendering
-
-Rendering is the process React uses to determine what the user interface should look like based on the current props and state.
-
-Contrary to a common misconception, rendering does **not** immediately update the browser's DOM. Instead, React first calculates the next version of the user interface before deciding what changes actually need to be applied.
-
-Understanding this distinction is essential for understanding React's rendering model and the optimizations it performs internally.
-
-## The Render Phase
-
-During the render phase, React executes components to produce a new tree of React Elements.
-
-```jsx
-function Greeting({ name }) {
-  return <h1>Hello, {name}</h1>;
-}
-```
-
-At this stage, React is only calculating what the interface should look like. No changes have been made to the browser yet.
-
-Because rendering is simply a calculation, component functions should remain pure and free of side effects.
-
-## The Commit Phase
-
-Once React finishes rendering and determines what has changed, it enters the **Commit Phase**.
-
-During this phase, React applies only the necessary updates to the browser's DOM.
-
-This separation between rendering and committing allows React to optimize updates while avoiding unnecessary DOM operations.
-
-## Re-rendering
-
-Whenever props or state change, React schedules another render.
-
-A re-render does not necessarily mean the browser's DOM will change.
-
-If the newly rendered output is identical to the previous one, React may determine that no DOM updates are required.
-
-Understanding this distinction helps explain why React applications remain efficient even when components render frequently.
-
-![React Rendering Pipeline](/docs/react/react-rendering-pipeline.png)
-
----
-
-# Virtual DOM & Reconciliation
-
-The Virtual DOM is an in-memory representation of the user interface that React uses to determine what has changed between renders.
-
-Rather than updating the browser's DOM immediately after every state or prop change, React first creates a new tree of React Elements and compares it with the previous one.
-
-This comparison process is known as **Reconciliation**.
-
-## React Elements
-
-During rendering, React produces a new tree of React Elements. The Virtual DOM is the in-memory representation of that tree.
-
-## Virtual DOM
-
-The Virtual DOM is the collection of React Elements representing the current state of the user interface.
-
-Because it exists entirely in memory, React can perform comparisons without interacting with the browser.
-
-Working in memory is significantly faster than repeatedly modifying the real DOM.
-
-## Diffing
-
-After a component renders, React compares the previous React Element tree with the newly generated one.
-
-This process is called **Diffing**.
-
-Rather than rebuilding the entire interface, React identifies only the parts of the tree that have changed.
-
-## Reconciliation
-
-Reconciliation is the algorithm React uses to transform one React Element tree into another.
-
-Using the results of the diffing process, React determines the minimum set of DOM operations required to synchronize the browser with the latest application state.
-
-This optimization minimizes expensive DOM updates and contributes significantly to React's performance.
-
-## Keys
-
-When rendering collections, React uses the `key` prop to identify elements between renders.
-
-Stable and unique keys allow React to correctly match existing elements with their updated versions during reconciliation.
-
-Poorly chosen keys, such as array indexes in dynamic lists, can lead to unnecessary re-renders or incorrect UI behavior.
-
-![Virtual DOM & Reconciliation](/docs/react/react-virtual-dom-reconciliation.png)
-
-![Reconciliation Quick Reference](/docs/react/react-reconciliation-cheatsheet.png)
-
----
-
 # Hooks
 
 Hooks are functions that allow functional components to use React features such as state, context, references, effects, and memoization.
 
 Before Hooks, stateful behavior was primarily associated with class components. Hooks allow the same capabilities to be expressed through functional components while making related logic easier to organize and reuse.
-
-```jsx
-import { useState } from 'react';
-
-function Counter() {
-  const [count, setCount] = useState(0);
-
-  return <button onClick={() => setCount((previous) => previous + 1)}>{count}</button>;
-}
-```
 
 Hooks do not replace components. They extend functional components with behavior that React preserves between renders.
 
@@ -407,41 +294,17 @@ React relies on Hooks being called in the same order during every render. Changi
 
 React provides Hooks for different responsibilities.
 
-`useState` stores local component state.
+Some of the most frequently used include:
 
-```jsx
-const [count, setCount] = useState(0);
-```
+- `useState` for local state
+- `useReducer` for complex state transitions
+- `useContext` for reading shared context
+- `useRef` for mutable references
+- `useMemo` for memoizing calculations
+- `useCallback` for memoizing function references
+- `useEffect` for synchronizing with external systems
 
-`useReducer` manages state through explicit actions and a reducer function.
-
-```jsx
-const [state, dispatch] = useReducer(reducer, initialState);
-```
-
-`useContext` reads a value from the nearest matching Context provider.
-
-```jsx
-const theme = useContext(ThemeContext);
-```
-
-`useRef` preserves a mutable value between renders without triggering a new render when that value changes.
-
-```jsx
-const inputRef = useRef(null);
-```
-
-`useMemo` caches the result of a calculation, while `useCallback` caches a function reference.
-
-```jsx
-const filteredUsers = useMemo(() => users.filter((user) => user.active), [users]);
-
-const handleSave = useCallback(() => {
-  saveUser(user);
-}, [user]);
-```
-
-`useEffect` synchronizes a component with systems outside React and will be explored separately in the next chapter.
+Each Hook addresses a specific responsibility and will be explored in more detail throughout this guide where appropriate.
 
 ## Custom Hooks
 
@@ -469,7 +332,87 @@ Custom Hooks reuse behavior, not rendered UI. Each component calling a custom Ho
 
 ![How Hooks Extend Components](/docs/react/react-hooks-component-model.png)
 
-![React Hooks Quick Reference](/docs/react/react-hooks-cheatsheet.png)
+---
+
+# Rendering Pipeline
+
+Rendering is the process React uses to determine what the user interface should look like based on the current props and state.
+
+Contrary to a common misconception, rendering does **not** immediately update the browser's DOM. Instead, React first calculates the next version of the user interface before deciding what changes actually need to be applied.
+
+This separation between rendering and DOM updates forms the foundation of React's rendering pipeline.
+
+## The Render Phase
+
+During the render phase, React executes components to produce a new tree of React Elements.
+
+```jsx
+function Greeting({ name }) {
+  return <h1>Hello, {name}</h1>;
+}
+```
+
+At this stage, React is only calculating what the interface should look like. No changes have been made to the browser yet.
+
+Because rendering is simply a calculation, component functions should remain pure and free of side effects.
+
+## React Elements and the Virtual DOM
+
+During rendering, React produces a tree of React Elements.
+
+The Virtual DOM is the in-memory representation of that tree, allowing React to compare successive renders before updating the browser's DOM.
+
+## Diffing
+
+After a component renders, React compares the previous React Element tree with the newly generated one.
+
+This process is called **Diffing**.
+
+Rather than rebuilding the entire interface, React identifies only the parts of the tree that have changed.
+
+## Reconciliation
+
+Reconciliation is the algorithm React uses to transform one React Element tree into another.
+
+Using the results of the diffing process, React determines the minimum set of DOM operations required to synchronize the browser with the latest application state.
+
+This optimization minimizes expensive DOM updates and contributes significantly to React's performance.
+
+![Virtual DOM & Reconciliation](/docs/react/react-virtual-dom-reconciliation.png)
+
+## The Commit Phase
+
+Once React finishes rendering and determines what has changed, it enters the **Commit Phase**.
+
+During this phase, React applies only the necessary updates to the browser's DOM.
+
+This separation between rendering and committing allows React to optimize updates while avoiding unnecessary DOM operations.
+
+## Re-rendering
+
+Whenever props or state change, React schedules another render.
+
+A re-render does not necessarily mean the browser's DOM will change.
+
+If the newly rendered output is identical to the previous one, React may determine that no DOM updates are required.
+
+Understanding this distinction helps explain why React applications remain efficient even when components render frequently.
+
+![React Rendering Pipeline](/docs/react/react-rendering-pipeline.png)
+
+## Keys
+
+A `key` uniquely identifies an element among its siblings.
+
+Keys are not passed as props to components. They exist solely to help React identify elements during reconciliation.
+
+```jsx
+<ProductCard key={product.id} product={product} />
+```
+
+Stable keys allow React to reuse existing components whenever possible instead of destroying and recreating them.
+
+![Rendering Lists with Keys](/docs/react/react-lists-keys-flow.png)
 
 ---
 
@@ -599,23 +542,7 @@ If only `Profile` requires the current user, every intermediate component would 
 
 Context removes this unnecessary coupling by allowing `Profile` to read the value directly from the nearest provider.
 
-## When to Use Context
-
-Context works best for relatively stable, shared application state.
-
-Common examples include:
-
-- Authentication
-- Themes
-- Localization
-- User preferences
-- Feature flags
-
-Frequently changing state that affects many consumers can trigger unnecessary re-renders, making Context less suitable for highly dynamic application state.
-
 ![Context Provider Flow](/docs/react/react-context-provider-flow.png)
-
-![Context Quick Reference](/docs/react/react-context-cheatsheet.png)
 
 ---
 
@@ -710,92 +637,7 @@ Some of the most frequently used include:
 
 ---
 
-# Lists & Keys
-
-React applications frequently render collections of data.
-
-Rather than creating components individually, React allows developers to generate multiple elements by transforming arrays into React Elements.
-
-The most common approach is using JavaScript's `map()` function.
-
-```jsx
-const users = ['Alice', 'Bob', 'Charlie'];
-
-function UserList() {
-  return (
-    <ul>
-      {users.map((user) => (
-        <li key={user}>{user}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-Each element in the collection should provide a unique `key` so React can correctly identify it between renders.
-
-## Rendering Lists
-
-Rendering lists simply means transforming data into components.
-
-```jsx
-const products = [
-  { id: 1, name: 'Keyboard' },
-  { id: 2, name: 'Mouse' },
-];
-```
-
-```jsx
-products.map((product) => <ProductCard key={product.id} product={product} />);
-```
-
-React renders one component for each item while preserving the relationship between the data and the rendered interface.
-
-## Keys
-
-A `key` uniquely identifies an element among its siblings.
-
-Keys are not passed as props to components. They exist solely to help React identify elements during reconciliation.
-
-```jsx
-<ProductCard key={product.id} product={product} />
-```
-
-Stable keys allow React to reuse existing components whenever possible instead of destroying and recreating them.
-
-## Choosing Good Keys
-
-The best keys are values that uniquely identify the underlying data.
-
-Examples include:
-
-- Database IDs
-- UUIDs
-- Stable unique identifiers
-
-These values remain consistent between renders, allowing React to accurately match elements.
-
-## Avoiding Array Indexes
-
-Using the array index as a key is generally discouraged for dynamic lists.
-
-```jsx
-items.map((item, index) => <Row key={index} />);
-```
-
-If items are inserted, removed, or reordered, indexes change even though the underlying data has not.
-
-This can cause React to reuse the wrong components, leading to unnecessary re-renders or incorrect UI behavior.
-
-Array indexes are acceptable only when a list is static and its order never changes.
-
-![Rendering Lists with Keys](/docs/react/react-lists-keys-flow.png)
-
-![Keys Quick Reference](/docs/react/react-keys-cheatsheet.png)
-
----
-
-# Performance
+# Render Optimization
 
 Performance problems appear when components perform unnecessary work during rendering.
 
@@ -812,9 +654,13 @@ A parent re-render causes React to execute its child components again by default
 
 React then uses reconciliation to determine whether the browser's DOM actually needs to change.
 
-## React.memo
+## Memoization
 
-`React.memo` can prevent a component from re-rendering when its props remain shallowly equal.
+React provides several memoization mechanisms that reduce unnecessary work during rendering by preserving previously computed values or previously rendered output.
+
+Different memoization techniques optimize different parts of the rendering pipeline and should only be introduced after identifying a measurable performance bottleneck.
+
+## React.memo
 
 ```jsx
 const UserCard = memo(function UserCard({ user }) {
@@ -823,8 +669,6 @@ const UserCard = memo(function UserCard({ user }) {
 ```
 
 Memoization is most useful for components that render frequently, receive stable props, and perform enough work for the avoided render to matter.
-
-It should not be applied to every component automatically, because comparing props also introduces work.
 
 ## useMemo
 
@@ -891,7 +735,7 @@ Optimization is most effective when it targets an observed bottleneck instead of
 
 # Forms
 
-Forms are the primary mechanism through which users provide input in React applications.
+Forms allow users to provide, validate, and submit data within React applications.
 
 Unlike static interfaces, forms continuously synchronize user interactions with application state, allowing React to validate, display, and process data before it is submitted.
 
@@ -903,7 +747,7 @@ function LoginForm() {
 }
 ```
 
-Form values are typically managed form values using either controlled or uncontrolled components.
+Form values are typically managed using either controlled or uncontrolled components.
 
 ## Controlled Components
 
@@ -933,20 +777,6 @@ const inputRef = useRef();
 
 Uncontrolled components are useful for simple forms or integrations with non-React code.
 
-## Form Submission
-
-React commonly intercepts the browser's default submission behavior.
-
-```jsx
-function handleSubmit(event) {
-  event.preventDefault();
-
-  // submit data
-}
-```
-
-This allows applications to validate data, send API requests asynchronously, and update the interface without reloading the page.
-
 ## Validation
 
 Validation ensures user input satisfies application requirements before submission.
@@ -969,58 +799,10 @@ Many React applications use libraries such as **React Hook Form** together with 
 
 # Putting Everything Together
 
-A React application is the result of multiple independent concepts working together.
+Every React application combines the concepts introduced throughout this chapter into a single rendering pipeline.
 
-Components describe the user interface.
+User interactions trigger state updates, React calculates the next user interface, determines what changed, updates the browser only where necessary, and finally synchronizes with external systems when required.
 
-Props pass data through the component tree.
-
-State stores information that changes over time.
-
-Events allow users to interact with the application.
-
-Rendering produces a new tree of React Elements.
-
-Reconciliation compares the new tree with the previous one.
-
-The Commit Phase updates the browser's DOM.
-
-Effects synchronize React with systems outside the application.
-
-Understanding how these concepts connect is more important than memorizing each one individually.
-
-## End-to-End Flow
-
-A typical React interaction follows a predictable sequence.
-
-1. The user interacts with the interface.
-2. An event handler executes.
-3. State is updated.
-4. React schedules a new render.
-5. Components execute and produce a new React Element tree.
-6. React performs reconciliation.
-7. The Commit Phase updates the DOM if necessary.
-8. Effects synchronize with external systems.
-9. The browser displays the updated interface.
-
-Every interactive React application follows this same high-level model regardless of its size or complexity.
-
-## Building Large Applications
-
-As applications grow, React projects commonly introduce additional architectural patterns.
-
-Examples include:
-
-- Routing
-- Global state management
-- Server communication
-- Code splitting
-- Component libraries
-- Testing
-- Build tools
-
-These technologies extend React rather than replacing its core rendering model.
-
-The concepts covered throughout this guide remain the foundation of every React application.
+Although applications differ greatly in size and architecture, they all follow this same execution model.
 
 ![React Execution Flow](/docs/react/react-complete-execution-flow.png)
