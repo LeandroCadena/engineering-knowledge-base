@@ -58,12 +58,6 @@ function Welcome() {
 
 As applications grow, components are composed together to create increasingly complex interfaces.
 
----
-
-**Image: React Component Tree**
-
-The following diagram illustrates how individual React components combine to form a complete application interface through composition.
-
 ![React Component Tree](/docs/react/react-component-tree.png)
 
 ---

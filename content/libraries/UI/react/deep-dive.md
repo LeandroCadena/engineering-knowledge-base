@@ -194,8 +194,6 @@ It represents any elements placed between a component's opening and closing tags
 
 The `children` prop represents the elements placed between a component's opening and closing tags, allowing components to render nested content provided by their parent.
 
-![One-Way Data Flow](/docs/react/react-one-way-data-flow.png)
-
 ![Props Quick Reference](/docs/react/react-props-cheatsheet.png)
 
 ---
