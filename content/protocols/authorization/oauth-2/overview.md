@@ -10,9 +10,7 @@ updatedAt: 2026-08-02
 
 ## Definition
 
-OAuth 2.0 is an authorization framework that allows an application to access protected resources on behalf of a user without requiring the user's credentials.
-
-Instead of sharing passwords with every application, users grant limited permissions, which are represented by access tokens issued by an authorization server.
+OAuth 2.0 is a standardized authorization protocol that defines how applications obtain, delegate, and use access to protected resources without ever handling the resource owner's credentials.
 
 OAuth is responsible for delegated authorization. It does not define how users authenticate or how access tokens are internally represented.
 

@@ -8,33 +8,19 @@ updatedAt: 2026-08-02
 
 # OAuth 2.0 Deep Dive
 
-This chapter explores the mechanisms introduced by OAuth 2.0 to securely delegate authorization between applications.
-
-Rather than focusing on specific providers or implementations, it explains the protocol features that allow applications to obtain, manage, and use delegated permissions while protecting user credentials.
-
----
-
 # Delegated Authorization
 
 OAuth introduces delegated authorization, allowing an application to access protected resources without ever receiving the user's credentials.
 
 Instead of sharing usernames and passwords with every client application, users authorize access through an authorization server, which issues credentials representing the granted permissions.
 
-This separation reduces credential exposure while allowing permissions to be limited, revoked, and managed independently from user authentication.
-
-![OAuth Delegated Authorization](/docs/oauth/oauth-delegated-authorization.png)
-
----
-
 # Authorization Roles
 
 OAuth separates authorization into distinct roles, each with a clearly defined responsibility.
 
-Rather than allowing every participant to perform every operation, the protocol assigns authorization, resource protection, client behavior, and permission ownership to different actors.
-
 This separation enables independent implementations while maintaining interoperability between applications and authorization providers.
 
-![OAuth Authorization Roles](/docs/oauth/oauth-authorization-roles.png)
+![OAuth Delegated Authorization](/docs/oauth/oauth-delegated-authorization.png)
 
 ---
 
@@ -43,8 +29,6 @@ This separation enables independent implementations while maintaining interopera
 Not every application can protect sensitive credentials in the same way.
 
 OAuth classifies clients according to their ability to securely store confidential information, allowing the protocol to apply different authorization strategies depending on the application's execution environment.
-
-This distinction determines which security mechanisms are required throughout the authorization process.
 
 ![OAuth Client Types](/docs/oauth/oauth-client-types.png)
 
@@ -55,8 +39,6 @@ This distinction determines which security mechanisms are required throughout th
 Before participating in an authorization flow, a client must establish its identity with the authorization server.
 
 Registration creates a trusted relationship that allows the authorization server to recognize the client, apply security policies, and determine which authorization capabilities are available.
-
-Although registration details vary between providers, the overall registration model remains consistent across OAuth implementations.
 
 ![OAuth Client Registration](/docs/oauth/oauth-client-registration.png)
 
@@ -76,7 +58,7 @@ Because these endpoints have clearly separated responsibilities, different OAuth
 
 OAuth defines multiple authorization flows to accommodate different application types and security requirements.
 
-Each flow represents a standardized strategy for obtaining delegated authorization while adapting the protocol to the capabilities of the participating client. These strategies, formally known as authorization grants, allow the same authorization model to support web applications, backend services, mobile devices, and constrained environments.
+Each flow adapts the authorization process to a particular application type and security model while preserving the same delegated authorization principles.
 
 Although the exchanged messages differ, every flow ultimately produces delegated access without exposing user credentials.
 
@@ -88,9 +70,7 @@ Although the exchanged messages differ, every flow ultimately produces delegated
 
 Some applications cannot safely protect confidential credentials.
 
-OAuth extends the authorization process with PKCE, allowing public clients to prove that the authorization code is redeemed by the same application that originally requested it.
-
-PKCE proves that the client redeeming an authorization code is the same client that initiated the authorization request.
+OAuth extends the authorization process with PKCE, allowing public clients to prove that the authorization code is redeemed by the same application that initiated the authorization request.
 
 ![OAuth PKCE Flow](/docs/oauth/oauth-pkce-flow.png)
 
@@ -101,8 +81,6 @@ PKCE proves that the client redeeming an authorization code is the same client t
 Delegated authorization requires explicit approval from the resource owner.
 
 OAuth introduces a consent step where users review the permissions requested by a client before authorization is granted. This allows users to understand which resources an application may access and to deny requests that exceed their intended level of trust.
-
-Consent becomes the foundation for controlled permission delegation across independent applications.
 
 ![OAuth User Consent](/docs/oauth/oauth-user-consent.png)
 
@@ -132,13 +110,13 @@ OAuth introduces scopes to limit delegated permissions according to the operatio
 
 # Token Validation
 
-Possessing an access token alone does not guarantee access to protected resources.
+Access tokens must be validated before protected resources are accessed.
 
-Before granting access, resource servers validate the received authorization according to the policies established by the authorization server. Only tokens satisfying the required security and authorization conditions are accepted.
+Resource servers verify that the received token is valid and authorized for the requested operation before processing the request.
 
-This validation process allows protected resources to remain independent from the authorization process itself.
+![OAuth Token Validation Flow](/docs/oauth/oauth-token-validation-flow.png)
 
-![OAuth Token Validation](/docs/oauth/oauth-token-validation.png)
+![OAuth Token Validation Methods Cheat Sheet](/docs/oauth/oauth-token-validation-methods-cheatsheet.png)
 
 ---
 
@@ -146,27 +124,19 @@ This validation process allows protected resources to remain independent from th
 
 OAuth introduces refresh tokens, allowing clients to obtain new access tokens without repeating the authorization process.
 
-![OAuth Refresh Token Flow](/docs/oauth/oauth-refresh-token-flow.png)
+# Authorization Lifetime
 
----
+Delegated authorization is temporary.
 
-# Authorization Lifecycle
+OAuth manages the lifetime of an authorization through short-lived access tokens, optional refresh tokens, expiration policies, and revocation mechanisms. Together, these mechanisms allow applications to maintain authorized sessions while ensuring delegated access eventually expires or can be revoked when necessary.
 
-Delegated authorization is not permanent.
-
-OAuth defines a lifecycle in which authorizations are created, actively used, renewed when appropriate, and eventually expire or are revoked. This allows authorization to adapt to changing security requirements, user decisions, and application policies.
-
-Managing the authorization lifecycle independently from user authentication gives applications greater control over long-term access.
-
-![OAuth Authorization Lifecycle](/docs/oauth/oauth-token-lifecycle.png)
+![OAuth Authorization Lifetime](/docs/oauth/oauth-authorization-lifetime.png)
 
 ---
 
 # Authorization Protection
 
 OAuth incorporates multiple security mechanisms designed to protect the authorization process against common attack vectors.
-
-Rather than relying on a single defense, the protocol combines client identification, secure communication, request validation, authorization verification, and additional protections that work together throughout the authorization lifecycle.
 
 These mechanisms allow OAuth to operate securely across browsers, mobile devices, backend services, and distributed systems.
 
@@ -183,6 +153,14 @@ Modern identity platforms frequently combine OAuth with complementary technologi
 Understanding these relationships makes it easier to distinguish each technology's responsibility and avoid treating OAuth as a complete identity solution.
 
 ---
+
+# OAuth in an Application
+
+OAuth is implemented by configuring an authorization provider, registering a client application, exchanging authorization messages, and validating access tokens when protected resources are requested.
+
+Although the specific libraries differ between frameworks and providers, every OAuth integration follows the same sequence of protocol interactions defined by the standard.
+
+![OAuth Application Integration](/docs/oauth/oauth-application-integration.png)
 
 # Putting Everything Together
 
