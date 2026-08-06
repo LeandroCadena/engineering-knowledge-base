@@ -85,11 +85,3 @@ Ensure that existing functionality continues working after refactoring or adding
 ### Supporting Continuous Integration
 
 Automatically execute tests in CI/CD pipelines before merging or deploying code.
-
----
-
-## Why Learn Jest?
-
-Automated testing is a fundamental practice in modern software engineering. Jest allows developers to verify software continuously, refactor with confidence, and maintain application quality as projects grow.
-
-Learning Jest is not only about writing tests—it is about understanding how professional teams build reliable software that can evolve without introducing unexpected behavior.

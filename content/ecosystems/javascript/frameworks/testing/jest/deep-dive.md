@@ -8,207 +8,157 @@ updatedAt: 2026-08-02
 
 # Test Runner
 
-The Test Runner is the core system of Jest. Every test executed by the framework passes through it.
+The Test Runner coordinates the execution of a Jest test suite.
 
-Its responsibility is not to verify application behavior directly, but to coordinate the entire testing process. It decides what should be executed, prepares the execution workflow, delegates work to the appropriate systems, and produces a single, unified result.
-
-Rather than acting as a simple command that executes files, the Test Runner orchestrates every major capability provided by Jest. Test discovery, execution environments, isolation, mocking, snapshots, coverage analysis, and reporting all operate under its coordination.
-
-This centralized architecture allows Jest to provide a complete testing experience without requiring multiple independent tools.
+It receives the selected test files, schedules their execution, delegates work to the configured environments, and collects the results into a unified report.
 
 ![Jest Test Runner Architecture](/docs/jest/jest-test-runner-architecture.png)
 
 ---
 
-# Test Execution Model
+# Test Structure
 
-Running tests involves much more than simply executing JavaScript code.
+Jest organizes tests into files, test suites, and individual test cases.
 
-Jest organizes every test into a structured execution model that determines how test suites are processed, when individual tests execute, and how results are collected.
-
-This model guarantees that every test follows the same predictable lifecycle regardless of the project's size. As a result, developers can reason about test execution consistently across small applications and large enterprise systems.
-
-Within this execution model, test suites provide logical organization, while individual test cases define the expected behavior that will be verified during execution.
-
-The keywords used to define suites and test cases are part of Jest's public API and are covered later in the accompanying cheat sheet.
+This hierarchical structure groups related behavior together while keeping each test focused on a single scenario. As projects grow, the same organization scales naturally from a few tests to thousands of automated checks.
 
 ![Jest Test Hierarchy](/docs/jest/jest-test-hierarchy.png)
+
+![Jest Test Structure Cheat Sheet](/docs/jest/jest-test-structure-cheatsheet.png)
 
 ---
 
 # Test Discovery
 
-Before any test can run, Jest must determine which files belong to the test suite.
+Before tests can run, Jest must identify which project files belong to the test suite.
 
-Instead of requiring developers to manually register every test file, Jest automatically scans the project and identifies files that match its discovery rules.
-
-This discovery process allows projects to grow without introducing additional configuration every time a new test is created. As long as a file follows the project's discovery conventions, Jest automatically includes it during execution.
-
-The exact naming conventions and configuration options used during discovery are reference material and are provided separately in the Test Discovery Cheat Sheet.
+Using project conventions and configuration rules, Jest automatically discovers test files without requiring manual registration. This allows new tests to become part of the execution process simply by being placed in the appropriate location.
 
 ![Jest Test Discovery](/docs/jest/jest-test-discovery.png)
+
+![Jest Test Discovery Cheat Sheet](/docs/jest/jest-test-discovery-cheatsheet.png)
 
 ---
 
 # Test Environments
 
-Not every application executes in the same runtime.
+Applications may depend on different runtime capabilities depending on where they execute.
 
-Some tests validate backend code that runs inside Node.js, while others verify frontend code that depends on browser APIs.
+Jest runs each test suite inside a configurable environment, allowing backend code to execute with Node.js APIs and browser-oriented code to execute with a simulated browser environment.
 
-To support these different execution contexts, Jest creates an isolated environment before running each test. The environment provides the runtime required by the code under test while remaining independent from the developer's actual application.
+![Jest Test Environments](/docs/jest/jest-test-environment.png)
 
-Because the execution environment is created specifically for testing, Jest can provide predictable behavior regardless of where the application will eventually run.
-
-![Jest Test Environments](/docs/jest/jest-test-environments.png)
+![Jest Test Environments Cheat Sheet](/docs/jest/jest-test-environments-cheatsheet.png)
 
 ---
 
 # Test Isolation
 
-Reliable automated testing depends on independence.
+Reliable tests should produce the same result regardless of the order in which they execute.
 
-A test should never succeed or fail because another test modified shared state before it executed.
-
-For this reason, Jest isolates every test execution from the others. Each test begins with a predictable environment and finishes without leaving state that could influence subsequent executions.
-
-This isolation makes test results reproducible and allows developers to execute tests individually, repeatedly, or in different orders while obtaining consistent results.
+Jest encourages test independence by isolating test suites and providing lifecycle hooks and reset mechanisms that help prevent shared state from affecting subsequent executions.
 
 ![Jest Test Isolation](/docs/jest/jest-test-isolation.png)
+
+![Jest Test Isolation Cheat Sheet](/docs/jest/jest-test-isolation-cheatsheet.png)
 
 ---
 
 # Assertions
 
-Executing code alone does not verify correctness. A test must also define what outcome is expected.
+Assertions verify that the actual result of a test matches the expected behavior.
 
-Jest provides an expectation system that compares the actual result produced during execution with the behavior defined by the developer.
+Jest performs assertions through its `expect()` API and a collection of matchers, allowing tests to validate values, objects, exceptions, asynchronous operations, and many other conditions.
 
-This comparison determines whether a test succeeds or fails and forms the foundation of every automated test written with Jest.
+![Jest Assertions](/docs/jest/jest-assertions.png)
 
-The expectation system is intentionally expressive, allowing tests to describe behavior in a way that remains easy to read even as applications become more complex.
-
-![Jest Matchers Cheat Sheet](/docs/jest/jest-matchers-cheatsheet.png)
+![Jest Assertions Cheat Sheet](/docs/jest/jest-assertions-cheatsheet.png)
 
 ---
 
 # Mocking System
 
-Software rarely executes in complete isolation.
+Tests should verify application behavior without depending on external systems or unpredictable side effects.
 
-Applications communicate with databases, APIs, authentication services, file systems, timers, and many other external dependencies. Using those real dependencies during testing often makes tests slower, more complex, and less predictable.
-
-Jest provides a mocking system that replaces real dependencies with controlled alternatives created specifically for testing.
-
-By controlling external behavior, developers can focus on validating the code under test instead of the systems surrounding it.
+Jest provides a built-in mocking system that allows functions, modules, and objects to be replaced with controlled implementations, enabling deterministic and isolated tests.
 
 ![Jest Mocking System](/docs/jest/jest-mocking-system.png)
 
-![Jest Mocking API Cheat Sheet](/docs/jest/jest-mocking-api-cheatsheet.png)
+![Jest Mocking Cheat Sheet](/docs/jest/jest-mocking-cheatsheet.png)
 
 ---
 
 # Test Lifecycle
 
-Running tests often requires more than executing application code.
+Many tests require preparation before execution and cleanup after they finish.
 
-Some tests need data to be prepared before execution, while others must release resources after they finish. Rather than forcing every test to repeat the same setup and cleanup logic, Jest provides a test lifecycle that allows common work to occur at well-defined moments during execution.
+Jest provides lifecycle hooks that execute at well-defined moments during the execution of a test suite, making it possible to initialize resources, reset state, and release shared resources consistently.
 
-Separating preparation, execution, and cleanup improves readability, reduces duplicated code, and makes test suites easier to maintain as they grow.
+```ts
+beforeEach(() => {
+  database.reset();
+});
 
-![Jest Lifecycle Cheat Sheet](/docs/jest/jest-lifecycle-cheatsheet.png)
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+```
+
+![Jest Test Lifecycle](/docs/jest/jest-test-lifecycle.png)
 
 ---
 
 # Asynchronous Testing
 
-Modern applications spend much of their time waiting.
+Asynchronous operations do not complete immediately, so Jest must know when a test has finished before evaluating its result.
 
-Database queries, HTTP requests, file operations, and many other tasks complete asynchronously rather than immediately. A testing framework must understand this behavior to determine when a test has actually finished.
+Jest supports promises, `async`/`await`, promise matchers, and callback-based completion, allowing tests to wait for asynchronous work before producing a final result.
 
-Jest provides native support for asynchronous execution, allowing tests to wait for operations to complete before evaluating their results.
-
-This ensures that asynchronous code can be tested with the same confidence and predictability as synchronous logic while preserving a consistent execution model.
+![Jest Async Testing Flow](/docs/jest/jest-async-testing-flow.png)
 
 ![Jest Async Testing Cheat Sheet](/docs/jest/jest-async-testing-cheatsheet.png)
 
 ---
 
-# Parameterized Testing
+# Snapshot Testing
 
-Many tests verify the same behavior using different input values.
+Some tests verify complex outputs whose complete structure would be difficult to express through individual assertions.
 
-Writing separate tests for every possible combination quickly leads to duplicated code that is difficult to maintain.
+Jest snapshots capture the expected output during the first execution and compare future executions against the stored version, making unexpected changes immediately visible.
 
-Jest provides a parameterized testing system that executes the same test multiple times using different datasets while keeping the test logic defined only once.
+```ts
+expect(component).toMatchSnapshot();
+```
 
-This approach improves readability, reduces duplication, and encourages broader test coverage with minimal additional code.
+![Jest Snapshot Testing](/docs/jest/jest-snapshot-testing.png)
 
-![Jest Parameterized Tests Cheat Sheet](/docs/jest/jest-parameterized-tests-cheatsheet.png)
-
----
-
-# Test Filtering
-
-Large projects may contain thousands of tests.
-
-Executing every test after every change is not always necessary. During development, developers often need to focus on a specific feature, file, or failing test while temporarily excluding the rest of the suite.
-
-Jest provides several filtering mechanisms that allow subsets of tests to be executed without modifying the overall project structure.
-
-This flexibility shortens feedback cycles during development while preserving the complete test suite for continuous integration.
-
-![Jest Test Filtering Cheat Sheet](/docs/jest/jest-test-filtering-cheatsheet.png)
+![Jest Snapshot Testing Cheat Sheet](/docs/jest/jest-snapshot-testing-cheatsheet.png)
 
 ---
 
-# Snapshot System
+# Code Coverage
 
-Some tests verify complex outputs that would be difficult to compare manually.
+Passing tests do not necessarily mean that every part of the application has been exercised.
 
-Instead of requiring every expected value to be written explicitly inside a test, Jest can store a reference version of the output and compare future executions against it.
+Jest measures code coverage by recording which statements, branches, functions, and lines execute while the test suite runs, helping identify untested portions of the codebase.
 
-Whenever the generated output changes, Jest reports the difference, allowing developers to determine whether the change was intentional or introduced unexpectedly.
+```bash
+npx jest --coverage
+```
 
-This approach is particularly useful when validating large user interfaces, serialized objects, or other structured outputs whose complete representation would otherwise make tests difficult to read.
+![Jest Code Coverage](/docs/jest/jest-code-coverage.png)
 
-![Jest Snapshot Workflow](/docs/jest/jest-snapshot-workflow.png)
-
----
-
-# Coverage System
-
-Knowing that tests pass does not necessarily mean the application has been thoroughly tested.
-
-A feature may execute successfully while significant portions of the codebase remain completely untested.
-
-Jest includes a coverage system that measures which parts of the application were exercised during test execution, allowing developers to identify areas that still require validation.
-
-Coverage is intended to guide testing efforts rather than replace thoughtful test design. High coverage does not automatically imply high-quality tests, but it provides valuable insight into how much of the application has actually been executed.
-
-![Jest Coverage Workflow](/docs/jest/jest-coverage-workflow.png)
+![Jest Code Coverage Cheat Sheet](/docs/jest/jest-code-coverage-cheatsheet.png)
 
 ---
 
-# Watch Mode
+# Configuration
 
-Running the entire test suite after every small code change quickly becomes inefficient.
+Jest centralizes its behavior through a configuration file, allowing projects to customize test discovery, execution environments, code coverage, snapshots, and many other features.
 
-Watch Mode continuously monitors the project for file changes and automatically reruns the relevant tests whenever the source code is modified.
+Configuration can be defined using a dedicated configuration file or through the `package.json` file.
 
-This short feedback loop allows developers to identify problems within seconds, making automated testing feel like part of the development process rather than a separate verification step.
-
-![Jest Watch Mode Cheat Sheet](/docs/jest/jest-watch-mode-cheatsheet.png)
-
----
-
-# Configuration System
-
-Projects rarely share identical testing requirements.
-
-Different applications may require different execution environments, file discovery rules, setup procedures, coverage settings, or reporting behavior.
-
-Jest centralizes these decisions within a configuration system that allows projects to customize how the framework behaves without changing the testing code itself.
+![Jest Configuration](/docs/jest/jest-configuration.png)
 
 ![Jest Configuration Cheat Sheet](/docs/jest/jest-configuration-cheatsheet.png)
 
@@ -216,6 +166,8 @@ Jest centralizes these decisions within a configuration system that allows proje
 
 # Putting Everything Together
 
-Every system introduced throughout this Deep Dive participates in the same execution pipeline. Together, they transform individual test files into a predictable, isolated, and repeatable verification process.
+Running a Jest test involves multiple components working together.
 
-![Putting Everything Together](/docs/jest/jest-putting-everything-together.png)
+From discovering test files to generating the final report, each feature contributes to a different stage of the execution pipeline, resulting in a reliable, isolated, and repeatable testing process.
+
+![Jest Execution Pipeline](/docs/jest/jest-putting-everything-together.png)
