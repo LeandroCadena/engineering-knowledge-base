@@ -1,120 +1,70 @@
 ---
 title: Node.js Overview
-description: Understand why Node.js was created, how it works at a high level, where it fits in modern software systems, and when to use it.
+description: Understand what Node.js is, how it executes JavaScript, where it fits in modern software systems, and the problems it is designed to solve.
+icon: nodejs
 order: 1
-updatedAt: 2026-07-05
 ---
 
 # Node.js
 
 ## Definition
 
-Node.js was created by **Ryan Dahl** in 2009 to solve a scalability problem found in many traditional web servers.
+Node.js is a JavaScript runtime that allows applications to execute JavaScript outside the browser.
 
-Before Node.js, JavaScript could only execute inside web browsers, while backend applications were typically developed using different programming languages. This separation increased development complexity and prevented developers from using JavaScript across the entire application.
+Unlike browser environments, Node.js provides direct access to operating system resources such as the file system, networking, processes, and environment variables, making it possible to build backend applications, command-line tools, and automation scripts using JavaScript.
 
-Traditional web servers commonly assigned one execution thread to every incoming request. While waiting for databases, file systems, or external services to respond, those threads remained occupied without performing useful work.
+Node.js executes JavaScript using Google's V8 JavaScript engine while exposing additional runtime APIs that are unavailable in web browsers.
 
-Node.js introduced a different execution model that minimizes the number of execution threads required to manage large numbers of waiting operations. This approach made it possible to build highly concurrent backend applications while using JavaScript outside the browser.
-
----
-
-## How it Works
-
-Node.js is a **Runtime Environment**, a software environment that provides everything required to execute JavaScript outside the browser.
-
-A Runtime Environment interacts with the operating system, allowing applications to access resources such as the file system, networking, processes, and memory.
-
-Node.js executes JavaScript using the **V8 JavaScript Engine**, the engine responsible for parsing, compiling, and executing JavaScript code.
-
-JavaScript executes on a **single main execution thread**, meaning only one JavaScript instruction can be processed at any given moment.
-
-A **blocking operation** prevents the main execution thread from processing additional JavaScript code until the current operation finishes.
-
-Many operations performed by backend applications involve **I/O (Input/Output)**, including communicating with databases, reading files, sending network requests, or interacting with external APIs. These operations typically spend more time waiting for external resources than executing JavaScript code.
-
-Instead of blocking the main execution thread while waiting, Node.js delegates asynchronous work outside the JavaScript execution thread whenever possible, allowing other JavaScript code to continue executing.
-
-The **Event Loop** coordinates the execution of completed asynchronous operations once the main execution thread becomes available.
-
-Node.js relies on **libuv** to coordinate asynchronous operations and interact with operating system services.
-
-Some operations that cannot be performed asynchronously by the operating system are delegated to a **Worker Pool**, a small group of background threads managed by libuv.
+![Node.js Runtime Model](/docs/nodejs/nodejs-overview-runtime-model.png)
 
 ---
 
 ## How it Fits into the Ecosystem
 
-Node.js primarily runs in the **backend**, the part of an application responsible for executing business logic, accessing data, communicating with external services, and responding to client requests.
+Node.js is commonly used to build backend systems that communicate with users, databases, and external services.
 
-Within modern software systems, Node.js commonly fulfills one of the following roles.
+Because it is a runtime rather than a framework, it can power many different kinds of applications depending on the libraries and frameworks built on top of it.
 
-```text
-                    Node.js
+Some of the most common roles include:
 
-        ┌────────────┼────────────┐
-        │            │            │
-        ▼            ▼            ▼
+- REST APIs
+- Background Workers
+- Serverless Functions
+- Real-time Applications
+- Command-Line Tools
 
-     REST API   Background    Serverless
-                  Worker       Function
-```
-
-### REST API
-
-A **REST API** receives requests over **HTTP**, executes business logic, communicates with databases or external services, and returns a response to the client.
-
-```text
-Browser / Mobile App
-         │
-         ▼
-     REST API
-     (Node.js)
-         │
-         ▼
-      Database
-```
-
-### Background Worker
-
-A **Background Worker** executes tasks without responding directly to users. Instead of processing client requests, it consumes jobs from a **Queue** and performs work asynchronously.
-
-```text
-Application
-      │
-      ▼
-    Queue
-      │
-      ▼
-Background Worker
-    (Node.js)
-      │
-      ▼
-External Service
-```
-
-### Serverless Function
-
-A **Serverless Function** executes code only when triggered by an event. The cloud provider automatically starts the function, executes the required work, and stops it when the execution finishes.
-
-```text
-Event
-  │
-  ▼
-Serverless Function
-     (Node.js)
-  │
-  ▼
-Database
-```
+![Node.js Ecosystem](/docs/nodejs/nodejs-overview-ecosystem.png)
 
 ---
 
-## Real-World Usage
+## What It Looks Like
 
-### When to Use Node.js
+A typical Node.js project contains a `package.json` file that defines project metadata and dependencies, along with one or more JavaScript or TypeScript source files.
 
-Node.js is an excellent choice for **I/O-bound applications**, where most execution time is spent waiting for external resources rather than performing computations.
+Applications are commonly started using npm scripts defined in `package.json`.
+
+```text
+my-app/
+├── package.json
+├── src/
+│   └── server.js
+└── node_modules/
+```
+
+```bash
+npm install
+npm run dev
+```
+
+Node.js applications can be written using either JavaScript or TypeScript and are commonly organized using frameworks such as Express or NestJS.
+
+![Node.js Project Structure](/docs/nodejs/nodejs-overview-project-structure.png)
+
+---
+
+## Common Use Cases
+
+Node.js is particularly well suited for applications that spend most of their time communicating with external systems rather than performing heavy computations.
 
 Common examples include:
 
@@ -126,121 +76,12 @@ Common examples include:
 - API Gateways
 - Streaming services
 
-### When Not to Use Node.js
-
-Node.js is generally not the best choice for **CPU-bound applications**, where most execution time is spent performing intensive calculations.
-
-Examples include:
-
-- Image processing
-- Video encoding
-- Scientific computing
-- Machine learning training
-- Large data transformations
-
-These workloads can block the main JavaScript execution thread and reduce the application's ability to process concurrent requests.
-
-### Advantages
-
-- Uses JavaScript across both frontend and backend.
-- Efficiently handles large numbers of concurrent I/O operations.
-- Large ecosystem and community support.
-- Excellent for scalable network applications.
-- Fast development cycle.
-
-### Trade-offs
-
-- Not ideal for long-running CPU-intensive tasks.
-- Blocking JavaScript code affects the entire execution thread.
-- Some computational workloads require Worker Threads or external services.
-
-### Common Alternatives
-
-Different workloads benefit from different technologies.
-
-Examples include:
-
-- Go for lightweight concurrent services.
-- Java for large enterprise systems and CPU-intensive workloads.
-- C# for applications within the Microsoft ecosystem.
-- Python for automation, AI, and data science workloads.
+Workloads that require intensive CPU computations are generally better suited to technologies specifically designed for parallel computation.
 
 ---
 
-## Practical Examples
+## What's Next?
 
-### Example 1 — REST API
+This overview introduced the role of Node.js within modern software systems.
 
-A client application sends an **HTTP** request to a REST API built with Node.js. The API validates the request, executes the required business logic, retrieves data from the database, and returns a response to the client.
-
-```text
-Browser / Mobile App
-         │
-         ▼
-     REST API
-     (Node.js)
-         │
-         ▼
-      Database
-```
-
-Typical use cases include:
-
-- Authentication systems
-- E-commerce platforms
-- Mobile application backends
-- SaaS products
-- Public APIs
-
----
-
-### Example 2 — Background Worker
-
-An application publishes a job to a **Queue** after completing an operation. A Node.js Background Worker consumes the job asynchronously and performs tasks without affecting the application's response time.
-
-Typical responsibilities include:
-
-- Sending emails
-- Processing uploaded files
-- Generating reports
-- Synchronizing external systems
-- Executing scheduled jobs
-
-```text
-Application
-      │
-      ▼
-    Queue
-      │
-      ▼
-Background Worker
-    (Node.js)
-      │
-      ▼
-External Service
-```
-
----
-
-### Example 3 — Serverless Function
-
-An event triggers a Serverless Function written in Node.js. The function executes a specific task, stores the result if necessary, and automatically terminates once the execution finishes.
-
-Typical use cases include:
-
-- Processing uploaded files
-- Webhook handlers
-- Scheduled tasks
-- API integrations
-- Cloud automations
-
-```text
-Event
-  │
-  ▼
-Serverless Function
-     (Node.js)
-  │
-  ▼
-Database
-```
+The next section explores how Node.js actually works internally, including the V8 engine, the JavaScript execution thread, asynchronous I/O, the Event Loop, libuv, and the Worker Pool.

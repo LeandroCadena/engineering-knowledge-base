@@ -1,785 +1,496 @@
 ---
 title: Node.js Deep Dive
 description: Master the internal concepts that explain how Node.js works from an engineering perspective.
+icon: nodejs
 order: 2
 updatedAt: 2026-07-05
 ---
 
 # Node.js Deep Dive
 
-## Runtime Environment
+# JavaScript Runtime
 
-A **Runtime Environment** is the software responsible for loading an application, providing the resources it needs during execution, and coordinating its interaction with the operating system.
+Node.js extends JavaScript beyond the browser by providing a runtime capable of interacting with the operating system.
 
-Different programming languages use different runtime environments.
-
-Examples include:
-
-- Node.js Runtime
-- Java Virtual Machine (JVM)
-- .NET Common Language Runtime (CLR)
-- Python Interpreter
-
-Although their implementations differ, they all serve the same purpose: providing an execution environment for applications written in a specific programming language.
-
-The Node.js Runtime extends JavaScript beyond the browser by exposing operating system capabilities such as the file system, networking, processes, and environment variables.
-
-The runtime provides the infrastructure required for JavaScript code to execute and interact with the operating system.
-
----
-
-## JavaScript Engine
-
-A **JavaScript Engine** is the component responsible for executing JavaScript code.
-
-Its primary responsibilities are parsing JavaScript source code, compiling it into executable instructions, and executing those instructions.
-
-Different JavaScript runtimes and browsers can use different JavaScript engines.
-
-Examples include:
-
-- V8 (Google Chrome and Node.js)
-- SpiderMonkey (Mozilla Firefox)
-- JavaScriptCore (Safari)
-- Chakra (Microsoft Edge Legacy)
-
-Although their internal implementations differ, they all share the same goal: executing JavaScript efficiently while following the ECMAScript specification.
-
-The JavaScript Engine is one of the core components of the Node.js Runtime and is responsible only for executing JavaScript code. Features such as file system access, networking, and asynchronous I/O are provided by the runtime, not by the engine.
-
----
-
-## V8
-
-**V8** is Google's open-source JavaScript engine, originally developed for Google Chrome and later adopted by Node.js.
-
-Its primary responsibility is executing JavaScript code quickly and efficiently.
-
-V8 parses JavaScript source code, compiles it into machine code, and executes it directly on the CPU.
-
-Unlike traditional interpreters that execute code one instruction at a time, V8 uses **Just-in-Time (JIT) compilation** to improve execution performance.
-
-The engine continuously analyzes running applications and optimizes frequently executed code while maintaining compatibility with the ECMAScript specification.
-
-Node.js relies on V8 exclusively for JavaScript execution. Features such as file system access, networking, asynchronous I/O, and process management are provided by the Node.js Runtime.
-
----
-
-## Execution Thread
-
-An **Execution Thread**, commonly referred to as a **Thread**, is the smallest sequence of instructions that a CPU can execute independently within a running process.
-
-A process can contain one or multiple execution threads. Each thread executes its own sequence of instructions while sharing the process's memory and resources with other threads.
-
-Operating systems schedule execution threads, allowing the CPU to switch between them and execute multiple threads concurrently.
-
-Threads improve application responsiveness by allowing independent tasks to progress without waiting for one another.
-
-Although a process may contain multiple threads, JavaScript code executed by Node.js runs on a single main execution thread.
-
----
-
-## Single Thread
-
-A **Single-Threaded** execution model means that JavaScript code is executed by a single main execution thread.
-
-Only one JavaScript instruction can be executed at any given moment. Before the next instruction can begin, the current one must finish executing.
-
-This execution model makes JavaScript predictable by avoiding multiple threads modifying the same data simultaneously.
-
-Being single-threaded does **not** mean that the entire Node.js Runtime uses only one thread.
-
-The Node.js Runtime uses additional threads internally to perform operations such as file system access, cryptographic functions, data compression, and DNS lookups.
-
-Only JavaScript execution remains single-threaded.
-
-Understanding this distinction is essential:
-
-> **JavaScript is single-threaded, but Node.js is not a single-threaded runtime.**
-
----
-
-## Blocking
-
-A **Blocking Operation** is any operation that prevents the current execution thread from continuing until the operation has finished.
-
-In a single-threaded execution model, a blocking operation prevents all subsequent JavaScript code from executing because only one instruction can be processed at a time.
-
-Blocking operations are especially problematic when they require waiting for external resources, such as databases, file systems, network communication, or external APIs. During this waiting period, the execution thread remains occupied even though it is not actively performing useful computation.
-
-Not all blocking operations involve waiting for external resources. CPU-intensive calculations can also block the execution thread by keeping it busy performing computations for an extended period.
-
-Reducing the amount of time the main execution thread spends blocked is one of the primary design goals of Node.js.
-
-### At a Glance
-
-| Blocking Source          | Blocks the Main Thread |
-| ------------------------ | ---------------------- |
-| Synchronous I/O          | ✅                     |
-| CPU-intensive JavaScript | ✅                     |
-| Asynchronous I/O         | ❌                     |
-
-### Common Misconceptions
-
-❌ Blocking only happens during I/O.
-
-✅ CPU-intensive JavaScript can also block the main execution thread.
-
----
-
-## Concurrency
-
-**Concurrency** is the ability of a system to make progress on multiple tasks during the same period of time.
-
-Concurrent tasks do not necessarily execute at the exact same moment. Instead, the system coordinates their execution by switching between tasks whenever progress can be made.
-
-**Parallelism** is different. It refers to multiple tasks executing simultaneously on different CPU cores or execution threads.
-
-Node.js achieves high concurrency by allowing the main execution thread to continue executing JavaScript while waiting for I/O operations to complete.
-
-This approach enables a single execution thread to manage thousands of concurrent operations without requiring thousands of execution threads.
-
-### At a Glance
-
-| Concept     | Meaning                                |
-| ----------- | -------------------------------------- |
-| Concurrency | Multiple tasks make progress over time |
-| Parallelism | Multiple tasks execute simultaneously  |
-
-### Common Misconceptions
-
-❌ Concurrency and Parallelism are the same thing.
-
-✅ Concurrency focuses on coordinating tasks efficiently, while Parallelism focuses on executing tasks simultaneously.
-
----
-
-## Asynchronous Programming
-
-**Asynchronous Programming** is a programming model that allows an application to continue executing other work while waiting for an operation to complete.
-
-Instead of stopping the execution thread until an operation finishes, the application schedules the operation and continues executing the next available instructions.
-
-When the operation completes, its result is processed later without blocking the execution of other JavaScript code.
-
-Asynchronous programming does not mean that multiple JavaScript instructions execute simultaneously. JavaScript execution remains single-threaded.
-
-Its primary goal is reducing idle time caused by waiting for external resources, improving application responsiveness and increasing concurrency.
-
-Node.js uses asynchronous programming extensively for operations such as file system access, networking, database communication, and interactions with external services.
-
-### At a Glance
-
-| Characteristic                 | Asynchronous Programming |
-| ------------------------------ | ------------------------ |
-| Blocks execution               | ❌                       |
-| Improves concurrency           | ✅                       |
-| Creates new JavaScript threads | ❌                       |
-
-### Common Misconceptions
-
-❌ Asynchronous programming means JavaScript runs on multiple threads.
-
-✅ JavaScript execution remains single-threaded. Asynchronous operations allow other work to continue while waiting for external resources.
-
----
-
-## I/O Operations
-
-**I/O (Input/Output) Operations** are operations that exchange data between an application and external resources.
-
-Unlike CPU operations, which perform computations directly on the processor, I/O operations spend most of their execution time waiting for external systems to respond.
-
-Common I/O operations include:
-
-- Reading or writing files.
-- Sending or receiving network requests.
-- Querying databases.
-- Communicating with external APIs.
-- Reading user input.
-
-Blocking the main execution thread while waiting for these operations would prevent the application from processing additional work.
-
-Node.js minimizes this waiting time by executing I/O operations asynchronously whenever possible.
-
-### At a Glance
-
-Common I/O operations:
-
-- File System
-- Database Queries
-- HTTP Requests
-- TCP/UDP Communication
-- DNS Resolution
-
-### Common Misconceptions
-
-❌ I/O operations are CPU-intensive.
-
-✅ Most I/O operations spend significantly more time waiting than executing.
-
----
-
-## Event Loop
-
-The **Event Loop** is the mechanism responsible for coordinating asynchronous operations and determining when their associated JavaScript callbacks can be executed.
-
-Without the Event Loop, JavaScript would have no way of knowing when an asynchronous operation had completed or when it was safe to resume execution.
-
-The Event Loop does not execute JavaScript code itself. JavaScript execution is performed by the JavaScript Engine. The Event Loop only decides **when** queued work can enter execution.
-
-Understanding the Event Loop requires understanding the components that participate in its execution flow.
-
-### Call Stack
-
-The **Call Stack** is the data structure used by the JavaScript Engine to keep track of the functions currently being executed.
-
-Every time a function is called, it is pushed onto the top of the Call Stack. When the function finishes executing, it is removed from the stack.
-
-Only one function can execute at a time because JavaScript executes on a single main execution thread.
-
-The Event Loop only schedules new work when the Call Stack becomes empty.
-
-### Callback Queue
-
-The **Callback Queue** stores callbacks whose asynchronous operations have already completed and are waiting to be executed.
-
-Completing an asynchronous operation does not immediately execute its callback. Instead, the callback is placed in the Callback Queue until the Event Loop determines that the Call Stack is empty.
-
-The Callback Queue preserves the order in which callbacks become ready for execution.
-
-### Microtasks
-
-**Microtasks** are high-priority asynchronous tasks executed immediately after the current JavaScript execution finishes and before the Event Loop continues with its normal execution phases.
-
-Common sources of Microtasks include:
-
-- `Promise.then()`
-- `Promise.catch()`
-- `Promise.finally()`
-- `queueMicrotask()`
-
-The Event Loop always processes every pending Microtask before continuing.
-
-### Macrotasks
-
-**Macrotasks** represent asynchronous tasks scheduled to execute during future iterations of the Event Loop.
-
-Common sources of Macrotasks include:
-
-- `setTimeout()`
-- `setInterval()`
-- I/O callbacks
-- `setImmediate()`
-
-Macrotasks execute only after the Call Stack becomes empty and all pending Microtasks have finished.
-
-### process.nextTick()
-
-`process.nextTick()` is a Node.js mechanism that schedules a callback immediately after the current JavaScript execution completes.
-
-Callbacks scheduled with `process.nextTick()` execute before the Event Loop continues to its next phase and before pending Microtasks.
-
-Because `process.nextTick()` has the highest execution priority, excessive use can delay I/O processing and negatively affect application responsiveness.
-
-### setImmediate()
-
-`setImmediate()` schedules a callback during the **Check** phase of the next Event Loop iteration.
-
-Unlike `process.nextTick()`, `setImmediate()` allows the Event Loop to continue processing pending I/O operations before executing its callback.
-
-It is commonly used when work should be deferred without interrupting the normal progression of the Event Loop.
-
-:::at-a-glance
-
-### Execution Priority
-
-| Priority | Executes                                     |
-| -------- | -------------------------------------------- |
-| 1        | Current JavaScript Execution                 |
-| 2        | `process.nextTick()`                         |
-| 3        | Promise Microtasks                           |
-| 4        | Event Loop Phases (Timers, I/O, Check, etc.) |
-
-### Common Microtasks
-
-- `Promise.then()`
-- `Promise.catch()`
-- `Promise.finally()`
-- `queueMicrotask()`
-
-### Common Macrotasks
-
-- `setTimeout()`
-- `setInterval()`
-- I/O callbacks
-- `setImmediate()`
-
-:::
-
-:::misconceptions
-
-❌ Promises execute immediately.
-
-✅ Promise callbacks execute only after the current JavaScript execution completes.
-
----
-
-❌ `setTimeout(fn, 0)` executes immediately.
-
-✅ The callback executes only when the Event Loop reaches the Timers phase and the Call Stack is empty.
-
----
-
-❌ The Event Loop executes JavaScript.
-
-✅ JavaScript is executed by the JavaScript Engine. The Event Loop only schedules when queued callbacks may execute.
-
-:::
-
-:::example
+While the JavaScript engine is responsible for executing JavaScript code, the runtime adds the infrastructure required to build backend applications, including access to the file system, networking, processes, timers, streams, cryptography, and other operating system capabilities.
 
 ```js
-console.log('A');
+import fs from 'node:fs';
+import http from 'node:http';
+import crypto from 'node:crypto';
 
-setTimeout(() => console.log('B'), 0);
+console.log(fs.existsSync('package.json'));
+console.log(process.platform);
 
-Promise.resolve().then(() => console.log('C'));
+const hash = crypto.randomUUID();
 
-process.nextTick(() => console.log('D'));
+const server = http.createServer();
 
-console.log('E');
+server.listen(3000);
 ```
 
-Output:
+These APIs are not part of the JavaScript language itself. They are provided by the Node.js runtime and are available because the application executes outside the browser.
 
-```text
-A
-E
-D
-C
-B
-```
+The runtime also coordinates asynchronous operations, manages system resources, and provides the execution environment that allows JavaScript applications to interact with the operating system.
 
-Execution order:
-
-1. Current JavaScript execution.
-2. `process.nextTick()`.
-3. Promise Microtasks.
-4. `setTimeout()` callback.
-
-:::
+![Node.js Runtime Architecture](/docs/nodejs/nodejs-runtime-architecture.png)
 
 ---
 
-## libuv
+# Single JavaScript Execution Thread
 
-**libuv** is a cross-platform C library that provides Node.js with asynchronous I/O capabilities and access to operating system services.
+JavaScript code in Node.js executes on a single main execution thread.
 
-The JavaScript Engine executes JavaScript code, while libuv coordinates asynchronous operations such as file system access, networking, DNS resolution, timers, and process management.
-
-Whenever JavaScript requests an asynchronous operation, the Node.js Runtime delegates the work to libuv instead of blocking the main execution thread.
-
-Whenever possible, libuv relies on asynchronous operating system APIs. If the operating system does not provide an asynchronous implementation for a particular operation, libuv delegates the work to its internal Worker Pool.
-
-Once an asynchronous operation completes, libuv notifies the Event Loop, allowing the associated callback to be scheduled for execution.
-
-Without libuv, Node.js would not be able to provide its non-blocking execution model.
-
-:::at-a-glance
-
-### Responsibilities
-
-- Coordinate asynchronous I/O.
-- Communicate with the operating system.
-- Manage timers.
-- Manage the Worker Pool.
-- Notify the Event Loop when operations complete.
-
-### Delegation Flow
-
-```text
-JavaScript
-
-↓
-
-libuv
-
-↓
-
-Operating System
-or
-Worker Pool
-```
-
-:::
-
-:::misconceptions
-
-❌ libuv executes JavaScript.
-
-✅ JavaScript is executed only by the JavaScript Engine (V8).
-
----
-
-❌ Every asynchronous operation uses the Worker Pool.
-
-✅ libuv first attempts to use native asynchronous operating system APIs. The Worker Pool is used only when necessary.
-
-:::
-
----
-
-## Worker Pool
-
-The **Worker Pool** is a small group of background threads managed by libuv to execute operations that cannot be performed asynchronously by the operating system.
-
-Whenever possible, libuv relies on native asynchronous operating system APIs because they do not require additional threads.
-
-When asynchronous operating system APIs are unavailable, libuv delegates the work to one of the Worker Pool threads while the main JavaScript execution thread continues executing other tasks.
-
-Once the operation completes, libuv notifies the Event Loop, which schedules the corresponding callback for execution.
-
-The Worker Pool improves application responsiveness without changing JavaScript's single-threaded execution model.
-
-:::at-a-glance
-
-### Common Worker Pool Operations
-
-| Operation      | Worker Pool |
-| -------------- | ----------- |
-| File System    | ✅          |
-| DNS Lookup     | ✅          |
-| Crypto         | ✅          |
-| Compression    | ✅          |
-| TCP Networking | ❌          |
-| HTTP Requests  | ❌          |
-
-:::
-
-:::misconceptions
-
-❌ Node.js executes every asynchronous operation using the Worker Pool.
-
-✅ Most networking operations rely directly on asynchronous operating system APIs.
-
----
-
-❌ Worker Pool threads execute JavaScript.
-
-✅ Worker Pool threads execute native operations. JavaScript always executes on the main execution thread.
-
-:::
-
----
-
-## Worker Threads
-
-**Worker Threads** allow JavaScript code to execute on additional execution threads.
-
-Unlike the Worker Pool, which is managed internally by libuv, Worker Threads are explicitly created by the application.
-
-Worker Threads are designed for CPU-intensive JavaScript workloads that would otherwise block the main execution thread.
-
-Each Worker Thread has its own JavaScript Engine instance, its own Event Loop, and its own execution context.
-
-Because Worker Threads execute JavaScript independently, communication between threads occurs through message passing rather than shared execution.
-
-:::at-a-glance
-
-### Worker Pool vs Worker Threads
-
-| Worker Pool                | Worker Threads             |
-| -------------------------- | -------------------------- |
-| Managed by libuv           | Created by the application |
-| Executes native operations | Executes JavaScript        |
-| Used automatically         | Used explicitly            |
-| Mainly I/O support         | Mainly CPU-intensive work  |
-
-:::
-
-:::misconceptions
-
-❌ Worker Threads are the same as the Worker Pool.
-
-✅ They solve different problems and operate independently.
-
-:::
-
-:::example
+Only one JavaScript instruction can run at a time. Before the next instruction begins, the current one must finish executing.
 
 ```js
-// CPU-intensive work
+console.log('First');
 
-// Main Thread
-new Worker('./worker.js');
+console.log('Second');
+
+console.log('Third');
 ```
 
-Worker Threads are typically used for image processing, video processing, large calculations, data analysis, or other CPU-intensive workloads that should not block the main JavaScript execution thread.
+```text
+First
+Second
+Third
+```
 
-:::
+This sequential execution model makes JavaScript predictable because only one piece of JavaScript code modifies application state at any given moment.
+
+Although JavaScript execution is single-threaded, the Node.js runtime itself is not. Internal runtime components can perform work outside the main JavaScript execution thread, allowing the application to remain responsive while JavaScript continues executing.
+
+The following diagram illustrates how JavaScript execution is isolated to a single main thread.
+
+![Node.js Single JavaScript Thread](/docs/nodejs/nodejs-single-thread.png)
 
 ---
 
-## Buffers
+# Non-Blocking I/O
 
-A **Buffer** is a block of memory used to store binary data.
+Many operations performed by backend applications involve waiting for external resources, such as files, databases, network connections, or APIs.
 
-Unlike strings, which represent text, Buffers represent raw bytes exactly as they are received or transmitted.
+If JavaScript waited for each operation to finish before continuing, the main execution thread would remain idle and the application would become unresponsive while waiting.
 
-Node.js uses Buffers extensively because most communication with external systems—including files, network sockets, and streams—involves binary data rather than plain text.
+Node.js avoids this problem by exposing non-blocking APIs for most I/O operations.
 
-Working directly with Buffers avoids unnecessary data conversions and improves performance.
+```js
+import fs from 'node:fs';
 
-:::at-a-glance
+console.log('Start');
 
-### Common Uses
+fs.readFile('users.json', 'utf8', (error, data) => {
+  console.log('File loaded');
+});
+
+console.log('Application continues...');
+```
+
+```text
+Start
+Application continues...
+File loaded
+```
+
+Instead of waiting for the file to be read, Node.js immediately continues executing JavaScript while the operation completes in the background.
+
+This allows the main JavaScript execution thread to remain available for other work instead of sitting idle while waiting for external resources.
+
+The following diagram compares blocking and non-blocking execution.
+
+![Node.js Non-Blocking I/O](/docs/nodejs/nodejs-non-blocking-io.png)
+
+---
+
+# Asynchronous Programming Model
+
+Node.js applications spend much of their time waiting for external resources such as files, databases, or network responses.
+
+Instead of blocking the main JavaScript thread while waiting, asynchronous programming allows work to continue and handles the result when it becomes available.
+
+Over time, JavaScript has introduced several ways to express asynchronous operations.
+
+### Callbacks
+
+```js
+fs.readFile('users.json', (error, data) => {
+  console.log(data);
+});
+```
+
+### Promises
+
+```js
+fetch('/users')
+  .then((response) => response.json())
+  .then((users) => console.log(users));
+```
+
+### async / await
+
+```js
+const response = await fetch('/users');
+const users = await response.json();
+
+console.log(users);
+```
+
+Although the syntax has evolved, each approach expresses the same idea: start an operation now and process its result later without blocking JavaScript execution.
+
+The next chapter explains how Node.js schedules these asynchronous operations internally using the Event Loop.
+
+---
+
+# Event Loop
+
+The Event Loop is the scheduling mechanism that allows Node.js to resume JavaScript execution after asynchronous operations complete.
+
+When an asynchronous operation finishes, its callback is not executed immediately. Instead, the Event Loop waits until the main JavaScript execution thread becomes available before scheduling that callback for execution.
+
+This coordination allows JavaScript to remain single-threaded while still handling many asynchronous operations efficiently.
+
+```js
+console.log('Start');
+
+setTimeout(() => {
+  console.log('Finished');
+}, 1000);
+
+console.log('Running...');
+```
+
+```text
+Start
+Running...
+Finished
+```
+
+The callback executes only after the current JavaScript execution has completed and the Event Loop determines that the main execution thread is ready for more work.
+
+The next chapter explores the internal queues and execution priorities that the Event Loop uses to decide what runs next.
+
+![Node.js Event Loop](/docs/nodejs/nodejs-event-loop.png)
+
+---
+
+# Task Scheduling
+
+When the Event Loop determines that JavaScript can continue executing, multiple callbacks may already be waiting to run.
+
+Node.js organizes pending work into different scheduling mechanisms, each with a specific execution priority.
+
+The following example schedules several asynchronous tasks.
+
+```js
+console.log('Start');
+
+setTimeout(() => console.log('setTimeout'), 0);
+
+setImmediate(() => console.log('setImmediate'));
+
+Promise.resolve().then(() => {
+  console.log('Promise');
+});
+
+process.nextTick(() => {
+  console.log('nextTick');
+});
+
+console.log('End');
+```
+
+```text
+Start
+End
+nextTick
+Promise
+setTimeout
+setImmediate
+```
+
+Although every callback is asynchronous, they do not execute in the order they were created.
+
+Instead, Node.js applies its scheduling rules to determine which callback executes next.
+
+The following diagram summarizes the execution priority of the most common scheduling mechanisms.
+
+![Node.js Task Scheduling](/docs/nodejs/nodejs-task-scheduling.png)
+
+---
+
+# libuv
+
+The Node.js runtime relies on **libuv** to coordinate asynchronous operations and communicate with the operating system.
+
+Whenever JavaScript requests an asynchronous operation, Node.js delegates that work to libuv instead of blocking the main JavaScript execution thread.
+
+```js
+import fs from 'node:fs';
+
+fs.readFile('users.json', (error, data) => {
+  console.log(data);
+});
+```
+
+Although the application only calls `fs.readFile()`, the operation is coordinated internally by libuv.
+
+libuv is responsible for:
+
+- Communicating with operating system APIs.
+- Managing asynchronous I/O.
+- Managing timers.
+- Coordinating the Event Loop.
+- Delegating work when necessary.
+
+The following diagram illustrates libuv's role inside the Node.js runtime.
+
+![Node.js libuv](/docs/nodejs/nodejs-libuv.png)
+
+---
+
+# Worker Pool
+
+Some operations cannot be performed asynchronously using the operating system alone.
+
+For these operations, libuv delegates the work to a small pool of background threads known as the **Worker Pool**.
+
+While a worker thread performs the operation, the main JavaScript execution thread remains free to continue executing other code.
+
+The Worker Pool is commonly used for operations such as:
 
 - File system operations
-- Network communication
+- Cryptographic functions
+- Compression
+- DNS lookups
+
+```js
+import crypto from 'node:crypto';
+
+crypto.pbkdf2('password', 'salt', 100000, 64, 'sha512', () => {
+  console.log('Hash generated');
+});
+
+console.log('Application continues...');
+```
+
+The JavaScript thread does not wait for the hash to be generated. Instead, libuv delegates the work to the Worker Pool and schedules the callback once the operation completes.
+
+The following diagram summarizes which operations typically use the Worker Pool.
+
+![Node.js Worker Pool](/docs/nodejs/nodejs-worker-pool.png)
+
+---
+
+# Worker Threads
+
+The Worker Pool executes internal runtime operations such as file system access and cryptographic functions.
+
+However, if the application itself needs to execute CPU-intensive JavaScript code, that work still runs on the main JavaScript thread and can block the application.
+
+Worker Threads allow JavaScript code to execute on additional threads, enabling true parallel execution of JavaScript workloads.
+
+```js
+import { Worker } from 'node:worker_threads';
+
+const worker = new Worker('./worker.js');
+
+worker.on('message', (result) => {
+  console.log(result);
+});
+
+worker.postMessage({
+  numbers: [1, 2, 3],
+});
+```
+
+Unlike the Worker Pool, Worker Threads are created and managed explicitly by the application.
+
+They are typically used for CPU-intensive algorithms, image processing, data analysis, or other long-running computations written in JavaScript.
+
+The following diagram compares the Worker Pool with Worker Threads.
+
+![Node.js Worker Threads](/docs/nodejs/nodejs-worker-threads.png)
+
+---
+
+# Core Modules
+
+Node.js includes a rich set of built-in modules that provide access to common system functionality without requiring third-party packages.
+
+These modules are available immediately after installing Node.js and can be imported using the `node:` prefix.
+
+```js
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import http from 'node:http';
+import os from 'node:os';
+```
+
+The standard library covers many common backend tasks, including:
+
+- File system access
+- Networking
+- Cryptography
+- Compression
 - Streams
-- Binary protocols
+- Events
+- Process management
+- Path manipulation
 
-:::
+Although most applications also rely on external npm packages, the built-in modules provide the foundation for many Node.js applications and frameworks.
 
-:::misconceptions
+The following diagram groups the most commonly used core modules by responsibility.
 
-❌ Network requests return strings.
+![Node.js Core Modules](/docs/nodejs/nodejs-core-modules.png)
 
-✅ Data is typically received as binary data and represented internally using Buffers.
+---
 
-:::
+# Buffers
 
-:::example
+Many operating system APIs work with raw binary data instead of JavaScript strings or objects.
+
+Node.js provides the `Buffer` class to represent and manipulate binary data efficiently.
+
+Buffers are commonly used when reading files, receiving network packets, processing streams, or working with cryptographic operations.
 
 ```js
 const buffer = Buffer.from('Hello');
 
 console.log(buffer);
-```
 
-Output:
+console.log(buffer.toString());
+```
 
 ```text
 <Buffer 48 65 6c 6c 6f>
+
+Hello
 ```
 
-:::
+Buffers store bytes directly in memory, allowing Node.js to exchange data efficiently with the operating system and external systems.
+
+Most developers use Buffers indirectly through APIs such as file system operations, networking, and streams, although they can also be manipulated directly when working with binary protocols or custom file formats.
+
+The following diagram illustrates how Buffers bridge JavaScript values and binary data.
+
+![Node.js Buffers](/docs/nodejs/nodejs-buffers.png)
 
 ---
 
-## Streams
+# Streams
 
-A **Stream** is an abstraction that allows data to be processed progressively as it becomes available instead of waiting for the complete data set.
+Loading an entire file into memory is often unnecessary and inefficient, especially when working with large files or continuous data.
 
-Streams reduce memory usage because applications process small chunks of data rather than loading entire files or network responses into memory.
+Node.js provides **Streams**, which process data incrementally as it becomes available.
 
-This makes Streams especially useful when working with large files, network communication, or continuous data sources.
-
-:::at-a-glance
-
-### Stream Types
-
-| Type      | Purpose                     |
-| --------- | --------------------------- |
-| Readable  | Consume data                |
-| Writable  | Produce data                |
-| Duplex    | Read and write              |
-| Transform | Modify data while streaming |
-
-:::
-
-:::misconceptions
-
-❌ A file must be fully loaded before it can be processed.
-
-✅ Streams allow applications to process data incrementally.
-
-:::
-
-:::example
+Instead of waiting for the complete dataset, applications consume small chunks of data while the operation is still in progress.
 
 ```js
-fs.createReadStream('video.mp4');
+import fs from 'node:fs';
+
+const source = fs.createReadStream('input.txt');
+const destination = fs.createWriteStream('output.txt');
+
+source.pipe(destination);
 ```
 
-Instead of loading the entire file into memory, Node.js processes it in small chunks.
+Streams are commonly used for:
 
-:::
+- Reading large files
+- Writing files
+- HTTP responses
+- File uploads
+- Media streaming
+- Data transformations
+
+Because data is processed progressively, Streams reduce memory usage and allow applications to start working before the entire operation has completed.
+
+The following diagram illustrates how data flows through a stream pipeline.
+
+![Node.js Streams](/docs/nodejs/nodejs-streams.png)
 
 ---
 
-## EventEmitter
+# EventEmitter
 
-**EventEmitter** is the event-driven communication mechanism used throughout Node.js.
+Many Node.js components communicate by publishing events instead of calling each other directly.
 
-Instead of components calling one another directly, they can emit events that other parts of the application listen for and react to.
-
-This approach reduces coupling and allows independent components to communicate without knowing about each other's internal implementation.
-
-Many Node.js APIs, including Streams, HTTP servers, and file system watchers, are built on top of EventEmitter.
-
-:::at-a-glance
-
-### Core Methods
-
-| Method   | Purpose             |
-| -------- | ------------------- |
-| `on()`   | Listen for an event |
-| `once()` | Listen once         |
-| `emit()` | Emit an event       |
-| `off()`  | Remove a listener   |
-
-:::
-
-:::misconceptions
-
-❌ EventEmitter executes code asynchronously.
-
-✅ Emitting an event executes its listeners synchronously unless they explicitly schedule asynchronous work.
-
-:::
-
-:::example
+The `EventEmitter` class implements the Observer pattern, allowing one object to emit events while one or more listeners react to them independently.
 
 ```js
-emitter.on('login', () => {
-  console.log('User logged in');
+import { EventEmitter } from 'node:events';
+
+const emitter = new EventEmitter();
+
+emitter.on('user.created', (user) => {
+  console.log(user.name);
 });
 
-emitter.emit('login');
+emitter.emit('user.created', {
+  name: 'Alice',
+});
 ```
 
-:::
+The most commonly used methods are:
+
+- `on()` – Register a listener.
+- `once()` – Register a listener that executes only once.
+- `emit()` – Emit an event.
+- `off()` – Remove a listener.
+
+This event-driven model reduces coupling between components and is widely used throughout Node.js, including streams, HTTP servers, and many third-party libraries.
+
+The following diagram summarizes how events flow through an `EventEmitter`.
+
+![Node.js EventEmitter](/docs/nodejs/nodejs-event-emitter.png)
 
 ---
 
-## Memory
+# Memory Management
 
-Every running Node.js application uses memory to store variables, objects, functions, and application state.
+Node.js applications rely on the V8 JavaScript engine to manage memory automatically.
 
-The two primary memory regions involved in JavaScript execution are the **Stack** and the **Heap**.
+Instead of manually allocating and freeing memory, JavaScript objects are created as needed and automatically reclaimed when they are no longer reachable.
 
-The **Stack** stores function execution contexts and local values. It is fast and automatically managed as functions are called and completed.
+Memory is primarily divided into two areas:
 
-The **Heap** stores dynamically allocated objects whose lifetime is not tied directly to function execution.
+- **Stack** – Stores function calls and primitive values.
+- **Heap** – Stores objects, arrays, functions, and other reference types.
 
-V8 automatically manages both memory regions throughout the application's execution.
+```js
+function createUser() {
+  const id = 1;
+  const name = 'Alice';
 
-:::at-a-glance
+  return {
+    id,
+    name,
+  };
+}
 
-| Region | Purpose                    |
-| ------ | -------------------------- |
-| Stack  | Function execution         |
-| Heap   | Objects and dynamic memory |
+const user = createUser();
+```
 
-:::
+In this example, primitive values are stored on the stack, while the returned object is allocated on the heap.
 
----
+When objects are no longer referenced, V8's **Garbage Collector (GC)** automatically releases their memory, helping prevent memory leaks without requiring manual memory management.
 
-## Garbage Collection
+The following diagram illustrates how memory is organized inside a Node.js application.
 
-**Garbage Collection** is the automatic process of reclaiming memory occupied by objects that are no longer reachable by the application.
-
-Instead of requiring developers to manually free memory, V8 continuously identifies unused objects and releases their memory.
-
-Automatic memory management simplifies application development but does not eliminate memory leaks. Objects that remain referenced unnecessarily continue occupying memory until those references are removed.
-
-:::at-a-glance
-
-### Key Ideas
-
-- Automatic memory management.
-- Frees unreachable objects.
-- Prevents most manual memory errors.
-- Does not automatically prevent memory leaks.
-
-:::
-
-:::misconceptions
-
-❌ JavaScript cannot have memory leaks.
-
-✅ Objects that remain referenced unnecessarily cannot be collected.
-
-:::
+![Node.js Memory Management](/docs/nodejs/nodejs-memory-management.png)
 
 ---
 
 # Putting Everything Together
 
-The following sequence summarizes how the main components of Node.js collaborate to execute asynchronous JavaScript applications.
+A Node.js application combines all the concepts introduced throughout this guide.
 
-```text
-                    JavaScript Code
-                           │
-                           ▼
-                  Node.js Runtime Environment
-                           │
-                           ▼
-                 JavaScript Engine (V8)
-                           │
-                           ▼
-              Main JavaScript Execution Thread
-                           │
-                           ▼
-               Asynchronous I/O Operation
-                           │
-                           ▼
-                         libuv
-                  ┌────────┴────────┐
-                  │                 │
-                  ▼                 ▼
-      Operating System      Worker Pool (if required)
-                  │                 │
-                  └────────┬────────┘
-                           ▼
-                 Asynchronous Operation
-                       Completes
-                           │
-                           ▼
-                         libuv
-                           │
-                           ▼
-                      Event Loop
-                           │
-                           ▼
-                 Callback Ready to Execute
-                           │
-                           ▼
-                      Call Stack Empty?
-                           │
-                  ┌────────┴────────┐
-                  │                 │
-                 No                Yes
-                  │                 │
-                  ▼                 ▼
-             Keep Waiting     Execute Callback
-                                    │
-                                    ▼
-                           JavaScript Continues
-```
+JavaScript executes on the main execution thread, built-in Node.js APIs delegate asynchronous work to libuv, operating system services or the Worker Pool perform that work, and completed operations are scheduled by the Event Loop before JavaScript resumes execution.
 
-Every JavaScript instruction is executed by the JavaScript Engine running on the main JavaScript execution thread.
+Meanwhile, V8 manages memory automatically, Streams process data efficiently, Buffers represent binary data, EventEmitter enables event-driven communication, and Worker Threads provide optional parallel execution for CPU-intensive JavaScript workloads.
 
-Whenever JavaScript requests an asynchronous operation, the Node.js Runtime delegates that work to libuv instead of blocking the execution thread.
+The following diagram illustrates how these runtime components collaborate during the lifetime of a typical Node.js application.
 
-Whenever possible, libuv relies on asynchronous operating system APIs. If the operating system cannot perform the operation asynchronously, libuv delegates it to the Worker Pool.
-
-Once the operation completes, libuv notifies the Event Loop.
-
-The Event Loop waits until the Call Stack becomes empty before scheduling the corresponding callback for execution.
-
-Throughout the entire process, JavaScript execution remains single-threaded while asynchronous work progresses independently of the main execution thread.
-
----
-
-## Final Perspective
-
-Node.js is not fast because JavaScript executes faster than other programming languages.
-
-Node.js is fast because it minimizes the amount of time the main JavaScript execution thread spends waiting for external resources.
-
-The combination of asynchronous programming, the Event Loop, libuv, and the operating system allows a single JavaScript execution thread to coordinate thousands of concurrent I/O operations efficiently.
-
-Understanding how these components collaborate is more valuable than memorizing individual APIs, because the same execution model applies throughout the entire Node.js ecosystem.
+![Node.js Runtime Architecture](/docs/nodejs/nodejs-putting-everything-together.png)
