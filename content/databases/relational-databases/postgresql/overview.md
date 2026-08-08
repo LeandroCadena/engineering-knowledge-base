@@ -1,167 +1,89 @@
 ---
 title: PostgreSQL Overview
-description: Understand what PostgreSQL is, why relational databases exist, and how applications persist and organize data reliably.
+description: Learn what PostgreSQL is, how it stores and retrieves persistent data, where it fits in modern software architectures, and the most common ways it is used.
+icon: postgresql.png
 order: 1
 updatedAt: 2026-07-05
 ---
 
-# PostgreSQL
+# PostgreSQL Overview
 
 ## Definition
 
-PostgreSQL is an open-source relational database management system (RDBMS) designed to store, organize, and retrieve structured data reliably.
+PostgreSQL is an open-source relational database management system (RDBMS) designed to store, organize, and retrieve persistent data reliably.
 
-Unlike application memory, which is temporary and disappears when a process stops, databases provide persistent storage that survives application restarts, server failures, and deployments.
+Unlike application memory, which is temporary and disappears when a process stops, PostgreSQL stores information permanently on disk, allowing applications to preserve data across restarts, deployments, and system failures.
 
-Applications use PostgreSQL to store business data such as:
+Applications use PostgreSQL to manage business information such as users, products, orders, payments, employees, inventory, and many other types of structured data.
 
-- Users
-- Orders
-- Products
-- Payments
-- Employees
-- Inventory
-- Audit logs
+PostgreSQL combines SQL, relational modeling, and transactional consistency, making it one of the most widely used databases for modern backend applications.
 
-PostgreSQL combines relational modeling, transactional consistency, and powerful querying capabilities, making it one of the most widely used databases in modern backend systems.
+![PostgreSQL Overview](/docs/postgresql/postgresql-overview.png)
 
 ---
 
-## How it Works
+## How It Works
 
-Applications send SQL statements to PostgreSQL.
+Applications communicate with PostgreSQL by sending SQL statements.
 
-PostgreSQL executes those statements against its internal storage engine and returns the requested data.
+PostgreSQL receives each statement, processes it, retrieves or modifies the requested data, and returns the result to the application.
 
-```text
-Application
+Rather than interacting directly with files on disk, applications work with a structured database that efficiently organizes, indexes, and manages information.
 
-↓
+This abstraction allows developers to query and update large amounts of data without managing the underlying storage themselves.
 
-SQL Query
-
-↓
-
-PostgreSQL
-
-↓
-
-Storage Engine
-
-↓
-
-Disk
-
-↓
-
-Result
-```
-
-Unlike files stored on disk, PostgreSQL organizes information using relational structures that allow efficient querying, consistency, and concurrent access by thousands of clients.
+![PostgreSQL Architecture](/docs/postgresql/postgresql-architecture.png)
 
 ---
 
-## Why Relational Databases Exist
-
-Applications rarely store isolated pieces of information.
-
-Business data is connected.
-
-For example:
-
-- A customer places many orders.
-- An order contains many products.
-- A payment belongs to an order.
-- An employee belongs to a department.
-
-Relational databases model these relationships explicitly.
-
-Rather than duplicating information repeatedly, they connect related entities through well-defined relationships, improving consistency and reducing redundancy.
-
----
-
-## How it Fits into the Ecosystem
+## How It Fits into the Ecosystem
 
 PostgreSQL is typically the primary source of persistent data within a backend application.
 
-Rather than storing business information directly inside application memory, backend services delegate persistence to the database.
+Frontend applications communicate with backend services, which use PostgreSQL to store and retrieve business information.
 
-```text
-Frontend
-      │
-      ▼
-REST API
-      │
-      ▼
-Application
-      │
-      ▼
-PostgreSQL
-      │
-      ▼
-Persistent Storage
+In larger architectures, PostgreSQL commonly works alongside technologies such as ORMs, Redis, message brokers, background workers, analytics platforms, and backup systems.
+
+While these technologies cache, process, or distribute data, PostgreSQL usually remains the system of record.
+
+![PostgreSQL Ecosystem](/docs/postgresql/postgresql-ecosystem.png)
+
+---
+
+## What It Looks Like
+
+A PostgreSQL database contains one or more databases, each organized into schemas that contain tables.
+
+Applications interact with these tables using SQL statements to create, read, update, and delete records.
+
+```sql
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL
+);
+
+SELECT id, name, email
+FROM users;
 ```
 
-PostgreSQL commonly works together with:
+The following example shows how a PostgreSQL database is typically viewed using administrative tools such as pgAdmin or the `psql` command-line client.
 
-- Backend APIs
-- Authentication systems
-- ORMs
-- Redis
-- Message Brokers
-- Background Workers
-
-In most architectures, PostgreSQL acts as the system of record, while other technologies either cache, replicate, or process its data.
+![PostgreSQL Interface](/docs/postgresql/postgresql-interface.png)
 
 ---
 
-## Real-World Usage
+## Common Use Cases
 
-PostgreSQL is widely used across industries because it provides strong consistency, reliability, and transactional guarantees.
+PostgreSQL is commonly used for applications that require reliable, consistent, and long-term data storage.
 
-Typical use cases include:
+Typical examples include:
 
-- Banking systems.
-- E-commerce platforms.
-- HR and Payroll systems.
-- Healthcare applications.
-- SaaS platforms.
-- Analytics systems.
-- Government services.
-
-Many organizations rely on PostgreSQL to store their most critical business data.
-
----
-
-## Practical Examples
-
-### Example 1 — User Registration
-
-A new user creates an account.
-
-The application inserts a new record into the Users table.
-
-Future logins retrieve that same information directly from PostgreSQL.
-
----
-
-### Example 2 — Online Store
-
-A customer places an order.
-
-The application stores:
-
-- Customer.
-- Order.
-- Order Items.
-- Payment.
-
-All of these entities are connected using relational references.
-
----
-
-### Example 3 — HR Platform
-
-An employee receives a promotion.
-
-Rather than duplicating employee information, PostgreSQL updates the employee record while maintaining relationships with departments, payroll, managers, and historical records.
+- Banking and financial systems
+- E-commerce platforms
+- HR and payroll systems
+- Healthcare applications
+- SaaS platforms
+- Content management systems
+- Analytics and reporting platforms
+- Government and public sector systems

@@ -489,6 +489,4 @@ A Next.js application is built by combining the features introduced throughout t
 
 A request enters the application, passes through Middleware, is matched by the App Router, renders the appropriate Server and Client Components, retrieves data when necessary, applies caching and revalidation, optimizes static assets, and finally returns the completed user interface to the browser.
 
-The following diagram illustrates how these features interact during the lifecycle of a request.
-
 ![Next.js Request Lifecycle](/docs/nextjs/nextjs-request-lifecycle.png)

@@ -815,8 +815,6 @@ Use the following checklist to systematically identify the policy preventing the
 
 # Putting Everything Together
 
-The following diagram summarizes the complete AWS IAM authorization process presented throughout this guide.
-
 It shows how a principal obtains credentials, submits a request to an AWS service, and how IAM evaluates every applicable policy before making the final authorization decision.
 
 ![AWS IAM Authorization Pipeline](/docs/aws/iam/aws-iam-authorization-pipeline.png)

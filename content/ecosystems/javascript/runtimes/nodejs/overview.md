@@ -1,8 +1,9 @@
 ---
 title: Node.js Overview
 description: Understand what Node.js is, how it executes JavaScript, where it fits in modern software systems, and the problems it is designed to solve.
-icon: nodejs
+icon: nodejs.png
 order: 1
+updatedAt: 2026-07-05
 ---
 
 # Node.js

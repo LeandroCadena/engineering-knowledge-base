@@ -1,7 +1,7 @@
 ---
 title: Node.js Deep Dive
 description: Master the internal concepts that explain how Node.js works from an engineering perspective.
-icon: nodejs
+icon: nodejs.png
 order: 2
 updatedAt: 2026-07-05
 ---
@@ -61,8 +61,6 @@ This sequential execution model makes JavaScript predictable because only one pi
 
 Although JavaScript execution is single-threaded, the Node.js runtime itself is not. Internal runtime components can perform work outside the main JavaScript execution thread, allowing the application to remain responsive while JavaScript continues executing.
 
-The following diagram illustrates how JavaScript execution is isolated to a single main thread.
-
 ![Node.js Single JavaScript Thread](/docs/nodejs/nodejs-single-thread.png)
 
 ---
@@ -96,8 +94,6 @@ File loaded
 Instead of waiting for the file to be read, Node.js immediately continues executing JavaScript while the operation completes in the background.
 
 This allows the main JavaScript execution thread to remain available for other work instead of sitting idle while waiting for external resources.
-
-The following diagram compares blocking and non-blocking execution.
 
 ![Node.js Non-Blocking I/O](/docs/nodejs/nodejs-non-blocking-io.png)
 
@@ -213,8 +209,6 @@ Although every callback is asynchronous, they do not execute in the order they w
 
 Instead, Node.js applies its scheduling rules to determine which callback executes next.
 
-The following diagram summarizes the execution priority of the most common scheduling mechanisms.
-
 ![Node.js Task Scheduling](/docs/nodejs/nodejs-task-scheduling.png)
 
 ---
@@ -242,8 +236,6 @@ libuv is responsible for:
 - Managing timers.
 - Coordinating the Event Loop.
 - Delegating work when necessary.
-
-The following diagram illustrates libuv's role inside the Node.js runtime.
 
 ![Node.js libuv](/docs/nodejs/nodejs-libuv.png)
 
@@ -276,8 +268,6 @@ console.log('Application continues...');
 
 The JavaScript thread does not wait for the hash to be generated. Instead, libuv delegates the work to the Worker Pool and schedules the callback once the operation completes.
 
-The following diagram summarizes which operations typically use the Worker Pool.
-
 ![Node.js Worker Pool](/docs/nodejs/nodejs-worker-pool.png)
 
 ---
@@ -307,8 +297,6 @@ worker.postMessage({
 Unlike the Worker Pool, Worker Threads are created and managed explicitly by the application.
 
 They are typically used for CPU-intensive algorithms, image processing, data analysis, or other long-running computations written in JavaScript.
-
-The following diagram compares the Worker Pool with Worker Threads.
 
 ![Node.js Worker Threads](/docs/nodejs/nodejs-worker-threads.png)
 
@@ -341,8 +329,6 @@ The standard library covers many common backend tasks, including:
 
 Although most applications also rely on external npm packages, the built-in modules provide the foundation for many Node.js applications and frameworks.
 
-The following diagram groups the most commonly used core modules by responsibility.
-
 ![Node.js Core Modules](/docs/nodejs/nodejs-core-modules.png)
 
 ---
@@ -372,8 +358,6 @@ Hello
 Buffers store bytes directly in memory, allowing Node.js to exchange data efficiently with the operating system and external systems.
 
 Most developers use Buffers indirectly through APIs such as file system operations, networking, and streams, although they can also be manipulated directly when working with binary protocols or custom file formats.
-
-The following diagram illustrates how Buffers bridge JavaScript values and binary data.
 
 ![Node.js Buffers](/docs/nodejs/nodejs-buffers.png)
 
@@ -406,8 +390,6 @@ Streams are commonly used for:
 - Data transformations
 
 Because data is processed progressively, Streams reduce memory usage and allow applications to start working before the entire operation has completed.
-
-The following diagram illustrates how data flows through a stream pipeline.
 
 ![Node.js Streams](/docs/nodejs/nodejs-streams.png)
 
@@ -442,8 +424,6 @@ The most commonly used methods are:
 
 This event-driven model reduces coupling between components and is widely used throughout Node.js, including streams, HTTP servers, and many third-party libraries.
 
-The following diagram summarizes how events flow through an `EventEmitter`.
-
 ![Node.js EventEmitter](/docs/nodejs/nodejs-event-emitter.png)
 
 ---
@@ -477,8 +457,6 @@ In this example, primitive values are stored on the stack, while the returned ob
 
 When objects are no longer referenced, V8's **Garbage Collector (GC)** automatically releases their memory, helping prevent memory leaks without requiring manual memory management.
 
-The following diagram illustrates how memory is organized inside a Node.js application.
-
 ![Node.js Memory Management](/docs/nodejs/nodejs-memory-management.png)
 
 ---
@@ -490,7 +468,5 @@ A Node.js application combines all the concepts introduced throughout this guide
 JavaScript executes on the main execution thread, built-in Node.js APIs delegate asynchronous work to libuv, operating system services or the Worker Pool perform that work, and completed operations are scheduled by the Event Loop before JavaScript resumes execution.
 
 Meanwhile, V8 manages memory automatically, Streams process data efficiently, Buffers represent binary data, EventEmitter enables event-driven communication, and Worker Threads provide optional parallel execution for CPU-intensive JavaScript workloads.
-
-The following diagram illustrates how these runtime components collaborate during the lifetime of a typical Node.js application.
 
 ![Node.js Runtime Architecture](/docs/nodejs/nodejs-putting-everything-together.png)

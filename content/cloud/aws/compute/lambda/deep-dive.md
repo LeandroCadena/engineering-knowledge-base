@@ -316,6 +316,4 @@ Rather than running applications continuously, Lambda executes independent funct
 
 Together, these capabilities allow developers to build scalable, loosely coupled applications without managing servers.
 
-The following diagram summarizes how every concept explored throughout this guide fits together into the complete Lambda execution lifecycle.
-
 ![Complete Lambda Lifecycle](/docs/aws-lambda/lambda-complete-lifecycle.png)

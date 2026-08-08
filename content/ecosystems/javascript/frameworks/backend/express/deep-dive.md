@@ -484,6 +484,4 @@ In production environments, additional responsibilities such as TLS termination,
 
 The previous chapters introduced each core component of an Express application independently. This section brings them together into a single request lifecycle, showing how an HTTP request moves through the framework from the moment it reaches the server until a response is returned to the client.
 
-Rather than introducing new concepts, the following diagram summarizes how Express matches routes, executes middleware, invokes route handlers, coordinates application components, handles errors, and ultimately generates an HTTP response.
-
 ![Complete Express request processing lifecycle.](/docs/express/putting-everything-together.png)

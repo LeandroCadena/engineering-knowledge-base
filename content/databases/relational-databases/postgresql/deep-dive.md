@@ -1,877 +1,370 @@
 ---
 title: PostgreSQL Deep Dive
 description: Master the engineering concepts behind PostgreSQL, including relational modeling, keys, transactions, indexing, query planning, and production best practices.
+icon: postgresql.png
 order: 2
 updatedAt: 2026-07-05
 ---
 
 # PostgreSQL Deep Dive
 
-## Data
+# Relational Storage
 
-Every application manages data.
+PostgreSQL organizes information using a hierarchical structure that separates data into logical containers.
 
-Data represents information about the business domain, such as users, orders, payments, products, or employees.
-
-A database organizes this information so that it can be stored, searched, updated, and protected efficiently.
-
-Unlike application memory, database data is persistent and survives process restarts.
-
-:::at-a-glance
-
-### Data
-
-- Persistent
-- Structured
-- Searchable
-- Reliable
-
-:::
-
-:::misconceptions
-
-❌ Databases only store files.
-
-✅ Databases store structured information that applications query continuously.
-
-:::
-
----
-
-## Tables
-
-A **Table** represents a collection of related information.
-
-Each table models a single business entity.
-
-Examples include:
-
-- Users
-- Orders
-- Products
-- Employees
-
-Rather than storing unrelated information together, relational databases separate each entity into its own table.
-
-:::at-a-glance
-
-### Tables
-
-- Represent entities.
-- Organize related information.
-- Contain rows and columns.
-
-:::
-
-:::misconceptions
-
-❌ A database is one giant table.
-
-✅ Databases typically contain many specialized tables.
-
-:::
-
-:::example
-
-```text
-Users
-
-+----------------------+
-| id | name | email    |
-+----------------------+
-```
-
-:::
-
----
-
-## Rows
-
-A **Row** represents one individual record inside a table.
-
-Each row corresponds to one real-world entity.
-
-For example:
-
-Users table
-
-```text
-1  John
-2  Alice
-3  Maria
-```
-
-Each row represents one user.
-
-:::at-a-glance
-
-### Rows
-
-- Individual records.
-- Represent one entity.
-- Stored inside tables.
-
-:::
-
-:::misconceptions
-
-❌ Rows are unique because of their position.
-
-✅ Rows are uniquely identified using Primary Keys.
-
-:::
-
----
-
-## Columns
-
-A **Column** defines one attribute shared by every row.
-
-For example:
-
-Users
-
-| id  | name | email |
-| --- | ---- | ----- |
-
-Each column has:
-
-- Name
-- Data Type
-- Constraints
-
-Columns determine the structure of the table.
-
-Rows provide the values.
-
-:::at-a-glance
-
-### Columns
-
-- Describe attributes.
-- Define data types.
-- Shared by every row.
-
-:::
-
-:::misconceptions
-
-❌ Every row can have different columns.
-
-✅ Every row follows the same table schema.
-
-:::
-
----
-
-## Primary Keys
-
-A **Primary Key (PK)** uniquely identifies each row within a table.
-
-Without a Primary Key, PostgreSQL cannot reliably distinguish one record from another.
-
-Every table should have exactly one Primary Key.
-
-A Primary Key must be:
-
-- Unique.
-- Not NULL.
-- Stable over time.
-
-Most applications use numeric identifiers (`BIGSERIAL`) or UUIDs as Primary Keys.
-
-:::at-a-glance
-
-### Primary Keys
-
-- Unique.
-- Never NULL.
-- Identify one row.
-- One Primary Key per table.
-
-:::
-
-:::misconceptions
-
-❌ Primary Keys are only used for joins.
-
-✅ Primary Keys uniquely identify every record and are fundamental to indexing and relationships.
-
-:::
-
-:::example
-
-```text
-Users
-
-+----+--------+
-| id | name   |
-+----+--------+
-| 1  | Alice  |
-| 2  | John   |
-| 3  | Maria  |
-+----+--------+
-```
-
-Here, `id` is the Primary Key.
-
-:::
-
----
-
-## Foreign Keys
-
-A **Foreign Key (FK)** establishes a relationship between two tables.
-
-Instead of duplicating information, one table stores a reference to the Primary Key of another table.
-
-This allows PostgreSQL to maintain referential integrity across related entities.
-
-:::at-a-glance
-
-### Foreign Keys
-
-- Reference another table.
-- Create relationships.
-- Enforce referential integrity.
-
-:::
-
-:::misconceptions
-
-❌ Foreign Keys copy data between tables.
-
-✅ Foreign Keys store references, not duplicated data.
-
-:::
-
-:::example
-
-```text
-Users
-
-id
-1
-2
-
-Orders
-
-id | user_id
--------------
-10 | 1
-11 | 2
-12 | 1
-```
-
-`user_id` references `Users.id`.
-
-:::
-
----
-
-## Relationships
-
-Relationships describe how business entities are connected.
-
-The three most common relationship types are:
-
-### One-to-One (1:1)
-
-One record relates to exactly one record.
-
-Example:
-
-```text
-User
-
-↓
-
-Profile
-```
-
----
-
-### One-to-Many (1:N)
-
-One record relates to many records.
-
-Example:
-
-```text
-Customer
-
-↓
-
-Orders
-```
-
-One customer can have many orders.
-
-Each order belongs to one customer.
-
----
-
-### Many-to-Many (N:N)
-
-Many records relate to many other records.
-
-This requires a junction table.
-
-```text
-Students
-
-↓
-
-Enrollments
-
-↓
-
-Courses
-```
-
-Each student can enroll in many courses.
-
-Each course contains many students.
-
-:::at-a-glance
-
-### Relationship Types
-
-- One-to-One
-- One-to-Many
-- Many-to-Many
-
-:::
-
-:::misconceptions
-
-❌ PostgreSQL automatically understands relationships.
-
-✅ Relationships are explicitly modeled using Foreign Keys.
-
-:::
-
----
-
-## Indexes
-
-An **Index** is a data structure that allows PostgreSQL to locate rows efficiently without scanning an entire table.
-
-Without an index, PostgreSQL may need to examine every row until it finds the requested data.
-
-This operation is known as a **Sequential Scan**.
-
-Indexes significantly reduce the amount of data that must be inspected, especially in large tables.
-
-They improve the performance of operations such as:
-
-- Searching
-- Filtering
-- Sorting
-- Joining
-
-However, indexes also consume disk space and must be updated whenever indexed data changes.
-
-:::at-a-glance
-
-### Indexes
-
-- Speed up reads.
-- Require additional storage.
-- Increase write cost.
-- Improve query performance.
-
-:::
-
-:::misconceptions
-
-❌ More indexes always improve performance.
-
-✅ Every index speeds up reads but slows down INSERT, UPDATE, and DELETE operations.
-
-:::
-
-:::example
-
-Without Index
-
-```text
-Row 1
-Row 2
-Row 3
-...
-Row 1,000,000
-```
-
-↓
-
-Sequential Scan
-
----
-
-With Index
-
-```text
-Index
-
-↓
-
-Pointer
-
-↓
-
-Target Row
-```
-
-:::
-
----
-
-## Transactions
-
-A **Transaction** is a sequence of database operations treated as a single logical unit of work.
-
-Either every operation succeeds, or none of them take effect.
-
-Transactions prevent the database from being left in an inconsistent state if an error occurs during execution.
-
-A transaction typically follows this lifecycle:
-
-```text
-BEGIN
-
-↓
-
-SQL Statements
-
-↓
-
-COMMIT
-```
-
-If an error occurs:
-
-```text
-BEGIN
-
-↓
-
-SQL Statements
-
-↓
-
-ROLLBACK
-```
-
-All intermediate changes are discarded.
-
-:::at-a-glance
-
-### Transactions
-
-- Group multiple operations.
-- Commit everything.
-- Or rollback everything.
-- Preserve consistency.
-
-:::
-
-:::misconceptions
-
-❌ Every SQL statement automatically belongs to the same transaction.
-
-✅ Applications explicitly define transaction boundaries when multiple operations must succeed together.
-
-:::
-
-:::example
-
-Transfer Money
-
-```text
-Withdraw
-
-↓
-
-Deposit
-
-↓
-
-Commit
-```
-
-If either operation fails:
-
-```text
-Rollback
-```
-
-No money is lost.
-
-:::
-
----
-
-## ACID
-
-ACID describes the guarantees provided by relational databases during transaction processing.
-
-### Atomicity
-
-Every operation inside the transaction succeeds or the entire transaction is rolled back.
-
----
-
-### Consistency
-
-Transactions move the database from one valid state to another while respecting all defined constraints.
-
----
-
-### Isolation
-
-Concurrent transactions should not interfere with one another.
-
-Each transaction behaves as though it were executing independently.
-
----
-
-### Durability
-
-Once a transaction has been committed, its changes persist even if the database server crashes immediately afterward.
-
-:::at-a-glance
-
-### ACID
-
-- Atomicity
-- Consistency
-- Isolation
-- Durability
-
-:::
-
-:::misconceptions
-
-❌ ACID means transactions are fast.
-
-✅ ACID defines correctness and reliability, not performance.
-
-:::
-
----
-
-## Isolation Levels
-
-Modern databases allow many transactions to execute simultaneously.
-
-Without proper isolation, concurrent transactions can interfere with one another, leading to inconsistent or unexpected results.
-
-Isolation Levels define how much one transaction can observe the intermediate changes made by another transaction.
-
-PostgreSQL supports four standard isolation levels.
-
-### Read Uncommitted
-
-The SQL standard defines this level, but PostgreSQL treats it as **Read Committed** because it never allows dirty reads.
-
----
-
-### Read Committed (Default)
-
-Each statement sees only data that has already been committed before that statement begins.
-
-This is PostgreSQL's default isolation level and is appropriate for most applications.
-
----
-
-### Repeatable Read
-
-Every query within the same transaction sees a consistent snapshot of the database.
-
-Even if another transaction commits new data, the current transaction continues seeing the original snapshot.
-
----
-
-### Serializable
-
-The strongest isolation level.
-
-PostgreSQL guarantees that concurrent transactions behave exactly as if they had executed one after another.
-
-Because this requires additional coordination, Serializable transactions may reduce throughput and occasionally require retries.
-
-:::at-a-glance
-
-### Isolation Levels
-
-- Read Committed (Default)
-- Repeatable Read
-- Serializable
-
-:::
-
-:::misconceptions
-
-❌ Serializable means faster.
-
-✅ Serializable provides stronger consistency, often at the cost of throughput.
-
-:::
-
-:::example
-
-Two users try to purchase the last available ticket.
-
-Without proper isolation:
-
-```text
-Stock = 1
-
-↓
-
-User A buys
-
-↓
-
-User B buys
-
-↓
-
-Stock = -1
-```
-
-With Serializable isolation:
-
-One transaction succeeds.
-
-The other must retry.
-
-:::
-
----
-
-## Query Planner
-
-The **Query Planner** determines the most efficient strategy for executing a SQL query.
-
-Rather than executing queries exactly as written, PostgreSQL analyzes multiple execution plans and estimates their cost.
-
-Possible execution strategies include:
-
-- Sequential Scan
-- Index Scan
-- Bitmap Index Scan
-- Nested Loop Join
-- Hash Join
-- Merge Join
-
-The planner selects the strategy with the lowest estimated execution cost.
-
-As table sizes grow, choosing the correct execution plan becomes increasingly important for performance.
-
-:::at-a-glance
-
-### Query Planner
-
-- Estimates execution cost.
-- Chooses execution plans.
-- Uses table statistics.
-- Optimizes queries automatically.
-
-:::
-
-:::misconceptions
-
-❌ PostgreSQL executes SQL literally.
-
-✅ PostgreSQL optimizes SQL before executing it.
-
-:::
-
-:::example
-
-Developer writes
+A PostgreSQL server can host multiple databases. Each database contains one or more schemas, each schema contains multiple tables, and each table stores rows of structured data.
 
 ```sql
+CREATE DATABASE company;
+
+CREATE SCHEMA hr;
+
+CREATE TABLE hr.employees (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+```
+
+This organization allows related data to be grouped, isolated, and managed independently while remaining part of the same PostgreSQL instance.
+
+Large applications commonly separate different domains into their own schemas, making databases easier to maintain, secure, and evolve over time.
+
+![PostgreSQL Relational Storage](/docs/postgresql/postgresql-relational-storage.png)
+
+---
+
+# Relational Modeling
+
+PostgreSQL models business domains by representing each entity in its own table and connecting related data through references.
+
+Instead of storing duplicated information, relationships allow independent entities to remain connected while preserving consistency and reducing redundancy.
+
+```sql
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE orders (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id),
+    total NUMERIC(10,2) NOT NULL
+);
+```
+
+In this example, each order references a user instead of storing the user's information repeatedly.
+
+This approach allows applications to model complex domains while maintaining a single source of truth for each entity.
+
+![PostgreSQL Relational Modeling](/docs/postgresql/postgresql-relational-modeling.png)
+
+---
+
+# SQL Execution
+
+Every interaction with PostgreSQL begins by executing a SQL statement.
+
+Rather than accessing tables directly, PostgreSQL receives the query, validates its syntax, determines the most efficient execution strategy, executes the requested operations, and returns the result.
+
+```sql
+SELECT first_name, last_name
+FROM employees
+WHERE department_id = 2;
+```
+
+Each query follows the same high-level execution pipeline, regardless of its complexity.
+
+Understanding this pipeline helps explain why indexes, statistics, transactions, and query optimization have such a significant impact on performance.
+
+![PostgreSQL SQL Execution](/docs/postgresql/postgresql-sql-execution.png)
+
+---
+
+# Data Integrity
+
+PostgreSQL provides built-in constraints that ensure stored data remains valid and consistent.
+
+Rather than relying entirely on application logic, constraints are enforced directly by the database, preventing invalid or inconsistent data from being stored.
+
+```sql
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    age INTEGER CHECK (age >= 18),
+    country TEXT DEFAULT 'US'
+);
+```
+
+Each constraint protects the data in a different way.
+
+For example, a Primary Key uniquely identifies every row, a Foreign Key preserves relationships between tables, and constraints such as `UNIQUE`, `CHECK`, and `NOT NULL` prevent invalid values from being inserted.
+
+![PostgreSQL Data Integrity](/docs/postgresql/postgresql-data-integrity.png)
+
+---
+
+# Fast Data Access
+
+As databases grow, searching every row becomes increasingly inefficient.
+
+PostgreSQL improves query performance by using indexes, specialized data structures that allow rows to be located without scanning an entire table.
+
+```sql
+CREATE INDEX idx_users_email
+ON users(email);
+
 SELECT *
 FROM users
 WHERE email = 'alice@example.com';
 ```
 
-↓
+When an appropriate index exists, PostgreSQL can locate matching rows significantly faster than performing a sequential scan across the entire table.
 
-Planner
+Indexes are one of the most important tools for optimizing read performance, although they also require additional storage and must be maintained whenever indexed data changes.
 
-↓
-
-Index Scan
-
-↓
-
-Result
-
-:::
+![PostgreSQL Fast Data Access](/docs/postgresql/postgresql-fast-data-access.png)
 
 ---
 
-## Performance
+# Transactional Consistency
 
-Database performance depends on many factors beyond hardware.
+PostgreSQL groups related operations into transactions so they either succeed together or have no effect at all.
 
-Common performance considerations include:
+This guarantees that the database never remains in a partially updated state if an error occurs during execution.
 
-- Proper indexing.
-- Efficient queries.
-- Avoiding unnecessary joins.
-- Returning only required columns.
-- Limiting result sets.
-- Using transactions appropriately.
-- Maintaining updated statistics.
+```sql
+BEGIN;
 
-Poor schema design or inefficient queries often have a much greater impact than database hardware itself.
+UPDATE accounts
+SET balance = balance - 500
+WHERE id = 1;
 
-:::at-a-glance
+UPDATE accounts
+SET balance = balance + 500
+WHERE id = 2;
 
-### Performance
+COMMIT;
+```
 
-- Schema Design
-- Indexes
-- Query Optimization
-- Statistics
-- Execution Plans
+If any statement inside the transaction fails, PostgreSQL discards every intermediate change by rolling the transaction back.
 
-:::
+Transactions form the foundation of reliable applications, ensuring that critical operations remain consistent even when failures or concurrent activity occur.
 
-:::misconceptions
-
-❌ PostgreSQL performance depends only on CPU and RAM.
-
-✅ Query design and indexing usually have a much larger impact.
-
-:::
+![PostgreSQL Transactional Consistency](/docs/postgresql/postgresql-transactional-consistency.png)
 
 ---
 
-## Best Practices
+# Concurrent Transactions
 
-Production PostgreSQL deployments should follow several operational best practices.
+Modern applications often execute hundreds or thousands of database operations simultaneously.
 
-Recommended practices include:
+PostgreSQL supports this concurrency through **Multi-Version Concurrency Control (MVCC)**, allowing transactions to work with consistent snapshots of the data instead of blocking one another.
 
-- Use Primary and Foreign Keys.
-- Normalize data appropriately.
-- Create indexes based on query patterns.
-- Monitor slow queries.
-- Analyze execution plans with `EXPLAIN ANALYZE`.
-- Keep transactions short.
-- Avoid unnecessary locks.
-- Use connection pooling.
-- Perform regular backups.
-- Monitor storage growth and index usage.
+```sql
+-- Session A
+BEGIN;
 
-:::at-a-glance
+UPDATE accounts
+SET balance = balance - 500
+WHERE id = 1;
+```
 
-### Production Checklist
+```sql
+-- Session B
+SELECT balance
+FROM accounts
+WHERE id = 1;
+```
 
-- Primary Keys
-- Foreign Keys
-- Indexes
-- Transactions
-- EXPLAIN ANALYZE
-- Connection Pooling
-- Monitoring
-- Backups
+Even while one transaction is modifying a row, another transaction can continue reading the previously committed version until the changes are committed.
 
-:::
+This approach significantly reduces lock contention while maintaining transactional consistency for concurrent workloads.
+
+![PostgreSQL Concurrent Transactions](/docs/postgresql/postgresql-concurrent-transactions.png)
+
+---
+
+# Query Optimization
+
+Before executing a query, PostgreSQL evaluates multiple execution strategies and chooses the one with the lowest estimated cost.
+
+Rather than always scanning tables sequentially, the query planner considers factors such as indexes, table statistics, estimated row counts, and available join strategies to build an efficient execution plan.
+
+```sql
+SELECT *
+FROM orders
+WHERE customer_id = 42;
+```
+
+Depending on the available indexes and the amount of data stored in the table, PostgreSQL may choose completely different execution plans for the same SQL statement.
+
+This automatic optimization is one of the key reasons PostgreSQL can efficiently process queries against databases containing millions of rows.
+
+![PostgreSQL Query Optimization](/docs/postgresql/postgresql-query-optimization.png)
+
+---
+
+# Query Analysis
+
+PostgreSQL provides the `EXPLAIN` and `EXPLAIN ANALYZE` commands to inspect how a query is executed.
+
+Rather than showing only the final result, these commands expose the execution plan chosen by the query planner, making it possible to understand where time is spent and how data is accessed.
+
+```sql
+EXPLAIN ANALYZE
+SELECT *
+FROM orders
+WHERE customer_id = 42;
+```
+
+Learning to recognize the most common execution plan operators is an essential skill when diagnosing slow queries or validating whether indexes are being used effectively.
+
+![PostgreSQL Query Analysis](/docs/postgresql/postgresql-query-analysis.png)
+
+---
+
+# Derived Data
+
+PostgreSQL allows queries to be stored and reused as database objects.
+
+Instead of repeating complex SQL statements throughout an application, developers can define reusable views that behave like virtual tables.
+
+```sql
+CREATE VIEW active_users AS
+SELECT id, name, email
+FROM users
+WHERE active = true;
+```
+
+For workloads where performance is more important than always returning the latest data, PostgreSQL also provides materialized views, which store the result of a query physically and can be refreshed when needed.
+
+Derived data simplifies query reuse, improves maintainability, and can significantly reduce the complexity of application code.
+
+![PostgreSQL Derived Data](/docs/postgresql/postgresql-derived-data.png)
+
+---
+
+# Semi-Structured Data
+
+Although PostgreSQL is a relational database, it also supports storing semi-structured documents using the `JSON` and `JSONB` data types.
+
+This allows applications to combine structured relational data with flexible document-based fields without requiring a separate NoSQL database.
+
+```sql
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    profile JSONB
+);
+
+SELECT
+    profile->>'city'
+FROM users;
+```
+
+While both `JSON` and `JSONB` store JSON documents, `JSONB` stores them in a binary representation that supports indexing and provides significantly faster querying.
+
+![PostgreSQL Semi-Structured Data](/docs/postgresql/postgresql-semi-structured-data.png)
+
+---
+
+# Extensibility
+
+PostgreSQL extends its functionality through installable extensions that add new data types, operators, indexing methods, functions, and specialized capabilities.
+
+Instead of requiring external services or custom implementations, many advanced features can be enabled directly inside the database.
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+SELECT gen_random_uuid();
+```
+
+Extensions allow PostgreSQL to support use cases such as geospatial queries, fuzzy text search, advanced statistics, cryptographic functions, UUID generation, and many other specialized workloads.
+
+![PostgreSQL Extensibility](/docs/postgresql/postgresql-extensibility.png)
+
+---
+
+# Durability & Recovery
+
+PostgreSQL guarantees that committed transactions survive unexpected failures through **Write-Ahead Logging (WAL)**.
+
+Before modifying the actual data files, every change is first written to the Write-Ahead Log. Once the WAL entry is safely stored, PostgreSQL can complete the transaction and update the corresponding data pages later.
+
+```sql
+BEGIN;
+
+UPDATE accounts
+SET balance = balance - 500
+WHERE id = 1;
+
+COMMIT;
+```
+
+If the database crashes before modified data pages are written to disk, PostgreSQL replays the WAL during startup to recover every committed transaction.
+
+This mechanism provides durability while also enabling crash recovery and physical replication.
+
+![PostgreSQL Durability & Recovery](/docs/postgresql/postgresql-durability-recovery.png)
+
+---
+
+# Storage Maintenance
+
+Unlike many database systems, PostgreSQL does not immediately remove outdated row versions after updates or deletes.
+
+Because PostgreSQL uses Multi-Version Concurrency Control (MVCC), obsolete row versions remain temporarily stored until they are no longer needed by active transactions.
+
+```sql
+VACUUM;
+
+VACUUM ANALYZE;
+```
+
+PostgreSQL periodically reclaims this unused space through `VACUUM`, while `AUTOVACUUM` performs the same maintenance automatically in the background.
+
+Regular maintenance keeps storage efficient, improves query performance, updates planner statistics, and prevents long-term table bloat.
+
+![PostgreSQL Storage Maintenance](/docs/postgresql/postgresql-storage-maintenance.png)
+
+---
+
+# High Availability
+
+PostgreSQL supports high availability by continuously replicating data from a primary server to one or more replicas.
+
+As transactions are committed, the corresponding Write-Ahead Log (WAL) records are streamed to replica servers, allowing them to stay synchronized with the primary database.
+
+```sql
+SELECT *
+FROM orders;
+```
+
+Applications typically send write operations to the primary server while replicas handle read-only workloads, improving scalability and reducing the load on the primary database.
+
+If the primary server becomes unavailable, a replica can be promoted to continue serving the application with minimal downtime.
+
+![PostgreSQL High Availability](/docs/postgresql/postgresql-high-availability.png)
 
 ---
 
 # Putting Everything Together
 
-The following sequence summarizes how PostgreSQL stores, retrieves, and protects business data.
+A single SQL query activates multiple PostgreSQL subsystems working together to retrieve, validate, protect, and persist data efficiently.
 
-```text
-                Application
-                     │
-                     ▼
-                 SQL Query
-                     │
-                     ▼
-              PostgreSQL Parser
-                     │
-                     ▼
-              Query Planner
-                     │
-                     ▼
-          Choose Execution Plan
-                     │
-                     ▼
-      Index Scan / Sequential Scan
-                     │
-                     ▼
-          Read or Modify Data
-                     │
-                     ▼
-             Transaction Engine
-                     │
-                     ▼
-          ACID Guarantees Applied
-                     │
-                     ▼
-               Commit / Rollback
-                     │
-                     ▼
-                Return Result
+From the moment an application sends a query until the result is returned and the transaction is safely committed, PostgreSQL coordinates query planning, indexing, concurrency control, transactions, storage, durability, and replication as one integrated database engine.
+
+```sql
+BEGIN;
+
+SELECT *
+FROM orders
+WHERE customer_id = 42;
+
+COMMIT;
 ```
 
-When an application sends a SQL statement, PostgreSQL first parses and validates it.
+Every capability introduced throughout this guide contributes to a different stage of the query lifecycle, allowing PostgreSQL to deliver reliable, scalable, and highly optimized data management for modern applications.
 
-The Query Planner then analyzes multiple execution strategies and selects the one with the lowest estimated cost.
-
-Depending on the available indexes and the query itself, PostgreSQL retrieves or modifies the required data.
-
-If the operation is part of a transaction, PostgreSQL applies the ACID guarantees to ensure that concurrent operations remain consistent and reliable.
-
-Finally, the transaction is either committed permanently or rolled back if an error occurs, and the database returns the result to the application.
-
----
-
-## Relational Thinking
-
-One of PostgreSQL's greatest strengths is its ability to model business relationships naturally.
-
-Instead of duplicating information across multiple tables, applications organize data into related entities connected through Primary Keys and Foreign Keys.
-
-For example:
-
-```text
-Customer
-      │
-      ▼
- Orders
-      │
-      ▼
-Order Items
-      │
-      ▼
- Products
-```
-
-This approach reduces redundancy, improves consistency, and makes complex business queries possible while maintaining data integrity.
-
----
-
-## Final Perspective
-
-PostgreSQL is far more than a place to store data.
-
-It is a relational database management system designed to guarantee consistency, durability, concurrency, and efficient querying at scale.
-
-Its relational model, transaction engine, indexing capabilities, and sophisticated query optimizer allow applications to manage complex business domains reliably.
-
-Understanding PostgreSQL is not simply about learning SQL syntax.
-
-It is about understanding how modern applications organize, relate, protect, and retrieve data efficiently.
-
-Mastering these concepts provides the foundation for building scalable backend systems and prepares developers to work effectively with ORMs, distributed systems, caching layers such as Redis, and cloud-native database services.
+![PostgreSQL Putting Everything Together](/docs/postgresql/postgresql-putting-everything-together.png)
