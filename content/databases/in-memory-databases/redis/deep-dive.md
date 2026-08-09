@@ -1,713 +1,542 @@
 ---
 title: Redis Deep Dive
 description: Master the engineering concepts behind Redis, including key-value storage, data structures, expiration policies, persistence, Pub/Sub, and production best practices.
+icon: redis.png
 order: 2
 updatedAt: 2026-07-05
 ---
 
 # Redis Deep Dive
 
-## Memory
+# In-Memory Execution
 
-Redis is primarily an **in-memory database**.
+Redis achieves extremely low latency by storing its primary working data directly in memory instead of reading it from disk for every operation.
 
-Instead of reading data from disk for every request, Redis keeps active data in RAM.
+Because accessing RAM is significantly faster than accessing persistent storage, Redis can execute hundreds of thousands of operations per second while maintaining response times measured in microseconds.
 
-Because memory access is significantly faster than disk access, Redis can process hundreds of thousands of operations per second with very low latency.
+```redis
+SET user:42 "Alice"
 
-This design makes Redis ideal for workloads where speed is more important than permanent storage.
+GET user:42
+```
 
-:::at-a-glance
+Every command operates directly on in-memory data structures, allowing Redis to process requests with minimal overhead.
 
-### Memory
+Although Redis can optionally persist data to disk, memory remains the primary execution layer, making speed its defining characteristic.
 
-- Extremely fast.
-- Low latency.
-- Optimized for frequent access.
-- Limited by available RAM.
-
-:::
-
-:::misconceptions
-
-❌ Redis stores everything permanently in memory.
-
-✅ Memory is Redis' primary storage, but optional persistence mechanisms can periodically write data to disk.
-
-:::
+![Redis In-Memory Execution](/docs/redis/redis-in-memory-execution.png)
 
 ---
 
-## Key-Value Model
+# Key-Based Data Access
 
-Redis organizes information using a **Key-Value model**.
+Redis organizes every piece of information using unique keys.
 
-Every piece of data is stored under a unique key.
+Unlike relational databases that store records inside tables, Redis stores values directly under keys, allowing applications to retrieve data without scanning rows or navigating relationships.
 
-Applications retrieve data by requesting that key.
+```redis
+SET user:42 "Alice"
+
+GET user:42
+```
+
+Applications typically use descriptive key names to organize related data.
 
 ```text
-user:123
+user:42
 
-↓
+session:abc123
 
-{
-    name: "Alice",
-    role: "admin"
+cart:user:42
+
+product:105
+
+rate-limit:192.168.1.15
+```
+
+Because every lookup starts with a key, Redis can locate data extremely efficiently regardless of the value stored behind it.
+
+![Redis Key-Based Data Access](/docs/redis/redis-key-based-data-access.png)
+
+---
+
+# Rich Data Structures
+
+Although Redis is often described as a key-value database, the value associated with each key can be one of several specialized data structures.
+
+Each structure is optimized for different access patterns, allowing applications to solve common problems without implementing additional logic.
+
+```redis
+SET user:name "Alice"
+
+HSET user:42 name "Alice" email "alice@example.com"
+
+LPUSH tasks "Process order"
+
+SADD online-users "alice"
+
+ZADD leaderboard 950 "alice"
+
+XADD orders * status created
+```
+
+Choosing the appropriate data structure simplifies application code while improving performance and reducing memory usage.
+
+![Redis Data Structures](/docs/redis/redis-data-structures.png)
+
+---
+
+# Command Complexity
+
+Every Redis command has a documented time complexity that describes how its execution time grows as the amount of stored data increases.
+
+Many of the most common operations execute in constant time (`O(1)`), allowing Redis to maintain predictable performance even when storing millions of keys.
+
+```redis
+GET user:42
+
+HGET user:42 name
+
+LPUSH tasks "Process order"
+
+ZRANGE leaderboard 0 9
+
+KEYS *
+```
+
+Understanding command complexity helps developers choose the most efficient operations and avoid commands that may become expensive as datasets grow.
+
+![Redis Command Complexity](/docs/redis/redis-command-complexity.png)
+
+---
+
+# Atomic Operations
+
+Redis executes every command atomically, meaning each operation completes entirely before another command can modify the same data.
+
+This behavior allows applications to safely update shared values without requiring explicit locks for many common use cases.
+
+```redis
+INCR api:requests
+
+HINCRBY inventory:42 stock -1
+
+SET lock:order:42 worker-1 NX
+```
+
+Atomic operations make Redis ideal for implementing counters, rate limiting, inventory tracking, distributed locks, and other concurrent workloads.
+
+![Redis Atomic Operations](/docs/redis/redis-atomic-operations.png)
+
+---
+
+# Key Lifecycle
+
+Redis allows keys to expire automatically after a specified period of time.
+
+Instead of requiring applications to manually remove temporary data, Redis tracks the remaining lifetime of each key and automatically deletes it once the expiration time is reached.
+
+```redis
+SET session:abc123 "user42"
+
+EXPIRE session:abc123 3600
+
+TTL session:abc123
+
+PERSIST session:abc123
+```
+
+Automatic expiration is commonly used for sessions, authentication tokens, caches, verification codes, and rate limiting windows, keeping temporary data synchronized without additional cleanup logic.
+
+![Redis Key Lifecycle](/docs/redis/redis-key-lifecycle.png)
+
+---
+
+# Memory Management
+
+Redis stores its working dataset in memory, so applications can define a maximum amount of memory that the server is allowed to use.
+
+When Redis reaches this limit and additional memory is required, its configured eviction policy determines whether existing keys should be removed or new writes should be rejected.
+
+```conf
+maxmemory 2gb
+
+maxmemory-policy allkeys-lru
+```
+
+Redis provides different eviction policies for workloads with different access patterns, allowing applications to control which data should remain in memory when capacity becomes limited.
+
+![Redis Memory Management](/docs/redis/redis-memory-management.png)
+
+---
+
+# Reliable Persistence
+
+Although Redis operates primarily in memory, it can persist data to disk so that application state can survive restarts and failures.
+
+Redis provides two primary persistence mechanisms: **RDB snapshots** and the **Append Only File (AOF)**.
+
+```conf
+save 3600 1
+save 300 100
+
+appendonly yes
+appendfsync everysec
+```
+
+RDB periodically creates point-in-time snapshots of the dataset, while AOF records write operations that can be replayed to reconstruct the database.
+
+Both mechanisms can also be enabled together, allowing applications to balance recovery guarantees, storage overhead, and performance.
+
+![Redis Reliable Persistence](/docs/redis/redis-reliable-persistence.png)
+
+---
+
+# Transactions
+
+Redis transactions allow multiple commands to be queued and executed sequentially as a single isolated operation.
+
+A transaction starts with `MULTI`. Commands issued afterward are queued instead of executed immediately, and `EXEC` runs the entire queue without other clients executing commands in between.
+
+```redis
+MULTI
+
+DECRBY account:1 100
+INCRBY account:2 100
+
+EXEC
+```
+
+Redis also provides `WATCH` for optimistic locking. If a watched key changes before `EXEC`, the transaction is aborted instead of applying commands based on stale data.
+
+```redis
+WATCH inventory:42
+
+MULTI
+DECR inventory:42
+EXEC
+```
+
+`DISCARD` can be used to cancel a transaction and remove all commands currently queued.
+
+![Redis Transactions](/docs/redis/redis-transactions.png)
+
+---
+
+# Server-Side Execution
+
+Redis can execute custom logic directly on the server using Lua scripts, allowing multiple operations to run without additional network round trips.
+
+Scripts are executed atomically, meaning no other Redis command can run while the script is executing.
+
+```redis
+EVAL "
+  local current = redis.call('GET', KEYS[1])
+
+  if not current then
+    return nil
+  end
+
+  redis.call('INCR', KEYS[1])
+
+  return redis.call('GET', KEYS[1])
+" 1 api:requests
+```
+
+Redis exposes keys and arguments to scripts through `KEYS` and `ARGV`, while `redis.call()` allows the script to execute Redis commands.
+
+```redis
+EVAL "
+  return redis.call('SET', KEYS[1], ARGV[1])
+" 1 user:42 "Alice"
+```
+
+For scripts that are executed repeatedly, Redis can cache the script and execute it by its SHA1 digest.
+
+```redis
+SCRIPT LOAD "return redis.call('GET', KEYS[1])"
+
+EVALSHA <sha1> 1 user:42
+```
+
+Server-side execution is useful when several dependent operations must execute atomically while avoiding repeated communication between the application and Redis.
+
+---
+
+# Real-Time Messaging
+
+Redis provides real-time message distribution through its Publish/Subscribe model.
+
+Publishers send messages to named channels without knowing which clients are listening, while subscribers receive messages from the channels they have subscribed to.
+
+```redis
+SUBSCRIBE notifications
+```
+
+From another Redis connection:
+
+```redis
+PUBLISH notifications "order-created"
+```
+
+Multiple subscribers can listen to the same channel, allowing a single published message to be delivered to all active subscribers.
+
+Redis also supports pattern-based subscriptions with `PSUBSCRIBE`.
+
+```redis
+PSUBSCRIBE events:*
+```
+
+Pub/Sub messages are ephemeral. Redis does not store them for later consumption, so subscribers that are disconnected when a message is published will not receive it.
+
+![Redis Real-Time Messaging](/docs/redis/redis-real-time-messaging.png)
+
+---
+
+# Durable Event Streaming
+
+Redis Streams provide an append-only data structure for storing and processing ordered sequences of events.
+
+Unlike Pub/Sub messages, stream entries remain stored after they are produced, allowing consumers to read them later, replay previous events, and track processing progress.
+
+```redis
+XADD orders * orderId 42 status created
+
+XREAD COUNT 10 STREAMS orders 0
+```
+
+Each entry receives a unique ID that preserves its position within the stream.
+
+```text
+1750000000000-0
+1750000000001-0
+1750000000002-0
+```
+
+Consumer groups allow multiple consumers to coordinate the processing of a stream.
+
+```redis
+XGROUP CREATE orders workers 0 MKSTREAM
+
+XREADGROUP GROUP workers consumer-1 COUNT 10 STREAMS orders >
+
+XACK orders workers 1750000000000-0
+```
+
+Within a consumer group, entries can be distributed across consumers and remain pending until they are acknowledged.
+
+![Redis Durable Event Streaming](/docs/redis/redis-durable-event-streaming.png)
+
+---
+
+# Distributed Coordination
+
+Redis can coordinate multiple application instances by using atomic operations to control access to shared resources.
+
+A common pattern is a distributed lock, where only one client can acquire a specific key at a time.
+
+```redis
+SET lock:order:42 worker-1 NX PX 10000
+```
+
+The `NX` option creates the key only if it does not already exist, while `PX` assigns an expiration time in milliseconds so the lock cannot remain indefinitely if the owner fails.
+
+A lock should only be released by the client that originally acquired it.
+
+```redis
+EVAL "
+  if redis.call('GET', KEYS[1]) == ARGV[1] then
+    return redis.call('DEL', KEYS[1])
+  end
+
+  return 0
+" 1 lock:order:42 worker-1
+```
+
+This compare-and-delete operation prevents one client from accidentally releasing a lock currently owned by another client.
+
+![Redis Distributed Coordination](/docs/redis/redis-distributed-coordination.png)
+
+---
+
+# Caching Patterns
+
+Redis can sit between an application and its primary data store to reduce repeated reads, lower database load, and improve response times.
+
+The way cached data is read, written, and synchronized with the primary database depends on the caching pattern used by the application.
+
+### Cache-Aside
+
+The application checks Redis first and loads the value from the database only when the cache does not contain it.
+
+```typescript
+const cached = await redis.get(`user:${userId}`);
+
+if (cached) {
+  return JSON.parse(cached);
 }
+
+const user = await database.users.findById(userId);
+
+await redis.set(`user:${userId}`, JSON.stringify(user), {
+  EX: 3600,
+});
+
+return user;
 ```
 
-Unlike relational databases, Redis does not organize information into tables or relationships.
+### Write-Through
 
-Instead, applications choose meaningful keys that allow fast retrieval.
+Writes are applied to the cache and primary database as part of the same application flow.
 
-:::at-a-glance
+```typescript
+await database.users.update(userId, user);
 
-### Key-Value
+await redis.set(`user:${userId}`, JSON.stringify(user));
+```
 
-- Unique Keys.
-- Fast lookups.
-- No relational schema.
-- O(1) average lookup.
+### Write-Behind
 
-:::
-
-:::misconceptions
-
-❌ Redis organizes data using tables.
-
-✅ Redis stores values directly under keys.
-
-:::
-
----
-
-## Redis Data Structures
-
-Although Redis is often described as a key-value database, the value associated with each key can be much more than a simple string.
-
-Redis supports several specialized data structures.
-
-Common structures include:
-
-- Strings
-- Hashes
-- Lists
-- Sets
-- Sorted Sets (ZSets)
-- Streams
-- Bitmaps
-- HyperLogLogs
-- Geospatial Indexes
-
-Choosing the appropriate structure often simplifies application logic while improving performance.
-
-:::at-a-glance
-
-### Common Structures
-
-- Strings
-- Hashes
-- Lists
-- Sets
-- Sorted Sets
-- Streams
-
-:::
-
-:::misconceptions
-
-❌ Redis only stores strings.
-
-✅ Redis provides multiple optimized data structures for different use cases.
-
-:::
-
-:::example
+The application writes to Redis first and persists the change to the primary database asynchronously.
 
 ```text
-user:123
-
-↓
-
-Hash
-
-↓
-
-name = Alice
-
-email = alice@example.com
-
-role = admin
+Application → Redis → Async Persistence → Database
 ```
 
-:::
+### Refresh-Ahead
 
----
-
-## Strings
-
-Strings are the simplest and most commonly used Redis data type.
-
-They can store:
-
-- Text
-- Numbers
-- JSON
-- Serialized objects
-- Binary data
-
-Typical use cases include:
-
-- Cache entries.
-- Session IDs.
-- Authentication tokens.
-- Counters.
-
-:::at-a-glance
-
-### Strings
-
-- Simple values.
-- Fast reads.
-- Fast writes.
-- Most commonly used type.
-
-:::
-
----
-
-## Hashes
-
-A **Hash** stores multiple field-value pairs under a single key.
-
-Hashes are ideal for representing structured objects such as users, products, or application settings without storing an entire JSON document.
-
-Because individual fields can be updated independently, hashes are often more memory-efficient than repeatedly serializing large objects.
-
-:::at-a-glance
-
-### Hashes
-
-- Structured objects.
-- Field-value pairs.
-- Partial updates.
-- Memory efficient.
-
-:::
-
-:::example
+Frequently accessed values are refreshed before they expire, reducing the probability that a request encounters stale or missing cached data.
 
 ```text
-user:123
-
-↓
-
-Hash
-
-name  → Alice
-
-email → alice@example.com
-
-role  → admin
+Request → Redis → Refresh Before Expiration → Database
 ```
 
-:::
+![Redis Caching Patterns](/docs/redis/redis-caching-patterns.png)
 
 ---
 
-## Lists
+# High Availability
 
-A **List** is an ordered collection of elements.
+Redis can maintain service availability by replicating data from a primary instance to one or more replicas.
 
-Lists preserve insertion order and allow efficient insertion or removal from either end.
-
-Typical use cases include:
-
-- Task queues.
-- Activity feeds.
-- Recent events.
-- Processing pipelines.
-
-:::at-a-glance
-
-### Lists
-
-- Ordered.
-- Queue-like behavior.
-- FIFO or LIFO.
-
-:::
-
-:::misconceptions
-
-❌ Lists are ideal for fast lookups.
-
-✅ Lists are optimized for ordered insertion and removal rather than random access.
-
-:::
-
----
-
-## Sets
-
-A **Set** stores unique values.
-
-Duplicate elements are automatically ignored.
-
-Sets are useful whenever uniqueness is more important than ordering.
-
-Typical use cases include:
-
-- User permissions.
-- Tags.
-- Online users.
-- Feature flags.
-
-:::at-a-glance
-
-### Sets
-
-- Unique elements.
-- No duplicates.
-- Unordered.
-
-:::
-
-:::example
+The primary handles writes and continuously propagates data changes to its replicas.
 
 ```text
-online-users
-
-↓
-
-alice
-
-john
-
-maria
+Primary
+  ├── Replica 1
+  └── Replica 2
 ```
 
-:::
+Replication can be configured dynamically with `REPLICAOF`.
 
----
+```redis
+REPLICAOF 10.0.0.10 6379
+```
 
-## Sorted Sets (ZSets)
+Redis Sentinel adds automatic monitoring and failover to replicated deployments.
 
-A **Sorted Set** combines uniqueness with ordering.
+```conf
+sentinel monitor mymaster 10.0.0.10 6379 2
+```
 
-Each element has an associated numeric score.
-
-Redis automatically keeps elements sorted by their score.
-
-Typical use cases include:
-
-- Leaderboards.
-- Rankings.
-- Prioritized queues.
-- Trending content.
-
-:::at-a-glance
-
-### Sorted Sets
-
-- Unique elements.
-- Ordered by score.
-- Efficient ranking.
-
-:::
-
-:::example
+Sentinel instances monitor the primary and replicas. If the primary becomes unavailable and the required quorum agrees on the failure, Sentinel coordinates a failover and promotes a replica to become the new primary.
 
 ```text
-Leaderboard
+Primary failure
 
-Alice   950
+      ↓
 
-John    820
+Failure detection
 
-Maria   760
+      ↓
+
+Sentinel coordination
+
+      ↓
+
+Replica promotion
+
+      ↓
+
+New primary
 ```
 
-:::
+Applications can use Sentinel to discover the current primary instead of depending on a permanently fixed primary address.
+
+![Redis High Availability](/docs/redis/redis-high-availability.png)
 
 ---
 
-## Streams
+# Horizontal Scaling
 
-A **Stream** is an append-only log designed for event-driven applications.
+Redis Cluster distributes data across multiple Redis nodes, allowing a dataset and its workload to scale beyond a single instance.
 
-Unlike Pub/Sub, streams retain messages after they are published.
-
-Consumers can process events independently and resume from the last processed message.
-
-Typical use cases include:
-
-- Event sourcing.
-- Audit logs.
-- Message processing.
-- Background workers.
-
-:::at-a-glance
-
-### Streams
-
-- Persistent events.
-- Consumer Groups.
-- Ordered processing.
-- Replay capability.
-
-:::
-
-:::misconceptions
-
-❌ Streams behave like Pub/Sub.
-
-✅ Streams retain events until they are explicitly acknowledged or removed.
-
-:::
-
----
-
-## Time To Live (TTL)
-
-A **Time To Live (TTL)** defines how long a key should remain in Redis before it is automatically removed.
-
-Expiration allows applications to keep temporary data without implementing manual cleanup logic.
-
-Typical use cases include:
-
-- Cache entries.
-- Password reset tokens.
-- Email verification links.
-- Temporary sessions.
-- Rate limiting windows.
-
-Once the configured time expires, Redis automatically deletes the key.
-
-:::at-a-glance
-
-### TTL
-
-- Automatic expiration.
-- Temporary data.
-- No manual cleanup.
-- Reduces stale data.
-
-:::
-
-:::misconceptions
-
-❌ Expired keys remain in Redis until manually deleted.
-
-✅ Redis automatically removes expired keys.
-
-:::
-
-:::example
+Instead of assigning individual keys directly to nodes, Redis divides the keyspace into **16,384 hash slots**. Each primary node owns a subset of those slots.
 
 ```text
-user:123
+0 ─────────────────────────────── 16383
 
-↓
-
-TTL = 300 seconds
-
-↓
-
-Automatically removed after 5 minutes
+Node A        Node B        Node C
+0–5460        5461–10922    10923–16383
 ```
 
-:::
-
----
-
-## Eviction Policies
-
-When Redis reaches its configured memory limit, it must decide which keys to remove.
-
-This behavior is controlled through **Eviction Policies**.
-
-Common policies include:
-
-- noeviction
-- allkeys-lru
-- volatile-lru
-- allkeys-lfu
-- volatile-ttl
-- random
-
-Choosing the correct policy depends on the application's access patterns.
-
-For example:
-
-- API cache → LRU
-- Session cache → volatile-lru
-- Frequently accessed data → LFU
-
-:::at-a-glance
-
-### Eviction Policies
-
-- Control memory usage.
-- Remove old or infrequently used keys.
-- Prevent out-of-memory failures.
-
-:::
-
-:::misconceptions
-
-❌ Redis automatically chooses the best eviction strategy.
-
-✅ Applications must configure the appropriate policy.
-
-:::
-
----
-
-## Persistence
-
-Although Redis is primarily an in-memory database, it also supports optional persistence.
-
-Persistence allows Redis to recover data after a restart.
-
-Redis supports two primary persistence mechanisms.
-
-### RDB Snapshots
-
-Redis periodically saves a snapshot of memory to disk.
-
-Advantages:
-
-- Compact files.
-- Fast recovery.
-- Lower write overhead.
-
-Disadvantages:
-
-- Recent changes may be lost.
-
----
-
-### AOF (Append Only File)
-
-Redis records every write operation.
-
-Advantages:
-
-- Better durability.
-- Smaller data loss window.
-
-Disadvantages:
-
-- Larger files.
-- Higher write overhead.
-
-Applications may also combine both mechanisms.
-
-:::at-a-glance
-
-### Persistence
-
-- RDB
-- AOF
-- Optional
-- Configurable
-
-:::
-
-:::misconceptions
-
-❌ Redis always loses all data after a restart.
-
-✅ Persistence can recover most or all stored data depending on the chosen strategy.
-
-:::
-
----
-
-## Pub/Sub
-
-Redis provides a lightweight **Publish / Subscribe** messaging system.
-
-Applications publish messages to a channel.
-
-Subscribers listening to that channel immediately receive new messages.
+When a client accesses a key, Redis determines its hash slot from the key name.
 
 ```text
-Publisher
-
-↓
-
-Channel
-
-↓
-
-Subscriber A
-
-Subscriber B
-
-Subscriber C
+user:42
+   ↓
+CRC16("user:42") mod 16384
+   ↓
+Hash Slot
+   ↓
+Owning Node
 ```
 
-Pub/Sub is commonly used for:
+Clients can connect to any node in the cluster. If the requested key belongs to another node, Redis returns a `MOVED` redirection containing the correct destination.
 
-- Notifications.
-- Real-time dashboards.
-- Chat systems.
-- Live updates.
-
-Unlike Redis Streams, Pub/Sub does **not** persist messages.
-
-If a subscriber is offline when a message is published, the message is permanently lost.
-
-:::at-a-glance
-
-### Pub/Sub
-
-- Real-time messaging.
-- Multiple subscribers.
-- No persistence.
-- Fire-and-forget.
-
-:::
-
-:::misconceptions
-
-❌ Pub/Sub stores messages until subscribers reconnect.
-
-✅ Messages are delivered only to active subscribers.
-
-:::
-
----
-
-## Distributed Cache
-
-Redis is frequently deployed as a shared cache across multiple application servers.
-
-Instead of each application instance maintaining its own cache, every instance communicates with the same Redis server.
+```redis
+GET user:42
+```
 
 ```text
-          Load Balancer
-           /        \
-          ▼          ▼
-      App A      App B
-          │          │
-          └────┬─────┘
-               ▼
-             Redis
-               │
-               ▼
-          PostgreSQL
+MOVED 8000 10.0.0.12:6379
 ```
 
-This architecture ensures that every application instance observes the same cached data.
+Cluster-aware clients automatically follow these redirections and maintain a mapping between hash slots and nodes.
 
-It also reduces duplicated work and improves cache consistency.
+Redis also supports **hash tags**, allowing related keys to be assigned to the same hash slot.
 
-:::at-a-glance
+```text
+user:{42}:profile
+user:{42}:settings
+user:{42}:sessions
+```
 
-### Distributed Cache
+Only the content inside `{}` is used when calculating the hash slot, allowing operations involving related keys to remain colocated.
 
-- Shared by all servers.
-- Consistent cache.
-- Scales horizontally.
-- Reduces database load.
+![Redis Horizontal Scaling](/docs/redis/redis-horizontal-scaling.png)
 
-:::
 ---
 
 # Putting Everything Together
 
-The following sequence summarizes how Redis accelerates data access in modern backend systems.
+Redis combines in-memory execution, specialized data structures, expiration, persistence, messaging, coordination, replication, and clustering within the same data platform.
+
+A production application can use these capabilities together while each solves a different part of the system.
 
 ```text
-                 Client Request
-                       │
-                       ▼
-                  Backend API
-                       │
-                       ▼
-                  Redis Lookup
-                       │
-              ┌────────┴────────┐
-              │                 │
-              ▼                 ▼
-         Cache Hit         Cache Miss
-              │                 │
-              ▼                 ▼
-      Return Cached Data   PostgreSQL Query
-                                │
-                                ▼
-                         Retrieve Data
-                                │
-                                ▼
-                         Store in Redis
-                                │
-                                ▼
-                         Return Response
+Application
+    │
+    ▼
+Redis
+    │
+    ├── Fast data access
+    ├── Temporary state
+    ├── Caching
+    ├── Coordination
+    └── Messaging
 ```
 
-When an application receives a request, it first checks whether the required data already exists in Redis.
+The deployment can then add persistence, replicas, and clustering according to its durability, availability, and scalability requirements.
 
-If the data is found (**Cache Hit**), Redis immediately returns the value, avoiding an unnecessary database query.
-
-If the data is not found (**Cache Miss**), the application retrieves it from PostgreSQL, stores it in Redis for future requests, and returns the result to the client.
-
-This pattern significantly reduces latency, decreases database load, and improves overall system scalability.
-
----
-
-## PostgreSQL vs Redis
-
-Although PostgreSQL and Redis are often deployed together, they serve fundamentally different purposes.
-
-| PostgreSQL              | Redis                                 |
-| ----------------------- | ------------------------------------- |
-| Persistent storage      | In-memory storage                     |
-| System of record        | Cache and fast data access            |
-| Relational model        | Key-Value model                       |
-| ACID transactions       | Optimized for speed                   |
-| Disk-based              | Memory-based                          |
-| Long-term business data | Temporary or frequently accessed data |
-
-Rather than competing technologies, PostgreSQL and Redis complement each other.
-
-A common production architecture stores authoritative business data in PostgreSQL while using Redis to accelerate frequently accessed information.
-
----
-
-## Common Architecture
-
-```text
-                Client
-                   │
-                   ▼
-               Backend API
-                   │
-        ┌──────────┴──────────┐
-        ▼                     ▼
-     Redis Cache       PostgreSQL
- (Fast Reads)       (Source of Truth)
-```
-
-Redis handles high-frequency, low-latency requests.
-
-PostgreSQL guarantees durability, consistency, and long-term persistence.
-
-Together, they provide both performance and reliability.
-
----
-
-## Final Perspective
-
-Redis is far more than a caching solution.
-
-It is an in-memory data platform capable of supporting caching, session management, rate limiting, distributed locks, Pub/Sub messaging, event streaming, leaderboards, and many other high-performance use cases.
-
-Its speed comes from keeping data in memory and providing specialized data structures optimized for common application patterns.
-
-Understanding Redis means understanding when data should be optimized for speed rather than permanence.
-
-Used together, PostgreSQL and Redis form one of the most common and effective architectural patterns in modern backend development.
+![Redis Putting Everything Together](/docs/redis/redis-putting-everything-together.png)

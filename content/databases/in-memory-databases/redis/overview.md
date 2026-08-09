@@ -1,6 +1,7 @@
 ---
 title: Redis Overview
 description: Understand what Redis is, why in-memory databases exist, and how applications achieve extremely fast data access.
+icon: redis.png
 order: 1
 updatedAt: 2026-07-05
 ---
@@ -11,194 +12,106 @@ updatedAt: 2026-07-05
 
 Redis is an in-memory data store designed for extremely fast data access.
 
-Unlike traditional relational databases that prioritize durability and relational consistency, Redis prioritizes speed by storing data primarily in memory.
+Instead of storing information primarily on disk, Redis keeps data in memory, allowing applications to retrieve and update data with extremely low latency.
 
-Applications commonly use Redis to reduce database load, decrease response times, and improve scalability.
+Unlike relational databases such as PostgreSQL, Redis is optimized for speed rather than complex relationships or long-term persistence.
 
-Redis is frequently used as:
+Redis is commonly used to cache frequently accessed data, store user sessions, implement rate limiting, exchange messages, and maintain real-time application state.
 
-- Cache
-- Session Store
-- Message Broker
-- Distributed Lock Manager
-- Rate Limiter
-- Real-Time Data Store
-
-Although Redis supports persistence, it is generally considered a complementary technology rather than a replacement for relational databases such as PostgreSQL.
+![Redis Overview](/docs/redis/redis-overview.png)
 
 ---
 
-## How it Works
+## How It Works
 
-Applications store data in Redis using unique keys.
+Applications communicate with Redis by sending commands that read or modify values identified by unique keys.
 
-Whenever the same information is needed again, the application retrieves it directly from Redis instead of executing another database query.
+Rather than executing expensive database queries for every request, applications can retrieve frequently accessed information directly from memory, dramatically reducing response times.
 
 ```text
-Application
+SET user:42 "Alice"
 
 ↓
 
-Redis Lookup
+Redis
 
 ↓
 
-Cache Hit?
+Memory
 
 ↓
 
-Yes
+GET user:42
 
 ↓
 
-Return Data
-
-No
-
-↓
-
-PostgreSQL
-
-↓
-
-Store in Redis
-
-↓
-
-Return Data
+"Alice"
 ```
 
-Because Redis keeps data in memory, access times are typically measured in microseconds rather than milliseconds.
+Because all operations occur in memory, Redis typically responds in microseconds, making it one of the fastest data stores available.
+
+![Redis Runtime Model](/docs/redis/redis-runtime-model.png)
 
 ---
 
-## Why In-Memory Databases Exist
+## How It Fits into the Ecosystem
 
-Relational databases provide consistency and durability.
+Redis typically sits alongside relational databases, APIs, background workers, and other backend services.
 
-However, repeatedly querying the database for frequently accessed information creates unnecessary latency and increases system load.
+Instead of replacing these systems, Redis complements them by temporarily storing frequently accessed or short-lived data, reducing unnecessary work and improving overall application performance.
 
-Redis addresses this problem by keeping hot data in memory.
-
-Rather than replacing PostgreSQL, Redis complements it.
-
-A common architecture is:
-
-```text
-Application
-      │
-      ▼
-Redis
-
-Cache Hit?
-
-Yes
-      │
-      ▼
-Response
-
-No
-      │
-      ▼
-PostgreSQL
-      │
-      ▼
-Store in Redis
-      │
-      ▼
-Response
-```
-
-This pattern dramatically reduces response times while decreasing pressure on the primary database.
-
----
-
-## How it Fits into the Ecosystem
-
-Redis sits between the application and slower backend systems.
-
-Its primary goal is reducing latency and minimizing unnecessary work performed by databases or external services.
-
-```text
-Frontend
-      │
-      ▼
-Backend
-      │
-      ▼
-Redis
-
-Cache Hit?
-
-Yes
-      │
-      ▼
-Response
-
-No
-      │
-      ▼
-PostgreSQL
-      │
-      ▼
-Redis
-      │
-      ▼
-Response
-```
-
-Redis commonly works together with:
+Applications commonly use Redis together with:
 
 - PostgreSQL
 - Backend APIs
-- Session-based authentication
-- Message Brokers
 - Background Workers
+- Session-based Authentication
+- Message Brokers
 - API Gateways
 
-Rather than replacing these technologies, Redis improves their performance by storing frequently accessed or short-lived data in memory.
+![Redis Ecosystem](/docs/redis/redis-ecosystem.png)
 
 ---
 
-## Real-World Usage
+## What It Looks Like
 
-Redis is commonly used for:
+Redis is commonly managed through the Redis command-line interface (`redis-cli`) or graphical management tools.
 
-- API response caching.
-- Session storage.
-- Authentication state.
-- Shopping carts.
-- Rate limiting.
-- Leaderboards.
-- Distributed locks.
-- Real-time analytics.
+Developers interact with Redis by executing simple commands that store, retrieve, update, or remove values associated with keys.
 
-Many large-scale systems rely on Redis to reduce database load and improve response times during periods of high traffic.
+```bash
+redis-cli
 
----
+127.0.0.1:6379> SET user:42 "Alice"
+OK
 
-## Practical Examples
+127.0.0.1:6379> GET user:42
+"Alice"
 
-### Example 1 — Product Catalog
+127.0.0.1:6379> INCR api:requests
+(integer) 1
 
-An e-commerce platform stores popular product information in Redis.
+127.0.0.1:6379> TTL session:abc
+(integer) 3542
+```
 
-Instead of querying PostgreSQL thousands of times per minute, the application retrieves the data directly from Redis.
-
----
-
-### Example 2 — User Sessions
-
-After a user authenticates, the application stores the user's session in Redis.
-
-Any application instance can retrieve the session, allowing the system to scale horizontally.
+![Redis Interface](/docs/redis/redis-interface.png)
 
 ---
 
-### Example 3 — API Rate Limiting
+## Common Use Cases
 
-An API stores request counters in Redis.
+Redis is commonly used to improve application performance and support real-time workloads.
 
-Each incoming request increments the counter.
+Some of the most common use cases include:
 
-If the configured limit is exceeded, the API rejects additional requests until the counter resets.
+- API response caching
+- Session storage
+- Authentication state
+- Rate limiting
+- Distributed locking
+- Leaderboards
+- Message queues
+- Pub/Sub messaging
+- Real-time analytics
+- Shopping carts
