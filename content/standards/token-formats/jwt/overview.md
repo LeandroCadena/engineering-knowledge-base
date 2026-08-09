@@ -1,163 +1,81 @@
 ---
 title: JWT Overview
-description: Understand what JSON Web Tokens are, how trusted claims travel between distributed systems, and why JWT has become a common token format for modern applications.
+description: Understand what JSON Web Tokens are, why they exist, how they carry verifiable claims between systems, and where they fit within modern application architectures.
+icon: jwt.png
 order: 1
-updatedAt: 2026-07-05
+updatedAt: 2026-08-08
 ---
 
 # JSON Web Token (JWT)
 
 ## Definition
 
-A JSON Web Token (JWT) is a compact, self-contained token format used to securely transmit claims between systems.
+A JSON Web Token (JWT) is a compact token format used to carry claims between systems in a way that allows the recipient to verify their integrity and origin.
 
-Rather than requiring every service to query a database before processing each request, a JWT allows trusted information to travel together with the request.
+A claim represents information about a subject or context, such as an identity, an issuer, an intended audience, or a validity period.
 
-The receiving system verifies the token's signature before trusting the contained information.
+JWT exists because distributed systems often need to exchange this information across trust boundaries without retrieving it from a central authority for every interaction.
 
-If the signature is valid and the token satisfies all validation rules, the contained claims may be used without additional lookups.
+JWT provides a portable container for verifiable claims.
 
-JWT is a transport format for trusted information.
-
-It is not an authentication protocol, an authorization framework, or an encryption mechanism.
-
-Today, JWT is widely used by APIs, microservices, cloud platforms, identity providers, and OAuth 2.0 implementations.
+It does not define how users authenticate, how permissions are assigned, or how applications perform authorization. It is also not an encryption mechanism: signed JWTs protect integrity, but their contents are not inherently secret.
 
 ---
 
-## How it Works
+## How It Works
 
-A trusted authority creates a JWT containing one or more claims.
+A trusted issuer creates a JWT containing claims that another system may need.
 
-The token is digitally signed before being sent to the client.
+The token can travel with a request or between components, allowing the receiving system to validate it before relying on the information it contains.
 
-Whenever the client communicates with another service, it includes the JWT.
+JWTs are self-contained in the sense that the claims required by the recipient can travel inside the token itself.
 
-The receiving service verifies the signature before trusting the claims.
+![JWT Lifecycle](/docs/jwt/jwt-overview-lifecycle.png)
 
-```text
-Identity Provider
-
-↓
-
-Create Claims
-
-↓
-
-Sign JWT
-
-↓
-
-Client
-
-↓
-
-Send JWT
-
-↓
-
-Verify Signature
-
-↓
-
-Trusted Claims
-```
-
-Because the claims travel inside the token itself, systems often avoid querying centralized storage on every request.
+The encoding process, signature algorithms, validation rules, and key management involved in this workflow are explored in the Deep Dive.
 
 ---
 
-## How it Fits into the Ecosystem
+## How It Fits into the Ecosystem
 
 JWT is a token format rather than an authentication or authorization protocol.
 
-Its responsibility is transporting trusted claims between systems.
+It is commonly used by identity and authorization systems when information must move between independently operating applications, APIs, gateways, or services.
 
-Other technologies frequently use JWT as the container for that information.
+OAuth 2.0 can use JWTs as access tokens, while OpenID Connect uses JWT for ID Tokens. Identity providers may issue them, and applications or protected services may consume them.
 
-```text
-Identity Provider
-        │
-        ▼
-Generate JWT
-        │
-        ▼
-Client
-        │
-        ▼
-API Gateway
-        │
-        ▼
-Verify Signature
-        │
-        ▼
-Business Logic
-```
+![JWT Ecosystem](/docs/jwt/jwt-overview-ecosystem.png)
 
-JWT is commonly used together with technologies such as:
-
-- OAuth 2.0
-- OpenID Connect
-- API Gateways
-- Microservices
-- Service-to-Service Authentication
-
-Although OAuth frequently issues JWT Access Tokens, OAuth itself does not require JWT.
-
-Similarly, OpenID Connect defines the ID Token as a JWT, but JWT can be used independently of OpenID Connect.
+The surrounding protocol or application defines why the token exists and how its claims affect system behavior. JWT provides the representation used to carry those claims.
 
 ---
 
-## Real-World Usage
+## What It Looks Like
 
-JWT is commonly used whenever systems need to exchange trusted information efficiently.
+JWTs are commonly encountered as compact strings in HTTP requests, browser developer tools, API clients, logs, and identity-platform debugging tools.
 
-Typical examples include:
+JWT inspection tools make their structure and decoded contents easier to recognize during development and troubleshooting.
 
-- User authentication.
-- Access Tokens.
-- ID Tokens.
-- Service-to-service communication.
-- API Gateways.
-- Distributed microservices.
+![JWT Token Inspection](/docs/jwt/jwt-overview-token-inspection.png)
 
-Modern cloud platforms frequently validate JWTs at the API Gateway, allowing downstream services to trust the verified claims without repeating authentication.
+Decoding a JWT is not the same as validating it. Readable contents alone do not establish that a token should be trusted.
 
 ---
 
-## Practical Examples
+## Common Use Cases
 
-### Example 1 — User Authentication
+### Authenticated Identity
 
-A user logs into an application.
+After authentication, an identity system can issue a JWT containing claims about the authenticated identity. Applications and APIs can use those claims after validating the token.
 
-The Identity Provider creates a signed JWT containing claims such as:
+### OAuth 2.0 Access Tokens
 
-- User ID
-- Email
-- Roles
-- Expiration
+OAuth 2.0 deployments may use JWT as the representation of an access token presented by a client when accessing protected resources.
 
-The client includes the JWT with every subsequent request.
+### OpenID Connect ID Tokens
 
-The API verifies the signature before authorizing access.
+OpenID Connect uses JWT to represent ID Tokens containing information about an authenticated user and the authentication event.
 
----
+### Service-to-Service Communication
 
-### Example 2 — Microservices
-
-A frontend sends a JWT to an API Gateway.
-
-The gateway validates the token once.
-
-Verified claims are forwarded to downstream microservices, eliminating repeated database lookups.
-
----
-
-### Example 3 — OAuth Access Token
-
-An OAuth Authorization Server issues a JWT Access Token.
-
-Every protected API verifies the JWT signature before processing the request.
-
-The API does not need to contact the Authorization Server for every request because the required claims already exist inside the token.
+Services can use JWTs to carry identity or authorization context across service boundaries without requiring an end user to be involved.
