@@ -1,145 +1,74 @@
 ---
 title: API Keys Overview
-description: Understand what API Keys are, how applications identify themselves, and when API Keys are an appropriate authentication mechanism.
+description: Understand what API Keys are, how they associate requests with clients or projects, and where they fit within API access and security.
 order: 1
-updatedAt: 2026-07-05
+updatedAt: 2026-08-10
 ---
 
 # API Keys
 
 ## Definition
 
-An API Key is a unique credential used by one application to identify itself when making requests to another application.
+An **API Key** is a credential issued by an API provider and associated with a known client, application, project, integration, or other usage context.
 
-Unlike user authentication mechanisms, API Keys typically identify the calling application rather than the individual user.
+When a request presents a valid key, the provider can associate that request with the context represented by the credential and apply the corresponding access rules, quotas, usage tracking, or billing policies.
 
-The server validates the API Key before processing the request.
+API Keys commonly act as secret credentials, meaning possession may be sufficient to use them. Some systems also provide publishable or restricted keys intended for environments where the credential cannot remain confidential.
 
-If the key is recognized and authorized, the request may continue.
-
-Otherwise, the request is rejected.
-
-API Keys provide a simple mechanism for authenticating clients, tracking usage, enforcing quotas, and restricting access to APIs.
-
-Although API Keys establish the identity of the calling application, they do not encrypt communication and should therefore always be transmitted over secure channels such as HTTPS.
+An API Key does not identify an end user unless a particular system explicitly assigns that meaning to it, and it does not provide encryption or protect the communication channel.
 
 ---
 
-## How it Works
+## How It Works
 
-An API provider generates a unique key for each client application.
+API Keys establish a credential relationship between a provider and a client. The provider controls which context and policies are associated with each issued key.
 
-The client includes that key with every request.
+![API Key High-Level Flow](/docs/api-keys/api-keys-overview-flow.png)
 
-The server validates the key before executing the requested operation.
-
-```text
-Client
-
-↓
-
-API Key
-
-↓
-
-API Server
-
-↓
-
-Validate Key
-
-↓
-
-Process Request
-```
-
-The API Key acts as a credential proving which application is making the request.
-
-It does not prove the identity of an end user.
+A key can therefore serve as more than a binary access check. Its associated context can determine which APIs are available, how usage is measured, and which restrictions apply to requests presenting that credential.
 
 ---
 
-## How it Fits into the Ecosystem
+## How It Fits into the Ecosystem
 
-API Keys operate at the application level.
+API Keys operate at the API access layer, where requests need to be associated with a known client or usage context.
 
-Their primary responsibility is identifying the calling application so that the server can decide whether to process the request.
+They can be used independently for simple access models or alongside mechanisms that provide different security properties.
 
-Unlike OAuth or OpenID Connect, API Keys do not represent an end user.
+![API Key Ecosystem](/docs/api-keys/api-keys-overview-ecosystem.png)
 
-Instead, they represent the application consuming the API.
-
-```text
-Application
-      │
-      ▼
-API Key
-      │
-      ▼
-API Gateway / API Server
-      │
-      ▼
-Authentication
-      │
-      ▼
-Authorization
-      │
-      ▼
-Business Logic
-```
-
-Because API Keys only identify the client application, they are commonly combined with other security mechanisms such as HTTPS, HMAC signatures, OAuth access tokens, or JWTs.
+The role assigned to an API Key depends on the system using it. In one API it may authenticate a confidential client, while in another it may primarily identify a project for quota enforcement or usage attribution.
 
 ---
 
-## Real-World Usage
+## What It Looks Like
 
-API Keys are commonly used for:
+API providers define how clients supply their keys. The credential may appear in an HTTP header or another provider-defined request location, and keys often use recognizable prefixes or formats to distinguish their purpose or environment.
 
-- Public APIs.
-- Internal service integrations.
-- AI platforms.
-- Mapping services.
-- Payment gateways.
-- Notification providers.
-- Cloud APIs.
+![API Key Request](/docs/api-keys/api-keys-overview-request.png)
 
-Popular examples include:
-
-- OpenAI API
-- Google Maps API
-- Stripe
-- Twilio
-- AWS APIs
-
-Although the implementation details differ, the underlying concept remains the same: each client receives a unique credential that identifies the application making the request.
+The transport format does not determine the key's security properties. Whether a key must remain secret, where it may be used, and which restrictions apply are defined by the provider that issued it.
 
 ---
 
-## Practical Examples
+## Common Use Cases
 
-### Example 1 — AI API
+### Third-Party API Access
 
-A backend service calls an AI provider.
+Applications can use API Keys to access external services under credentials issued specifically for that integration.
 
-Every request includes the API Key assigned to that application.
+### Project or Application Identification
 
-The provider identifies the client, applies usage limits, records billing information, and processes the request.
+Providers can associate requests with a particular project or application for configuration, policy enforcement, and operational visibility.
 
----
+### Internal Service Integrations
 
-### Example 2 — Google Maps
+Services operating within a controlled environment can use API Keys as credentials for integrations that require a simple shared access model.
 
-A web application loads Google Maps.
+### Usage Metering and Quotas
 
-The browser includes an API Key.
+A provider can associate API consumption with a key to measure usage, enforce rate or quota limits, and attribute consumption to the corresponding client or project.
 
-Google identifies which application issued the request and applies any configured restrictions or quotas.
+### Restricted Client Access
 
----
-
-### Example 3 — Internal Microservices
-
-A reporting service communicates with an internal analytics API.
-
-Rather than authenticating a human user, the reporting service authenticates itself using an API Key issued specifically for that integration.
+Keys intended for environments where confidentiality cannot be guaranteed can be constrained by provider-defined restrictions that limit where or how they may be used.

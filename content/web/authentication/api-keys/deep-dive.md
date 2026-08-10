@@ -1,247 +1,236 @@
 ---
 title: API Keys Deep Dive
-description: Master the engineering concepts behind API Keys, including secure transmission, storage, rotation, scopes, expiration, and best practices.
+description: Understand how API Keys are structured, validated, exposed, restricted, attributed, and managed throughout their lifecycle.
+icon: api-keys.png
 order: 2
-updatedAt: 2026-07-05
+updatedAt: 2026-08-10
 ---
 
-# API Keys Deep Dive
+# API Key Structure
 
-## Transmission
+An API Key is credential material issued by a provider and associated with a record the provider controls.
 
-API Keys must be transmitted securely.
+Keys may be completely opaque or follow a provider-defined format. Their structure is not standardized, so clients must treat the format as part of the issuing system's contract rather than assume that every key contains the same components.
 
-Because an API Key is a credential, anyone who obtains it can often impersonate the client application.
+![API Key Anatomy](/docs/api-keys/api-keys-anatomy.png)
 
-For this reason, API Keys should always be transmitted over HTTPS.
+Secret key material should be generated from cryptographically secure randomness rather than predictable identifiers, timestamps, usernames, or application data:
 
-Most APIs send API Keys using HTTP headers rather than query parameters.
+~~~ts
+import { randomBytes } from 'node:crypto';
 
-Common approaches include:
+const secret = randomBytes(32).toString('base64url');
+~~~
 
-- Authorization header
-- X-API-Key header
+A provider can combine generated secret material with its own external format:
 
-Headers reduce the likelihood of API Keys being exposed in logs, browser history, or analytics systems.
+~~~ts
+const apiKey = `sk_live_${secret}`;
+~~~
 
-:::at-a-glance
+The complete credential may be displayed only when it is created if the provider stores a non-recoverable verification representation rather than the original secret.
 
-### Best Practices
-
-- Always use HTTPS.
-- Prefer HTTP Headers.
-- Avoid query parameters.
-- Never expose keys publicly.
-
-:::
-
-:::misconceptions
-
-❌ API Keys are encrypted automatically.
-
-✅ API Keys rely on TLS (HTTPS) for secure transmission.
-
-:::
-
-:::example
-
-```http
-GET /users
-
-X-API-Key: abc123...
-```
-
-:::
+This allows subsequent verification without providing a mechanism for retrieving the original credential.
 
 ---
 
-## Storage
+# API Key Validation
 
-API Keys should be treated like passwords.
+Receiving an API Key is not sufficient to trust it. The provider must resolve the presented credential to a known key record and verify that the secret material corresponds to that record.
 
-Applications should never hardcode API Keys directly into source code or commit them to version control.
+A key record can separate information required for lookup from the representation used to verify the secret:
 
-Instead, they should be stored securely using:
+~~~ts
+interface ApiKeyRecord {
+  id: string;
+  keyHash: string;
+  status: 'active' | 'revoked';
+  expiresAt: Date | null;
+}
+~~~
 
-- Environment Variables
-- Secret Managers
-- Vault Services
-- Cloud Secret Stores
+When a key format contains a non-secret identifier, that identifier can locate the candidate record without using the complete secret as a database lookup value:
 
-Servers should avoid storing API Keys in plain text whenever possible.
+~~~ts
+const record = await apiKeys.findById(keyId);
 
-Instead, hashes or encrypted storage mechanisms should be used.
+if (!record) {
+  throw new Error('Invalid API key');
+}
 
-:::at-a-glance
+const valid = await verifyApiKey(
+  presentedSecret,
+  record.keyHash,
+);
 
-### Recommended Storage
+if (!valid) {
+  throw new Error('Invalid API key');
+}
+~~~
 
-- Environment Variables.
-- AWS Secrets Manager.
-- Azure Key Vault.
-- Google Secret Manager.
-- HashiCorp Vault.
+The stored verification representation can be derived when the credential is created:
 
-:::
+~~~ts
+const keyHash = await hashApiKey(secret);
 
-:::misconceptions
+await apiKeys.create({
+  id: keyId,
+  keyHash,
+  status: 'active',
+  expiresAt: null,
+});
+~~~
 
-❌ Environment variables encrypt API Keys.
+The exact verification mechanism depends on the key design. A provider that must recover the original key has different storage requirements from one that only needs to determine whether a presented credential is valid.
 
-✅ They separate secrets from source code but are not encryption.
-
-:::
-
----
-
-## Rotation
-
-API Keys should be replaced periodically.
-
-Regular key rotation reduces the impact of leaked or compromised credentials.
-
-Many production systems support multiple active API Keys simultaneously, allowing applications to transition to new credentials without downtime.
-
-:::at-a-glance
-
-### Rotation improves
-
-- Security.
-- Incident recovery.
-- Credential hygiene.
-
-:::
-
-:::misconceptions
-
-❌ API Keys should never change.
-
-✅ Regular rotation is considered a security best practice.
-
-:::
+Operational systems can use a non-secret identifier or fingerprint when referring to a credential in logs, dashboards, or audit records instead of exposing the complete key.
 
 ---
 
-## Scopes
+# API Key Exposure
 
-Some API providers associate API Keys with limited permissions.
+Possession of a secret API Key can be sufficient to exercise the privileges associated with it. Its confidentiality is therefore part of the credential's security boundary.
 
-Rather than granting unrestricted access, scopes restrict which operations a client may perform.
+Secret keys belong in environments where their value can remain confidential:
 
-Examples include:
+~~~ts
+const apiKey = process.env.PAYMENTS_API_KEY;
 
-- Read-only access.
-- Read and write access.
-- Billing APIs.
-- Administrative APIs.
+if (!apiKey) {
+  throw new Error('PAYMENTS_API_KEY is not configured');
+}
+~~~
 
-Although scopes are more commonly associated with OAuth, API providers frequently implement similar permission models for API Keys.
+Moving a secret outside source code does not automatically encrypt or protect it. The runtime, deployment system, logs, debugging tools, and operators with access to the environment can still affect its exposure.
 
-:::at-a-glance
+Secret credentials should also be protected while crossing the network by transport security such as HTTPS.
 
-### Example Scopes
+Not every API Key is designed to remain confidential. Providers can issue **publishable keys** for client environments where the value is expected to be observable, while enforcing security through the limited capabilities and restrictions associated with that key.
 
-- Read
-- Write
-- Admin
+A **restricted key** reduces what possession of the credential permits. Whether such a key may safely appear in a particular client environment still depends on the provider's security model and configured restrictions.
 
-:::
-
-:::misconceptions
-
-❌ Every API Key has unlimited permissions.
-
-✅ Many providers restrict permissions through scopes or roles.
-
-:::
+The exposure model is therefore part of the credential contract: a key intended only for trusted backend systems should not be treated as interchangeable with one explicitly designed for public clients.
 
 ---
 
-## Expiration
+# API Key Restrictions
 
-API Keys may be permanent or temporary.
+A valid API Key can resolve to policy that limits the contexts and operations in which the credential is accepted.
 
-Modern security practices increasingly favor keys with expiration dates.
+![API Key Restrictions](/docs/api-keys/api-keys-restrictions.png)
 
-Short-lived credentials reduce the window of opportunity available to attackers if a key becomes compromised.
+Credential verification and policy authorization are separate decisions. Successfully verifying the key establishes which key record is being presented; the associated policy determines whether that record permits the requested operation.
 
-Applications should monitor expiration dates and replace credentials before they expire.
+For example, an endpoint can require a permission associated with the resolved key:
 
-:::at-a-glance
+~~~ts
+if (!apiKey.scopes.includes('orders:write')) {
+  throw new Error('Insufficient scope');
+}
+~~~
 
-### Expiration
+Restrictions can also be evaluated against request context:
 
-- Reduces long-term risk.
-- Encourages rotation.
-- Improves security.
+~~~ts
+if (!apiKey.allowedEnvironments.includes(environment)) {
+  throw new Error('API key is not allowed in this environment');
+}
+~~~
 
-:::
+Policy should be controlled by the provider-side key record rather than trusted merely because a client supplied additional claims alongside its credential.
 
-:::misconceptions
+This allows permissions and restrictions to change without issuing a differently encoded credential when the provider's key model supports server-side policy updates.
 
-❌ API Keys should never expire.
+---
 
-✅ Expiring credentials generally provide better security.
+# API Key Attribution
 
-:::
+Resolving an API Key gives the provider a stable identifier that can associate requests with a client, application, project, integration, or other provider-defined context.
+
+That identifier can become the attribution key for usage accounting:
+
+~~~ts
+const usage = await usageStore.increment(apiKey.id);
+~~~
+
+A **rate limit** constrains how quickly requests may be made, while a **quota** constrains consumption across a broader allowance or period.
+
+For example:
+
+~~~text
+Rate limit: 100 requests / minute
+Quota:      100,000 requests / month
+~~~
+
+The resolved key can select the limits associated with its client or plan:
+
+~~~ts
+const usage = await usageStore.increment(apiKey.id);
+
+if (usage.monthly > apiKey.monthlyQuota) {
+  throw new Error('Monthly quota exceeded');
+}
+~~~
+
+The same attribution can support usage analytics and billing without requiring the API Key itself to encode those values.
+
+Changes to a client's plan or allowance can therefore modify provider-side configuration while preserving the credential when the surrounding system permits it.
+
+---
+
+# API Key Lifecycle
+
+An issued API Key remains usable only while its provider-side state allows it.
+
+Expiration places a time boundary on that state:
+
+~~~ts
+if (
+  apiKey.expiresAt &&
+  apiKey.expiresAt.getTime() <= Date.now()
+) {
+  throw new Error('API key expired');
+}
+~~~
+
+**Revocation** explicitly invalidates a credential independently of its original expiration:
+
+~~~ts
+await apiKeys.update(apiKey.id, {
+  status: 'revoked',
+});
+~~~
+
+A revoked credential should no longer be accepted even if the presented secret is otherwise correct.
+
+**Rotation** replaces credential material while allowing clients to migrate to a new key. Systems that support multiple credentials for the same client can temporarily keep both old and new keys active:
+
+~~~ts
+const newKey = await apiKeys.createForClient(clientId);
+
+await deliverNewKey(newKey);
+~~~
+
+After clients have migrated, the previous credential can be revoked:
+
+~~~ts
+await apiKeys.update(previousKeyId, {
+  status: 'revoked',
+});
+~~~
+
+This overlap separates credential replacement from immediate invalidation and allows rotation without requiring every consumer to switch at exactly the same moment.
+
+If a key is suspected to be compromised, revocation can terminate its validity and a replacement credential can establish new secret material.
+
+Deletion is distinct from revocation. Retaining a non-secret record of a revoked key can preserve audit and usage history even though the credential itself can no longer authorize requests.
 
 ---
 
 # Putting Everything Together
 
-The following sequence summarizes how API Keys identify client applications.
+An API Key converts a presented credential into provider-controlled context that can be evaluated before the requested operation is executed.
 
-```text
-                 Client Application
-                         │
-                         ▼
-                  HTTPS Request
-                         │
-                         ▼
-                    API Key Header
-                         │
-                         ▼
-                 API Gateway / Server
-                         │
-                Validate API Key
-                         │
-             ┌───────────┼───────────┐
-             │           │           │
-             ▼           ▼           ▼
-        Is Valid?     Has Scope?   Rate Limits
-             │           │           │
-             └───────────┼───────────┘
-                         ▼
-                 Business Logic
-                         │
-                         ▼
-                    API Response
-```
+![API Key Putting Everything Together](/docs/api-keys/api-keys-putting-everything-together.png)
 
-The client application includes its API Key with every request.
-
-The server validates the key before executing any business logic.
-
-If the key is valid, the server may also verify additional information such as scopes, quotas, expiration dates, IP restrictions, or rate limits.
-
-Only after these validations succeed does the application process the request.
-
-Because API Keys are credentials rather than encrypted tokens, they must always be transmitted over HTTPS and stored securely by the client application.
-
----
-
-## Final Perspective
-
-API Keys are not user authentication.
-
-API Keys are not encryption.
-
-API Keys are not authorization.
-
-API Keys are credentials that allow an application to identify itself to another application.
-
-They provide a simple authentication mechanism that enables API providers to identify clients, enforce quotas, apply permissions, monitor usage, and revoke compromised credentials.
-
-Although API Keys are appropriate for many integrations, they provide fewer security guarantees than mechanisms such as HMAC signatures, OAuth, or Mutual TLS.
-
-Understanding both their strengths and limitations is essential when designing secure APIs.
+The credential remains intentionally small while its mutable state, restrictions, lifecycle information, and usage context can remain under provider control.
