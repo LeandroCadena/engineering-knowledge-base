@@ -1,536 +1,209 @@
 ---
 title: HMAC Deep Dive
-description: Master the engineering concepts behind HMAC, including message signatures, verification, replay protection, canonicalization, and production best practices.
+description: Understand how HMAC constructs authentication tags, represents and verifies them, establishes shared-secret trust, authenticates deterministic request data, and protects signed requests against replay.
+icon: hmac.png
 order: 2
-updatedAt: 2026-07-05
+updatedAt: 2026-08-09
 ---
 
-# HMAC Deep Dive
+# HMAC Construction
 
-## Shared Secret
+HMAC is a keyed construction built on top of a cryptographic hash function. It produces a **Message Authentication Code (MAC)**, commonly called an **authentication tag** or, in many API integrations, a **signature**.
 
-A **Shared Secret** is a piece of confidential information known only by the communicating parties.
+The selected hash function operates with a fixed block size. HMAC adapts the secret key to that block size before using it in its keyed construction.
 
-Unlike asymmetric cryptography, where each participant owns a different key, HMAC requires both the sender and the receiver to possess exactly the same secret.
+![HMAC Internal Construction](/docs/hmac/hmac-internal-construction.png)
 
-This shared secret is never transmitted across the network.
+The construction is intentionally different from simply hashing a secret together with a message. Applications should use a cryptographic HMAC implementation rather than reproduce the construction manually.
 
-Instead, both parties use it independently when computing the HMAC signature.
-
-If the secret remains confidential, an attacker cannot generate valid signatures.
-
-:::at-a-glance
-
-### Shared Secret
-
-- Known by both parties.
-- Never transmitted.
-- Used to generate signatures.
-- Must remain confidential.
-
-:::
-
-:::misconceptions
-
-❌ The shared secret is sent with the request.
-
-✅ Both parties already possess the secret before communication begins.
-
-:::
+The resulting tag depends on the exact message bytes, the secret key, and the selected hash function. Changing any of them produces a different authentication value.
 
 ---
 
-## HMAC
+# HMAC Variants and Output
 
-An **HMAC** is the cryptographic signature produced by combining:
+An HMAC instance is identified by the cryptographic hash function used by its construction.
 
-- The message.
-- The shared secret.
-- A cryptographic hash function.
+The selected function determines properties of the cryptographic output, while the representation used to transmit or store that output is a separate concern.
 
-The resulting signature uniquely represents both the message and the secret.
+![HMAC Variants and Encodings](/docs/hmac/hmac-variants-encodings.png)
 
-Changing either one produces a completely different signature.
+Node.js exposes HMAC through `createHmac()`:
 
-Because the shared secret participates in the calculation, attackers cannot generate valid signatures without knowing that secret.
+```ts
+import { createHmac } from 'node:crypto';
 
-:::at-a-glance
+const signature = createHmac('sha256', secret).update(message).digest('hex');
+```
 
-### HMAC combines
+`update()` supplies the data to authenticate, while `digest()` finalizes the computation and returns the tag in the requested representation.
 
-- Message
-- Shared Secret
-- Hash Function
+The same authentication bytes can be represented differently:
 
-↓
+```ts
+const hexSignature = createHmac('sha256', secret).update(message).digest('hex');
 
-Signature
+const base64Signature = createHmac('sha256', secret).update(message).digest('base64');
+```
 
-:::
+A protocol may also use only a defined portion of an HMAC output. This is known as **tag truncation** and must follow the protocol's specified length rather than being chosen independently by each participant.
 
-:::misconceptions
+Interoperating systems must agree on the hash function, authenticated bytes, output representation, and any truncation rules.
 
-❌ HMAC encrypts messages.
+---
 
-✅ HMAC generates a signature used for verification.
+# HMAC Verification
 
-:::
+Verification reproduces the authentication tag from the received message using the trusted shared secret and compares it with the tag supplied by the sender.
 
-:::example
+```ts
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+function verifyHmac(message: Buffer, receivedSignature: string, secret: Buffer): boolean {
+  const expected = createHmac('sha256', secret).update(message).digest();
+
+  const received = Buffer.from(receivedSignature, 'hex');
+
+  if (received.length !== expected.length) {
+    return false;
+  }
+
+  return timingSafeEqual(received, expected);
+}
+```
+
+The comparison should operate on the decoded authentication bytes rather than independently formatted strings.
+
+A normal equality comparison can expose differences in execution time depending on where two values stop matching. **Constant-time comparison** avoids making the comparison result depend on the position of the first differing byte.
+
+A successful comparison establishes integrity and authenticity relative to possession of the shared secret. It does not establish when the message was created or whether the same valid message has already been processed.
+
+---
+
+# Shared Secret Trust Model
+
+HMAC is symmetric: the same secret key material is capable of producing and verifying authentication tags.
+
+A verifier therefore also possesses the cryptographic capability required to create valid tags. Unlike asymmetric signature schemes, HMAC does not separate signing authority from verification authority.
+
+Secrets should be generated from cryptographically secure random data rather than human-readable passwords or predictable application values:
+
+```ts
+import { randomBytes } from 'node:crypto';
+
+const secret = randomBytes(32);
+```
+
+The secret must remain confidential across its lifecycle. Storage and distribution should limit access to systems that participate in the HMAC trust relationship.
+
+Rotation replaces existing key material without requiring an immediate break in communication. During a controlled transition, a verifier can temporarily recognize more than one trusted secret while new messages are produced only with the current one:
+
+```ts
+const trustedSecrets = [currentSecret, previousSecret];
+```
+
+Once messages authenticated with the previous secret no longer need to be accepted, that secret can be removed.
+
+Compromise of a shared secret breaks the trust relationship because possession of that secret is sufficient to generate tags indistinguishable from those produced by other legitimate holders.
+
+---
+
+# Request Canonicalization
+
+HMAC authenticates bytes, not the semantic meaning of a request.
+
+Two representations that an application considers equivalent can therefore produce different authentication tags.
+
+For request signing, the participants define a **canonical representation** that deterministically converts the relevant request data into the bytes authenticated by HMAC.
+
+A canonical request might have a representation such as:
 
 ```text
-Message
-
-+
-
-Shared Secret
-
-↓
-
-HMAC
-
-↓
-
-Signature
+POST
+/v1/payments
+amount=100&currency=USD
+content-type:application/json
+x-timestamp:1723164000
+{"amount":100,"currency":"USD"}
 ```
 
-:::
+The application must construct that representation according to the protocol's exact rules:
 
----
-
-## Message Signature
-
-The **Message Signature** accompanies the request sent across the network.
-
-It is usually transmitted using an HTTP header.
-
-Typical examples include:
-
-```http
-X-Signature
-
-Stripe-Signature
-
-X-Hub-Signature-256
+```ts
+function canonicalizeRequest(request: SignedRequest): string {
+  return [
+    request.method.toUpperCase(),
+    request.path,
+    canonicalizeQuery(request.query),
+    canonicalizeHeaders(request.headers),
+    request.rawBody,
+  ].join('\n');
+}
 ```
 
-The receiver never trusts the signature directly.
+Ordering, whitespace, character encoding, escaping, path representation, query parameters, selected headers, and body bytes can all affect the resulting input when they are part of the canonicalization rules.
 
-Instead, it recomputes the expected signature independently.
+Webhook verification frequently requires access to the **raw request body** because parsing and serializing structured data can change its byte representation:
 
-Only if both signatures match is the message considered authentic.
+```ts
+const original = '{"amount":100, "currency":"USD"}';
 
-:::at-a-glance
+const parsed = JSON.parse(original);
+const serialized = JSON.stringify(parsed);
 
-### Signature Flow
-
-Sender
-
-↓
-
-Generate Signature
-
-↓
-
-Send Message + Signature
-
-↓
-
-Receiver
-
-↓
-
-Verify Signature
-
-:::
-
-:::misconceptions
-
-❌ The server decrypts the signature.
-
-✅ The server recomputes the expected signature and compares both values.
-
-:::
-
----
-
-## Signature Verification
-
-Signature verification follows exactly the same algorithm used by the sender.
-
-The receiver computes:
-
-```text
-HMAC(
-    Shared Secret,
-    Received Message
-)
+console.log(original === serialized);
+// false
 ```
 
-The resulting signature is then compared with the received signature.
+The two strings describe equivalent JSON data, but they are not identical HMAC inputs.
 
-If both values match:
-
-- The message has not been modified.
-- The sender knew the shared secret.
-
-Otherwise, the request must be rejected.
-
-:::at-a-glance
-
-### Verification confirms
-
-- Integrity.
-- Authenticity.
-
-:::
-
-:::misconceptions
-
-❌ Matching signatures prove the sender's identity.
-
-✅ They prove that the sender possessed the shared secret.
-
-:::
+Both participants must construct the same canonical bytes for the same authenticated request.
 
 ---
 
-## Replay Attacks
+# Replay Protection and Freshness
 
-A **Replay Attack** occurs when an attacker captures a valid request and sends it again later.
+A correctly verified HMAC proves that a message is authentic relative to the shared secret, but the tag itself does not establish **freshness**.
 
-Because the original HMAC signature remains valid, the receiver cannot distinguish between the original request and the replayed request unless additional protections are implemented.
+An attacker who captures a valid signed request may be able to submit the same request again without modifying either the authenticated data or its valid tag.
 
-Replay attacks are especially dangerous for operations such as:
+A timestamp can bind request authentication to a limited acceptance window:
 
-- Payments.
-- Money transfers.
-- Account changes.
-- Webhooks.
-- API commands.
+```ts
+const timestamp = Number(request.headers['x-timestamp']);
+const MAX_REQUEST_AGE = 5 * 60 * 1000;
 
-For this reason, production systems rarely rely on HMAC signatures alone.
+const age = Math.abs(Date.now() - timestamp);
 
-:::at-a-glance
-
-### Replay Attack
-
-Attacker
-
-↓
-
-Capture Valid Request
-
-↓
-
-Resend Request
-
-↓
-
-Same Signature
-
-↓
-
-Potentially Accepted
-
-:::
-
-:::misconceptions
-
-❌ HMAC automatically prevents replay attacks.
-
-✅ HMAC guarantees integrity and authenticity, not freshness.
-
-:::
-
----
-
-## Timestamps
-
-A **Timestamp** records the moment a request was created.
-
-The timestamp is included in the data used to compute the HMAC signature.
-
-When the request arrives, the receiver verifies that the timestamp falls within an acceptable time window.
-
-Requests outside this window are rejected, even if their HMAC signatures are valid.
-
-This significantly reduces the usefulness of intercepted requests.
-
-:::at-a-glance
-
-### Timestamp Validation
-
-- Included in the signature.
-- Checked by the receiver.
-- Rejects old requests.
-
-:::
-
-:::misconceptions
-
-❌ Timestamps replace HMAC.
-
-✅ Timestamps complement HMAC by limiting request lifetime.
-
-:::
-
-:::example
-
-```text
-Timestamp
-
-+
-
-Request Body
-
-↓
-
-HMAC
-
-↓
-
-Signature
+if (age > MAX_REQUEST_AGE) {
+  throw new Error('Request expired');
+}
 ```
 
-:::
+The timestamp must be included in the authenticated input; otherwise it could be modified independently of the HMAC.
 
----
+A **nonce** can provide request uniqueness. The receiver records previously accepted nonce values and rejects duplicates:
 
-## Nonces
+```ts
+if (await nonceStore.has(nonce)) {
+  throw new Error('Replay detected');
+}
 
-A **Nonce** is a unique value used only once.
-
-Each request includes a newly generated nonce that also participates in the HMAC calculation.
-
-The receiver stores previously used nonces for a limited period.
-
-If the same nonce appears again, the request is rejected.
-
-Even if an attacker replays the exact same message immediately, the duplicate nonce exposes the replay attempt.
-
-:::at-a-glance
-
-### Nonces
-
-- Unique per request.
-- Included in the signature.
-- Prevent duplicate requests.
-
-:::
-
-:::misconceptions
-
-❌ Timestamps eliminate the need for nonces.
-
-✅ Many high-security systems use both timestamps and nonces together.
-
-:::
-
-:::example
-
-```text
-Nonce
-
-+
-
-Timestamp
-
-+
-
-Request
-
-↓
-
-HMAC
-
-↓
-
-Signature
+await nonceStore.add(nonce, {
+  ttl: MAX_REQUEST_AGE,
+});
 ```
 
-:::
+The nonce must also be part of the authenticated input.
 
----
-
-## Canonicalization
-
-**Canonicalization** is the process of converting a request into a single, deterministic representation before computing its HMAC signature.
-
-Both the sender and the receiver must construct exactly the same canonical representation.
-
-Even insignificant differences such as:
-
-- Header order.
-- Query parameter order.
-- Whitespace.
-- Line endings.
-- Character encoding.
-
-produce completely different HMAC signatures.
-
-For this reason, many API providers publish strict canonicalization rules.
-
-:::at-a-glance
-
-### Canonicalization ensures
-
-- Consistent signatures.
-- Predictable verification.
-- Cross-platform compatibility.
-
-:::
-
-:::misconceptions
-
-❌ Signing the JSON payload alone is always sufficient.
-
-✅ Many systems sign a canonical representation containing headers, method, path, query parameters, and body.
-
-:::
-
-:::example
-
-```text
-HTTP Method
-
-+
-
-Request Path
-
-+
-
-Headers
-
-+
-
-Query Parameters
-
-+
-
-Body
-
-↓
-
-Canonical Representation
-
-↓
-
-HMAC
-```
-
-:::
-
----
-
-## Best Practices
-
-Although HMAC is conceptually simple, secure implementations require careful operational practices.
-
-Recommended practices include:
-
-- Always use HTTPS.
-- Store shared secrets securely.
-- Rotate shared secrets periodically.
-- Include timestamps in signed requests.
-- Use nonces when replay resistance is required.
-- Canonicalize requests consistently.
-- Compare signatures using constant-time comparison.
-- Reject invalid signatures immediately.
-- Log verification failures for auditing.
-
-:::at-a-glance
-
-### Production Checklist
-
-- HTTPS
-- Secret Management
-- Rotation
-- Timestamps
-- Nonces
-- Canonicalization
-- Constant-Time Comparison
-
-:::
-
-:::misconceptions
-
-❌ Comparing signatures with a normal string comparison is always safe.
-
-✅ Constant-time comparisons reduce the risk of timing attacks during signature verification.
-
-:::
+Timestamp validation limits how old an accepted request may be, while nonce tracking allows the receiver to identify repeated requests according to the protocol's uniqueness rules.
 
 ---
 
 # Putting Everything Together
 
-The following sequence summarizes how HMAC verifies the integrity and authenticity of a request.
+HMAC request authentication combines deterministic message representation with shared-secret authentication and request-level validation.
 
-```text
-                Client
-                   │
-                   ▼
-          Create HTTP Request
-                   │
-                   ▼
-        Canonicalize the Request
-                   │
-                   ▼
-      Compute HMAC using Shared Secret
-                   │
-                   ▼
-      Attach Signature + Timestamp
-                   │
-                   ▼
-              HTTPS Request
-                   │
-                   ▼
-                 Server
-                   │
-                   ▼
-      Rebuild Canonical Request
-                   │
-                   ▼
-      Compute Expected Signature
-                   │
-                   ▼
-          Compare Signatures
-                   │
-        ┌──────────┼──────────┐
-        │          │          │
-        ▼          ▼          ▼
-   Valid?    Timestamp?   Nonce?
-        │          │          │
-        └──────────┼──────────┘
-                   ▼
-          Process Request
-```
+![HMAC Putting Everything Together](/docs/hmac/hmac-putting-everything-together.png)
 
-Before sending the request, the client constructs a canonical representation of the message.
-
-Using the shared secret, it computes an HMAC signature and includes that signature—along with metadata such as timestamps or nonces—in the request.
-
-Upon receiving the request, the server reconstructs the same canonical representation and computes the expected HMAC using its copy of the shared secret.
-
-If both signatures match, and the timestamp and nonce satisfy the configured validation rules, the request is considered authentic and unmodified.
-
-Only then does the application execute its business logic.
-
----
-
-## Final Perspective
-
-HMAC is not encryption.
-
-HMAC is not authentication by itself.
-
-HMAC is not authorization.
-
-HMAC is a cryptographic mechanism for proving that a message was created by someone who possesses a shared secret and that the message has not been modified in transit.
-
-Because HMAC does not protect the communication channel, it is typically combined with TLS.
-
-Likewise, because HMAC does not identify end users or define permissions, it is commonly used alongside API Keys, OAuth, or other authentication and authorization mechanisms.
-
-Understanding HMAC as a message integrity mechanism—rather than simply a hashing algorithm—is essential for building secure APIs, validating webhooks, and designing reliable service-to-service integrations.
+Each participant must operate under the same signing contract: the authenticated data, canonicalization rules, HMAC configuration, signature representation, and request-validation requirements must agree for verification to succeed.

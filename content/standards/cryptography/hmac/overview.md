@@ -1,172 +1,79 @@
 ---
 title: HMAC Overview
-description: Understand what HMAC is, how message signatures work, and how applications verify authenticity and integrity using a shared secret.
+description: Understand what HMAC is, why it is used, and where message authentication fits within secure application architectures.
+icon: hmac.png
 order: 1
-updatedAt: 2026-07-05
+updatedAt: 2026-08-09
 ---
 
 # HMAC
 
 ## Definition
 
-Hash-based Message Authentication Code (HMAC) is a cryptographic mechanism used to verify both the integrity and authenticity of a message.
+Hash-based Message Authentication Code (HMAC) is a cryptographic mechanism used to verify the **integrity** and **authenticity** of data using a shared secret.
 
-Rather than encrypting the message itself, HMAC computes a cryptographic signature using:
+It allows systems that share secret key material to determine whether received data is consistent with data authenticated by another holder of that secret.
 
-- The message.
-- A shared secret.
-- A cryptographic hash function.
+HMAC does not encrypt data or provide confidentiality. The protected content remains readable unless a separate encryption mechanism is used.
 
-When the receiver independently computes the same signature using the shared secret, both signatures must match.
-
-If they do, the receiver knows:
-
-- The message was not modified.
-- The sender possessed the shared secret.
-
-Unlike encryption, HMAC does not hide information.
-
-Its purpose is proving authenticity and detecting tampering.
-
-Today, HMAC is widely used in webhook verification, cloud APIs, payment providers, and many service-to-service integrations.
+Its purpose is to make unauthorized modification detectable while establishing authenticity relative to possession of the shared secret.
 
 ---
 
-## How it Works
+## How It Works
 
-Both the client and the server possess the same secret key.
+HMAC combines secret key material with the data being authenticated through a cryptographic hash-based construction.
 
-The sender computes an HMAC signature over the request.
+Both sides of the trust relationship require access to the same secret, which makes HMAC a **symmetric authentication mechanism**.
 
-The receiver performs exactly the same calculation.
+![HMAC High-Level Flow](/docs/hmac/hmac-overview-flow.png)
 
-```text
-Shared Secret
-
-↓
-
-Message
-
-↓
-
-HMAC
-
-↓
-
-Signature
-
-↓
-
-Network
-
-↓
-
-Verify Signature
-
-↓
-
-Trusted Message
-```
-
-If the computed signature differs from the received signature, the message must be rejected because either:
-
-- The message was modified.
-- The signature was forged.
-- The sender does not possess the shared secret.
+The internal construction, hash functions, key handling, signature comparison, and security properties behind this process are explored in the Deep Dive.
 
 ---
 
-## How it Fits into the Ecosystem
+## How It Fits into the Ecosystem
 
-HMAC operates at the message level.
+HMAC protects data at the **message level** rather than establishing a protected communication channel.
 
-Unlike TLS, which protects the communication channel, HMAC protects the integrity and authenticity of individual messages.
+This makes it complementary to transport-security mechanisms such as TLS rather than a replacement for them.
 
-Because these mechanisms solve different problems, they are frequently used together.
+![HMAC Ecosystem](/docs/hmac/hmac-overview-ecosystem.png)
 
-```text
-Application
-      │
-      ▼
-HMAC Signature
-      │
-      ▼
-HTTPS (TLS)
-      │
-      ▼
-Network
-      │
-      ▼
-Server
-```
-
-In this architecture:
-
-- TLS protects the communication channel.
-- HMAC proves that the message itself is authentic and has not been modified.
-
-Even if TLS is already in use, HMAC provides an additional layer of protection by allowing the receiver to verify the integrity of the received payload.
+This distinction allows a receiving application to authenticate specific data independently of the mechanism used to transport it.
 
 ---
 
-## Real-World Usage
+## What It Looks Like
 
-HMAC is commonly used whenever systems exchange requests that must be independently verified.
+Applications commonly encounter HMAC as a signature attached to a request or another piece of data being exchanged between systems.
 
-Typical examples include:
+The exact representation and location of the signature are defined by the surrounding protocol or integration rather than by HMAC itself.
 
-- Webhook verification.
-- Payment providers.
-- Cloud APIs.
-- Internal service-to-service communication.
-- Signed URLs.
-- File integrity verification.
+![HMAC Request Signature](/docs/hmac/hmac-overview-request-signature.png)
 
-Popular examples include:
-
-- Stripe Webhooks
-- GitHub Webhooks
-- Slack Events API
-- Twilio Webhooks
-- AWS Signature Version 4
-- Shopify Webhooks
+Recognizing the signature is only one part of processing an authenticated message. The receiver must reproduce the expected authentication value according to the same signing rules before trusting the protected data.
 
 ---
 
-## Practical Examples
+## Common Use Cases
 
-### Example 1 — Stripe Webhook
+### Webhook Verification
 
-Stripe sends a webhook containing:
+Webhook providers can authenticate event payloads with HMAC so receiving applications can distinguish legitimately signed events from requests that do not possess a valid signature.
 
-- Request body.
-- Timestamp.
-- HMAC Signature.
+### API Request Signing
 
-Your server computes the HMAC using the shared secret.
+APIs can use HMAC to authenticate selected request data when clients and servers share secret key material.
 
-If both signatures match, the webhook is accepted.
+### Service-to-Service Requests
 
-Otherwise, it is rejected.
+Internal services can use HMAC when requests need message-level authentication between systems operating under a shared trust relationship.
 
----
+### Signed URLs
 
-### Example 2 — GitHub Webhook
+HMAC can protect selected URL data so a receiving system can detect unauthorized modifications before accepting the URL.
 
-GitHub signs every webhook payload using the secret configured by the repository owner.
+### Data Integrity
 
-Before processing the event, the receiving application verifies the HMAC signature.
-
-This prevents attackers from sending forged webhook requests.
-
----
-
-### Example 3 — Internal APIs
-
-Two internal services share a secret.
-
-Every request includes an HMAC signature.
-
-The receiving service independently verifies the signature before processing the request.
-
-This ensures that only trusted services can successfully send valid requests.
+HMAC can authenticate files, records, or other data when integrity must be verified together with knowledge of a shared secret.
