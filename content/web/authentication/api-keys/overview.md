@@ -1,6 +1,7 @@
 ---
 title: API Keys Overview
 description: Understand what API Keys are, how they associate requests with clients or projects, and where they fit within API access and security.
+icon: api-keys.png
 order: 1
 updatedAt: 2026-08-10
 ---

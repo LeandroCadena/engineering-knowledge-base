@@ -16,17 +16,17 @@ Keys may be completely opaque or follow a provider-defined format. Their structu
 
 Secret key material should be generated from cryptographically secure randomness rather than predictable identifiers, timestamps, usernames, or application data:
 
-~~~ts
+```ts
 import { randomBytes } from 'node:crypto';
 
 const secret = randomBytes(32).toString('base64url');
-~~~
+```
 
 A provider can combine generated secret material with its own external format:
 
-~~~ts
+```ts
 const apiKey = `sk_live_${secret}`;
-~~~
+```
 
 The complete credential may be displayed only when it is created if the provider stores a non-recoverable verification representation rather than the original secret.
 
@@ -40,37 +40,34 @@ Receiving an API Key is not sufficient to trust it. The provider must resolve th
 
 A key record can separate information required for lookup from the representation used to verify the secret:
 
-~~~ts
+```ts
 interface ApiKeyRecord {
   id: string;
   keyHash: string;
   status: 'active' | 'revoked';
   expiresAt: Date | null;
 }
-~~~
+```
 
 When a key format contains a non-secret identifier, that identifier can locate the candidate record without using the complete secret as a database lookup value:
 
-~~~ts
+```ts
 const record = await apiKeys.findById(keyId);
 
 if (!record) {
   throw new Error('Invalid API key');
 }
 
-const valid = await verifyApiKey(
-  presentedSecret,
-  record.keyHash,
-);
+const valid = await verifyApiKey(presentedSecret, record.keyHash);
 
 if (!valid) {
   throw new Error('Invalid API key');
 }
-~~~
+```
 
 The stored verification representation can be derived when the credential is created:
 
-~~~ts
+```ts
 const keyHash = await hashApiKey(secret);
 
 await apiKeys.create({
@@ -79,7 +76,7 @@ await apiKeys.create({
   status: 'active',
   expiresAt: null,
 });
-~~~
+```
 
 The exact verification mechanism depends on the key design. A provider that must recover the original key has different storage requirements from one that only needs to determine whether a presented credential is valid.
 
@@ -93,13 +90,13 @@ Possession of a secret API Key can be sufficient to exercise the privileges asso
 
 Secret keys belong in environments where their value can remain confidential:
 
-~~~ts
+```ts
 const apiKey = process.env.PAYMENTS_API_KEY;
 
 if (!apiKey) {
   throw new Error('PAYMENTS_API_KEY is not configured');
 }
-~~~
+```
 
 Moving a secret outside source code does not automatically encrypt or protect it. The runtime, deployment system, logs, debugging tools, and operators with access to the environment can still affect its exposure.
 
@@ -123,19 +120,19 @@ Credential verification and policy authorization are separate decisions. Success
 
 For example, an endpoint can require a permission associated with the resolved key:
 
-~~~ts
+```ts
 if (!apiKey.scopes.includes('orders:write')) {
   throw new Error('Insufficient scope');
 }
-~~~
+```
 
 Restrictions can also be evaluated against request context:
 
-~~~ts
+```ts
 if (!apiKey.allowedEnvironments.includes(environment)) {
   throw new Error('API key is not allowed in this environment');
 }
-~~~
+```
 
 Policy should be controlled by the provider-side key record rather than trusted merely because a client supplied additional claims alongside its credential.
 
@@ -149,28 +146,28 @@ Resolving an API Key gives the provider a stable identifier that can associate r
 
 That identifier can become the attribution key for usage accounting:
 
-~~~ts
+```ts
 const usage = await usageStore.increment(apiKey.id);
-~~~
+```
 
 A **rate limit** constrains how quickly requests may be made, while a **quota** constrains consumption across a broader allowance or period.
 
 For example:
 
-~~~text
+```text
 Rate limit: 100 requests / minute
 Quota:      100,000 requests / month
-~~~
+```
 
 The resolved key can select the limits associated with its client or plan:
 
-~~~ts
+```ts
 const usage = await usageStore.increment(apiKey.id);
 
 if (usage.monthly > apiKey.monthlyQuota) {
   throw new Error('Monthly quota exceeded');
 }
-~~~
+```
 
 The same attribution can support usage analytics and billing without requiring the API Key itself to encode those values.
 
@@ -184,40 +181,37 @@ An issued API Key remains usable only while its provider-side state allows it.
 
 Expiration places a time boundary on that state:
 
-~~~ts
-if (
-  apiKey.expiresAt &&
-  apiKey.expiresAt.getTime() <= Date.now()
-) {
+```ts
+if (apiKey.expiresAt && apiKey.expiresAt.getTime() <= Date.now()) {
   throw new Error('API key expired');
 }
-~~~
+```
 
 **Revocation** explicitly invalidates a credential independently of its original expiration:
 
-~~~ts
+```ts
 await apiKeys.update(apiKey.id, {
   status: 'revoked',
 });
-~~~
+```
 
 A revoked credential should no longer be accepted even if the presented secret is otherwise correct.
 
 **Rotation** replaces credential material while allowing clients to migrate to a new key. Systems that support multiple credentials for the same client can temporarily keep both old and new keys active:
 
-~~~ts
+```ts
 const newKey = await apiKeys.createForClient(clientId);
 
 await deliverNewKey(newKey);
-~~~
+```
 
 After clients have migrated, the previous credential can be revoked:
 
-~~~ts
+```ts
 await apiKeys.update(previousKeyId, {
   status: 'revoked',
 });
-~~~
+```
 
 This overlap separates credential replacement from immediate invalidation and allows rotation without requiring every consumer to switch at exactly the same moment.
 
