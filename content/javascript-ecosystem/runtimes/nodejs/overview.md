@@ -78,11 +78,3 @@ Common examples include:
 - Streaming services
 
 Workloads that require intensive CPU computations are generally better suited to technologies specifically designed for parallel computation.
-
----
-
-## What's Next?
-
-This overview introduced the role of Node.js within modern software systems.
-
-The next section explores how Node.js actually works internally, including the V8 engine, the JavaScript execution thread, asynchronous I/O, the Event Loop, libuv, and the Worker Pool.

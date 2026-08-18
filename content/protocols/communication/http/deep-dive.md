@@ -8,12 +8,6 @@ updatedAt: 2026-08-02
 
 # HTTP Deep Dive
 
-This chapter explores the mechanisms that make HTTP work. Rather than focusing on specific frameworks or APIs, it explains the protocol features that enable applications to communicate across the web.
-
-By the end of this chapter, you'll understand how HTTP structures messages, identifies resources, interprets requests, exchanges metadata, transfers data, and provides the foundation for modern web communication.
-
----
-
 # Message Exchange
 
 The core capability introduced by HTTP is a standardized request–response communication model. Every interaction between a client and a server follows the same structure: a client creates a request, the server processes it, and a response is returned.
