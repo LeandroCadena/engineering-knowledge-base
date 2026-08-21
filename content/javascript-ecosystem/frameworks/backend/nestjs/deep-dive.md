@@ -3,7 +3,7 @@ title: NestJS Deep Dive
 description: Deep dive into NestJS modules, controllers, providers, dependency injection, request processing, metadata, lifecycle, runtime APIs, and testing.
 icon: nestjs.png
 order: 2
-updatedAt: 2026-08-19
+updatedAt: 2026-08-21
 ---
 
 # NestJS Deep Dive
@@ -19,25 +19,15 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.setGlobalPrefix('api');
+
   await app.listen(3000);
 }
 
 bootstrap();
 ```
 
-The returned application instance exposes application-level capabilities before and after the server starts:
-
-```ts
-const app = await NestFactory.create(AppModule);
-
-app.setGlobalPrefix('api');
-
-const usersService = app.get(UsersService);
-
-await app.listen(3000);
-```
-
-Nest can also initialize its application container without creating a network listener:
+Nest can also initialize the application container without starting an HTTP server:
 
 ```ts
 const context = await NestFactory.createApplicationContext(AppModule);
@@ -45,21 +35,18 @@ const context = await NestFactory.createApplicationContext(AppModule);
 const service = context.get(TasksService);
 
 await service.run();
-
 await context.close();
 ```
 
-This preserves modules, providers, dependency injection, and lifecycle behavior for applications such as workers, command-line processes, and scripts.
+This preserves the Nest module, provider, dependency injection, and lifecycle model for processes that do not expose an HTTP server.
 
 ---
 
 ## Modules
 
-Modules define the boundaries through which Nest organizes and connects application components.
+Modules define boundaries between related Nest components and control how providers become available across those boundaries.
 
 ![NestJS Modules](/docs/nestjs/nestjs-modules.png)
-
-A feature module groups components that belong to the same application capability:
 
 ```ts
 @Module({
@@ -71,47 +58,15 @@ A feature module groups components that belong to the same application capabilit
 export class UsersModule {}
 ```
 
-Providers are encapsulated by their host module. Exporting a provider makes it available to modules that import that module:
-
-```ts
-@Module({
-  imports: [UsersModule],
-  providers: [AuthService],
-})
-export class AuthModule {}
-```
-
-`AuthService` can then depend on the exported provider:
-
-```ts
-@Injectable()
-export class AuthService {
-  constructor(private readonly usersService: UsersService) {}
-}
-```
-
-A module can be made globally available:
-
-```ts
-@Global()
-@Module({
-  providers: [LoggerService],
-  exports: [LoggerService],
-})
-export class LoggerModule {}
-```
-
-Global modules avoid repeated imports, but explicit module relationships preserve clearer dependency boundaries for most application features.
+Providers remain encapsulated by their host module unless exported. A module importing `UsersModule` can therefore inject `UsersService` because that provider forms part of the module's public interface.
 
 ---
 
 ## Controllers
 
-Controllers define entry points through which incoming requests reach application code.
+Controllers expose application capabilities through routes and translate incoming request data into handler arguments.
 
 ![NestJS Controller Decorators](/docs/nestjs/nestjs-controller-decorators.png)
-
-A controller combines a route prefix with handler mappings and request data extraction:
 
 ```ts
 @Controller('users')
@@ -119,73 +74,34 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Query('include') include?: string) {
+  findOne(
+    @Param('id') id: string,
+    @Query('include')
+    include?: string,
+  ) {
     return this.usersService.findOne(id, include);
   }
 }
 ```
 
-Nest normally handles the response using the value returned by the handler:
-
-```ts
-@Post()
-@HttpCode(201)
-create(
-  @Body() dto: CreateUserDto,
-) {
-  return this.usersService.create(dto);
-}
-```
-
-Route metadata can modify the response without taking control of the underlying platform response object:
-
-```ts
-@Get('export')
-@Header(
-  'Content-Type',
-  'text/csv',
-)
-download() {
-  return this.usersService.export();
-}
-```
-
-Direct access to the platform request or response is available when lower-level behavior is required:
-
-```ts
-@Get(':id/raw')
-findRaw(
-  @Param('id') id: string,
-  @Res() response: Response,
-) {
-  response.json(
-    this.usersService.findOne(id),
-  );
-}
-```
-
-Using the standard Nest response model keeps handlers compatible with framework features that operate around the request lifecycle.
+Returning a value delegates response handling to Nest. Direct access to the underlying platform request or response remains available when lower-level behavior is required, but bypassing Nest's standard response model can prevent framework features from operating normally around that handler.
 
 ---
 
 ## Providers
 
-Providers are values managed by the Nest dependency injection container.
-
-Classes marked with `@Injectable()` can participate in dependency resolution:
+Providers are values whose creation and availability are managed by the Nest dependency injection container.
 
 ```ts
 @Injectable()
 export class UsersService {
   findOne(id: string) {
-    return {
-      id,
-    };
+    return { id };
   }
 }
 ```
 
-The provider must belong to the module graph:
+A provider becomes part of the application graph through module metadata:
 
 ```ts
 @Module({
@@ -194,26 +110,17 @@ The provider must belong to the module graph:
 export class UsersModule {}
 ```
 
-A registered provider can be injected into another managed component:
-
-```ts
-@Injectable()
-export class AuditService {
-  constructor(private readonly usersService: UsersService) {}
-}
-```
-
-Provider visibility follows module boundaries. A provider used only inside its host module remains encapsulated; exporting it deliberately extends that visibility.
+Components instantiated outside the Nest container do not automatically participate in Nest dependency injection or lifecycle management.
 
 ---
 
 ## Dependency Injection
 
-Nest uses an IoC container to resolve dependencies instead of requiring application components to construct them directly.
+Nest resolves dependencies from its IoC container using injection tokens.
 
 ![NestJS Dependency Injection](/docs/nestjs/nestjs-dependency-injection.png)
 
-Class-based dependencies can be inferred from constructor metadata:
+Class dependencies can normally be inferred from constructor metadata:
 
 ```ts
 @Injectable()
@@ -222,7 +129,7 @@ export class UsersService {
 }
 ```
 
-Explicit injection tokens allow dependencies that are not represented directly by the constructor type:
+Explicit tokens allow the dependency identity to be separated from its TypeScript type:
 
 ```ts
 export const CACHE = Symbol('CACHE');
@@ -236,39 +143,17 @@ export class UsersService {
 }
 ```
 
-Tokens can be classes, strings, or symbols. The token is the identity used by the container when resolving a dependency.
-
-Optional dependencies can be declared when absence is valid:
-
-```ts
-constructor(
-  @Optional()
-  @Inject(CACHE)
-  private readonly cache?: Cache,
-) {}
-```
-
-Nest also supports property injection:
-
-```ts
-@Injectable()
-export class UsersService {
-  @Inject(CACHE)
-  private readonly cache: Cache;
-}
-```
-
-Constructor injection generally makes required dependencies explicit in the class contract, while property injection is useful for narrower cases such as inheritance constraints.
+The token, rather than the variable name or interface type, is what the container resolves.
 
 ---
 
 ## Custom Providers
 
-Provider definitions can control how the value associated with an injection token is obtained.
+Custom provider definitions control how the value associated with an injection token is produced.
 
 ![NestJS Custom Providers](/docs/nestjs/nestjs-custom-providers.png)
 
-A factory provider can itself depend on values from the Nest container:
+A factory provider can resolve its own dependencies through the container:
 
 ```ts
 export const API_CLIENT = Symbol('API_CLIENT');
@@ -277,45 +162,21 @@ const apiClientProvider = {
   provide: API_CLIENT,
   inject: [ConfigService],
 
-  useFactory: (config: ConfigService) => {
+  useFactory(config: ConfigService) {
     return new ApiClient(config.get('API_URL'));
   },
 };
 ```
 
-It is registered like any other provider:
-
-```ts
-@Module({
-  providers: [apiClientProvider, IntegrationService],
-  exports: [API_CLIENT],
-})
-export class IntegrationModule {}
-```
-
-Consumers depend on the token rather than the provider construction strategy:
-
-```ts
-@Injectable()
-export class IntegrationService {
-  constructor(
-    @Inject(API_CLIENT)
-    private readonly client: ApiClient,
-  ) {}
-}
-```
-
-This separates dependency identity from the mechanism used to create or select its value.
+Consumers remain coupled to the token rather than to the strategy used to construct its value.
 
 ---
 
 ## Injection Scopes
 
-Provider scope controls how Nest reuses provider instances.
+Provider scope determines how Nest reuses container-managed instances.
 
 ![NestJS Injection Scopes](/docs/nestjs/nestjs-injection-scopes.png)
-
-A non-default scope is selected when declaring the provider:
 
 ```ts
 @Injectable({
@@ -324,33 +185,15 @@ A non-default scope is selected when declaring the provider:
 export class RequestContextService {}
 ```
 
-Request-scoped providers can access the current HTTP request through Nest's request token:
+Request-scoped dependencies create a request-specific dependency subtree. Scope can therefore propagate to consumers that depend on them.
 
-```ts
-@Injectable({
-  scope: Scope.REQUEST,
-})
-export class RequestContextService {
-  constructor(
-    @Inject(REQUEST)
-    private readonly request: Request,
-  ) {}
-}
-```
-
-Request scope propagates upward through dependencies. If a controller depends on a request-scoped service, that controller must also participate in the request-specific dependency subtree.
-
-Transient dependencies behave differently: the consumer receives its own instance without automatically changing the consumer's own scope.
-
-The default singleton scope avoids repeated instantiation and is appropriate when state does not need to be isolated per request or consumer. :contentReference[oaicite:1]{index=1}
+Scope should be changed deliberately because the default provider lifecycle avoids repeated dependency-tree instantiation.
 
 ---
 
 ## Dynamic Modules
 
-Dynamic modules allow the importing module to influence how another module is configured.
-
-A dynamic module exposes a static configuration API that returns a `DynamicModule`:
+Dynamic modules allow configuration to influence the module metadata added to the application graph.
 
 ```ts
 @Module({})
@@ -373,7 +216,7 @@ export class ApiModule {
 }
 ```
 
-Consumers configure the module when importing it:
+The caller configures that module while importing it:
 
 ```ts
 @Module({
@@ -386,42 +229,24 @@ Consumers configure the module when importing it:
 export class AppModule {}
 ```
 
-The returned metadata extends the metadata declared directly on the module class.
+![NestJS Dynamic Modules](/docs/nestjs/nestjs-dynamic-modules.png)
 
-Asynchronous registration allows configuration itself to depend on the Nest container:
-
-```ts
-ApiModule.registerAsync({
-  inject: [ConfigService],
-
-  useFactory: (config: ConfigService) => ({
-    baseUrl: config.get('API_URL'),
-  }),
-});
-```
-
-Naming conventions such as `register()`, `forRoot()`, and `forFeature()` express different module APIs; they are conventions rather than special method names interpreted by Nest. Dynamic modules provide the mechanism behind these configurable import patterns. :contentReference[oaicite:2]{index=2}
+Asynchronous registration is useful when module configuration itself depends on values managed by the Nest container.
 
 ---
 
 ## ConfigurableModuleBuilder
 
-`ConfigurableModuleBuilder` generates the repetitive infrastructure required by configurable dynamic modules.
+`ConfigurableModuleBuilder` generates the configuration infrastructure required by a configurable dynamic module.
 
 ```ts
 export interface ApiModuleOptions {
   baseUrl: string;
 }
-```
 
-```ts
 export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
   new ConfigurableModuleBuilder<ApiModuleOptions>().build();
-```
 
-The module extends the generated class:
-
-```ts
 @Module({
   providers: [ApiService],
   exports: [ApiService],
@@ -429,20 +254,7 @@ The module extends the generated class:
 export class ApiModule extends ConfigurableModuleClass {}
 ```
 
-It can then be configured through the generated registration API:
-
-```ts
-@Module({
-  imports: [
-    ApiModule.register({
-      baseUrl: 'https://api.example.com',
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-Generated options are regular injectable values:
+The generated options token can be injected like any other Nest dependency:
 
 ```ts
 @Injectable()
@@ -454,22 +266,13 @@ export class ApiService {
 }
 ```
 
-The generated registration method names can also be customized:
-
-```ts
-export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
-  new ConfigurableModuleBuilder<ApiModuleOptions>().setClassMethodName('forRoot').build();
-```
-
-The resulting module exposes `forRoot()` and its asynchronous counterpart instead of the default registration names. :contentReference[oaicite:3]{index=3}
+This preserves the dynamic-module model while removing most of the registration boilerplate.
 
 ---
 
 ## Middleware
 
-Nest middleware executes before the route-handling features of the Nest request pipeline.
-
-Class middleware implements `NestMiddleware`:
+Nest middleware executes before the route-handling portion of the Nest request pipeline.
 
 ```ts
 @Injectable()
@@ -482,10 +285,9 @@ export class RequestLoggerMiddleware implements NestMiddleware {
 }
 ```
 
-Module-level middleware configuration uses `NestModule`:
+Module-level configuration determines where the middleware applies:
 
 ```ts
-@Module({})
 export class UsersModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(RequestLoggerMiddleware).forRoutes(UsersController);
@@ -493,89 +295,44 @@ export class UsersModule implements NestModule {
 }
 ```
 
-Middleware can be restricted more precisely:
-
-```ts
-consumer
-  .apply(RequestLoggerMiddleware)
-  .exclude({
-    path: 'users/health',
-    method: RequestMethod.GET,
-  })
-  .forRoutes(UsersController);
-```
-
-Multiple middleware can be applied in one chain:
-
-```ts
-consumer.apply(CorrelationIdMiddleware, RequestLoggerMiddleware).forRoutes('*');
-```
+![NestJS Middleware Consumer](/docs/nestjs/nestjs-middleware-consumer.png)
 
 ---
 
 ## Pipes
 
-Pipes operate on arguments before those values are passed to a route handler.
+Pipes operate on handler arguments before those values reach the route handler.
 
 ![NestJS Pipes](/docs/nestjs/nestjs-pipes.png)
-
-A pipe can be attached directly to a handler argument:
 
 ```ts
 @Get(':id')
 findOne(
-  @Param(
-    'id',
-    ParseIntPipe,
-  )
+  @Param('id', ParseIntPipe)
   id: number,
 ) {
   return this.usersService.findOne(id);
 }
 ```
 
-Custom pipes implement `PipeTransform`:
+Custom pipes participate through `PipeTransform`:
 
 ```ts
 @Injectable()
 export class TrimPipe implements PipeTransform<string, string> {
-  transform(value: string, metadata: ArgumentMetadata) {
+  transform(value: string) {
     return value.trim();
   }
 }
 ```
 
-The same pipe can be bound where the transformation is required:
-
-```ts
-@Post()
-create(
-  @Body('name', TrimPipe)
-  name: string,
-) {
-  return this.usersService.create({
-    name,
-  });
-}
-```
-
-A pipe may return a transformed value or throw an exception, preventing the handler from executing.
-
-Pipes can also be bound at broader scopes:
-
-```ts
-@UsePipes(ValidationPipe)
-@Controller('users')
-export class UsersController {}
-```
+A pipe can transform the incoming value or interrupt execution by throwing an exception.
 
 ---
 
 ## Guards
 
-Guards determine whether execution is allowed to proceed to a route handler.
-
-A guard implements `CanActivate`:
+Guards determine whether execution is allowed to continue to a route handler.
 
 ```ts
 @Injectable()
@@ -588,7 +345,7 @@ export class AuthGuard implements CanActivate {
 }
 ```
 
-It can be bound declaratively:
+The guard can be attached declaratively:
 
 ```ts
 @UseGuards(AuthGuard)
@@ -598,29 +355,15 @@ profile() {
 }
 ```
 
-A guard can also use metadata associated with the target handler or controller to make contextual access decisions.
-
-Application-wide guards can participate in dependency injection through Nest's provider system:
-
-```ts
-@Module({
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: AuthGuard,
-    },
-  ],
-})
-export class AppModule {}
-```
+Because guards receive `ExecutionContext`, authorization decisions can incorporate information about both the current request and the Nest handler being executed.
 
 ---
 
 ## Interceptors
 
-Interceptors wrap handler execution.
+Interceptors wrap handler execution and can execute logic on either side of it.
 
-An interceptor implements `NestInterceptor` and receives a `CallHandler` representing the next stage of execution:
+![NestJS Interceptors](/docs/nestjs/nestjs-interceptors.png)
 
 ```ts
 @Injectable()
@@ -637,44 +380,17 @@ export class TimingInterceptor implements NestInterceptor {
 }
 ```
 
-`next.handle()` returns an Observable representing the handler execution, allowing behavior to run around or transform its result.
-
-```ts
-@Injectable()
-export class ResponseInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler) {
-    return next.handle().pipe(
-      map((data) => ({
-        data,
-      })),
-    );
-  }
-}
-```
-
-Binding follows the same declarative pattern:
-
-```ts
-@UseInterceptors(
-  TimingInterceptor,
-)
-@Get()
-findAll() {
-  return this.usersService.findAll();
-}
-```
-
-A global interceptor that requires container-managed dependencies can be registered with `APP_INTERCEPTOR`.
+`next.handle()` exposes handler execution as an Observable, allowing the interceptor to compose behavior around or transform the resulting stream.
 
 ---
 
 ## Exception Filters
 
-Nest converts unhandled exceptions into responses through its exception layer. Exception filters allow that behavior to be customized.
+Nest routes unhandled exceptions through its exception layer. Exception filters customize how selected failures are handled.
 
 ![NestJS HTTP Exceptions](/docs/nestjs/nestjs-http-exceptions.png)
 
-Application code can communicate HTTP failures using Nest exceptions:
+Application code can communicate HTTP failures through Nest exceptions:
 
 ```ts
 const user = await this.usersService.findOne(id);
@@ -684,7 +400,7 @@ if (!user) {
 }
 ```
 
-A custom filter handles selected exception types:
+Custom handling is implemented through `ExceptionFilter`:
 
 ```ts
 @Catch(DomainException)
@@ -699,41 +415,13 @@ export class DomainExceptionFilter implements ExceptionFilter {
 }
 ```
 
-The filter can be bound to the required scope:
-
-```ts
-@UseFilters(DomainExceptionFilter)
-@Controller('orders')
-export class OrdersController {}
-```
-
-Global filters that depend on injected providers can be registered through `APP_FILTER`.
-
 ---
 
 ## ExecutionContext & ArgumentsHost
 
-`ArgumentsHost` abstracts the arguments supplied by the current execution environment.
+Nest provides execution abstractions that allow framework components to inspect the current invocation without coupling their core behavior to one transport.
 
-An exception filter can select the HTTP host without receiving an Express-specific request directly from Nest:
-
-```ts
-catch(
-  exception: Error,
-  host: ArgumentsHost,
-) {
-  const http =
-    host.switchToHttp();
-
-  const request =
-    http.getRequest<Request>();
-
-  const response =
-    http.getResponse<Response>();
-}
-```
-
-`ExecutionContext` extends this capability with information about the component currently being executed:
+![NestJS Execution Context](/docs/nestjs/nestjs-execution-context.png)
 
 ```ts
 canActivate(
@@ -754,43 +442,23 @@ canActivate(
 }
 ```
 
-The same abstraction can expose RPC or WebSocket arguments when the component executes under those transports:
-
-```ts
-const rpc = context.switchToRpc();
-
-const data = rpc.getData();
-```
-
-```ts
-const ws = context.switchToWs();
-
-const client = ws.getClient();
-```
-
-This allows guards, interceptors, filters, and custom decorators to inspect execution without requiring their core logic to assume HTTP.
+`ExecutionContext` extends the host abstraction with information about the Nest component currently being executed.
 
 ---
 
 ## Request Lifecycle
 
-Nest defines an ordering between the components that participate in processing an incoming request.
-
 ![NestJS Request Lifecycle](/docs/nestjs/nestjs-request-lifecycle.png)
 
-Binding scope also affects ordering. Components can be registered globally, at controller level, or at route-handler level.
+Interceptors wrap subsequent execution, so their post-handler behavior unwinds in the opposite direction from their pre-handler behavior.
 
-Interceptors wrap later execution, so their post-handler behavior unwinds in the opposite direction from their pre-handler behavior.
-
-Exception filters participate when an exception reaches the exception layer rather than behaving as another normal forward stage in successful request execution.
-
-Understanding this composition is necessary when multiple Nest request features are attached to the same route.
+Exceptions leave the successful execution path and are processed through the exception layer.
 
 ---
 
 ## Custom Decorators & Metadata
 
-Nest can associate custom metadata with controllers and handlers.
+Nest metadata allows controllers and handlers to declare information that other framework components can inspect during execution.
 
 ```ts
 export const ROLES_KEY = 'roles';
@@ -798,19 +466,7 @@ export const ROLES_KEY = 'roles';
 export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
 ```
 
-The decorator can then describe a handler declaratively:
-
-```ts
-@Roles('admin')
-@Delete(':id')
-remove(
-  @Param('id') id: string,
-) {
-  return this.usersService.remove(id);
-}
-```
-
-`Reflector` reads metadata using the current `ExecutionContext`:
+A guard can resolve that metadata against the active handler and controller:
 
 ```ts
 @Injectable()
@@ -833,43 +489,17 @@ export class RolesGuard implements CanActivate {
 }
 ```
 
-Custom parameter decorators can extract application-specific values from the current execution context:
+![NestJS Custom Decorators and Metadata](/docs/nestjs/nestjs-custom-decorators-metadata.png)
 
-```ts
-export const CurrentUser = createParamDecorator((data: unknown, context: ExecutionContext) => {
-  const request = context.switchToHttp().getRequest();
-
-  return request.user;
-});
-```
-
-```ts
-@Get('profile')
-profile(
-  @CurrentUser()
-  user: User,
-) {
-  return user;
-}
-```
-
-Several decorators can be composed into a reusable decorator:
-
-```ts
-export function AdminRoute() {
-  return applyDecorators(Roles('admin'), UseGuards(AuthGuard, RolesGuard));
-}
-```
+This pattern separates declarative metadata from the component responsible for interpreting it.
 
 ---
 
 ## Lifecycle Hooks
 
-Nest exposes lifecycle hooks for components that need to participate in application initialization or shutdown.
+Nest exposes lifecycle hooks to container-managed components during application initialization and shutdown.
 
 ![NestJS Lifecycle Hooks](/docs/nestjs/nestjs-lifecycle-hooks.png)
-
-A provider participates by implementing the corresponding lifecycle interface:
 
 ```ts
 @Injectable()
@@ -880,28 +510,13 @@ export class DatabaseService implements OnModuleInit {
 }
 ```
 
-Shutdown hooks allow resources to be released as the application terminates:
+Applications that need to react to process termination signals can enable Nest shutdown handling:
 
 ```ts
-@Injectable()
-export class DatabaseService implements OnModuleDestroy {
-  async onModuleDestroy() {
-    await this.disconnect();
-  }
-}
-```
-
-Application shutdown hooks must be enabled when the process should react to system termination signals:
-
-```ts
-const app = await NestFactory.create(AppModule);
-
 app.enableShutdownHooks();
-
-await app.listen(3000);
 ```
 
-Lifecycle hooks belong to container-managed application lifecycle rather than replacing explicit resource management required by individual operations.
+Lifecycle hooks coordinate component lifecycle with the Nest application lifecycle; they do not replace resource cleanup required by individual operations.
 
 ---
 
@@ -909,61 +524,25 @@ Lifecycle hooks belong to container-managed application lifecycle rather than re
 
 `ModuleRef` provides runtime access to Nest's dependency container.
 
-```ts
-@Injectable()
-export class TaskRunner {
-  constructor(private readonly moduleRef: ModuleRef) {}
-}
-```
+![NestJS ModuleRef](/docs/nestjs/nestjs-module-ref.png)
 
-`get()` retrieves an already registered static provider by token:
-
-```ts
-const service = this.moduleRef.get(UsersService);
-```
-
-Lookup can extend beyond the current module:
-
-```ts
-const service = this.moduleRef.get(UsersService, {
-  strict: false,
-});
-```
-
-Scoped providers require dynamic resolution:
-
-```ts
-const service = await this.moduleRef.resolve(RequestService);
-```
-
-A context ID can preserve the same scoped dependency subtree across multiple resolutions:
+Scoped providers can be resolved using an explicit context:
 
 ```ts
 const contextId = ContextIdFactory.create();
 
-const first = await this.moduleRef.resolve(RequestService, contextId);
-
-const second = await this.moduleRef.resolve(RequestService, contextId);
-
-first === second;
-// true
+const service = await this.moduleRef.resolve(RequestService, contextId);
 ```
 
-`create()` dynamically instantiates a class through Nest without requiring that class to be registered as a provider:
+Reusing the context ID allows multiple runtime resolutions to participate in the same scoped dependency subtree.
 
-```ts
-const handler = await this.moduleRef.create(JobHandler);
-```
-
-`ModuleRef` is therefore useful when dependency selection or creation must occur at runtime rather than through normal constructor injection. :contentReference[oaicite:4]{index=4}
+Normal constructor injection remains preferable when dependency relationships are known statically.
 
 ---
 
 ## Circular Dependencies
 
-A circular dependency occurs when two Nest-managed components require each other during dependency resolution.
-
-`forwardRef()` defers the reference so Nest can resolve the relationship:
+`forwardRef()` defers a dependency reference when Nest-managed components form a circular relationship.
 
 ```ts
 @Injectable()
@@ -975,36 +554,13 @@ export class UsersService {
 }
 ```
 
-The other side uses the same deferred reference:
-
-```ts
-@Injectable()
-export class AuthService {
-  constructor(
-    @Inject(forwardRef(() => UsersService))
-    private readonly usersService: UsersService,
-  ) {}
-}
-```
-
-Module-level cycles can use the same mechanism:
-
-```ts
-@Module({
-  imports: [forwardRef(() => AuthModule)],
-})
-export class UsersModule {}
-```
-
-`ModuleRef` can alternatively resolve a dependency after construction when direct constructor relationships are unsuitable.
-
-Circular dependencies increase coupling between components, so resolving the cycle structurally is preferable when the relationship does not genuinely need to be bidirectional.
+The mechanism allows Nest to resolve the cycle, but a circular relationship still represents strong coupling and should not replace a clearer dependency boundary when the cycle can be removed structurally.
 
 ---
 
 ## LazyModuleLoader
 
-`LazyModuleLoader` loads a module only when application code requests it.
+`LazyModuleLoader` defers initialization of a module until application code explicitly requests it.
 
 ```ts
 @Injectable()
@@ -1021,17 +577,13 @@ export class ReportsService {
 }
 ```
 
-The loaded module participates in Nest's module and dependency system while deferring its initialization until the lazy-loading path is executed.
-
-This can reduce startup work for modules that are expensive and not required during normal application execution.
+The loaded module still participates in Nest's module and dependency system after initialization.
 
 ---
 
 ## DiscoveryService
 
-`DiscoveryService` exposes Nest-managed components for runtime inspection.
-
-The discovery capability is enabled through `DiscoveryModule`:
+`DiscoveryService` exposes components registered in the Nest application graph for runtime inspection.
 
 ```ts
 @Module({
@@ -1041,77 +593,49 @@ The discovery capability is enabled through `DiscoveryModule`:
 export class PluginModule {}
 ```
 
-A provider can inspect registered providers:
-
 ```ts
 @Injectable()
 export class PluginExplorer {
   constructor(private readonly discovery: DiscoveryService) {}
 
-  findProviders() {
-    return this.discovery.getProviders();
+  inspect() {
+    return {
+      providers: this.discovery.getProviders(),
+
+      controllers: this.discovery.getControllers(),
+    };
   }
 }
 ```
 
-Controllers can be discovered separately:
-
-```ts
-const controllers = this.discovery.getControllers();
-```
-
-Discovery becomes useful when framework-like application features need to locate components by metadata rather than by explicit injection.
-
-For example, a custom decorator can mark plugin classes:
-
-```ts
-export const PLUGIN = Symbol('PLUGIN');
-
-export const Plugin = () => SetMetadata(PLUGIN, true);
-```
-
-The discovered wrappers can then be inspected for that metadata rather than requiring every plugin to be registered manually with a central registry.
+Discovery is useful when components must be located dynamically rather than referenced through explicit injection.
 
 ---
 
 ## HttpAdapterHost
 
-`HttpAdapterHost` provides access to the HTTP adapter currently used by the Nest application.
+`HttpAdapterHost` exposes the HTTP adapter selected by the Nest application.
 
 ```ts
 @Injectable()
 export class HttpInspector {
   constructor(private readonly adapterHost: HttpAdapterHost) {}
 
-  getHttpServer() {
-    return this.adapterHost.httpAdapter.getHttpServer();
+  get adapter() {
+    return this.adapterHost.httpAdapter;
   }
 }
 ```
 
-Code can perform adapter-level operations without directly selecting Express or Fastify:
+It provides an escape hatch below Nest's platform-independent controller abstraction without requiring framework-level code to select Express or Fastify directly.
 
-```ts
-const adapter = this.adapterHost.httpAdapter;
-
-adapter.reply(
-  response,
-  {
-    status: 'ok',
-  },
-  200,
-);
-```
-
-This API is useful for framework-level components that need access below Nest's standard controller abstraction while preserving compatibility with the configured HTTP platform.
-
-Application business logic should generally remain above this boundary when Nest's platform-independent APIs are sufficient.
+Application business logic should normally remain above this boundary.
 
 ---
 
 ## TestingModule
 
-Nest testing utilities create an isolated module container using the same dependency injection model as an application.
+Nest testing utilities create an isolated module container using the same dependency injection model as the application.
 
 ```ts
 const module = await Test.createTestingModule({
@@ -1124,27 +648,9 @@ const module = await Test.createTestingModule({
 const service = module.get(UsersService);
 ```
 
-The testing module resolves dependencies through Nest rather than requiring the class under test to be instantiated manually.
+![NestJS TestingModule](/docs/nestjs/nestjs-testing-module.png)
 
-Scoped providers can be resolved asynchronously:
-
-```ts
-const service = await module.resolve(RequestService);
-```
-
-Overrides can replace container-managed components before compilation. They follow the same builder pattern as the provider override above, allowing tests to substitute dependencies while preserving the rest of the application graph.
-
-An application instance can also be created from a compiled testing module when the behavior under test requires the Nest application lifecycle:
-
-```ts
-const app = module.createNestApplication();
-
-await app.init();
-
-// test through the application
-
-await app.close();
-```
+This allows dependencies to be replaced while preserving the Nest-managed graph around the component under test.
 
 ---
 
@@ -1155,69 +661,15 @@ await app.close();
 
 @Module({
   controllers: [UsersController],
-  providers: [UsersService, UsersRepository, RolesGuard, AuditInterceptor],
+  providers: [UsersService, UsersRepository, RolesGuard],
 })
 export class UsersModule {}
-```
-
-```ts
-// roles.decorator.ts
-
-export const ROLES_KEY = 'roles';
-
-export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
-```
-
-```ts
-// roles.guard.ts
-
-@Injectable()
-export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
-
-  canActivate(context: ExecutionContext) {
-    const roles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (!roles) {
-      return true;
-    }
-
-    const request = context.switchToHttp().getRequest();
-
-    return roles.includes(request.user?.role);
-  }
-}
-```
-
-```ts
-// audit.interceptor.ts
-
-@Injectable()
-export class AuditInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler) {
-    const startedAt = Date.now();
-
-    return next.handle().pipe(
-      finalize(() => {
-        console.log({
-          handler: context.getHandler().name,
-
-          durationMs: Date.now() - startedAt,
-        });
-      }),
-    );
-  }
-}
 ```
 
 ```ts
 // users.controller.ts
 
 @Controller('users')
-@UseInterceptors(AuditInterceptor)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
