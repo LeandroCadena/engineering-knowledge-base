@@ -3,85 +3,36 @@ title: JavaScript Deep Dive
 description: Deep dive into JavaScript language semantics, values, objects, functions, prototypes, asynchronous execution, modules, collections, iteration, and metaprogramming.
 icon: javascript.png
 order: 2
-updatedAt: 2026-08-19
+updatedAt: 2026-08-20
 ---
 
 # JavaScript Deep Dive
 
 ## Execution Contexts
 
-JavaScript code executes within **execution contexts**. An execution context contains the state required to evaluate code, including its current lexical environment and the function or module being executed.
+JavaScript evaluates code inside **execution contexts** containing the state required to execute a script, module, or function.
 
-A global script begins with a global execution context. Calling a function creates a new function execution context:
+Calling a function creates a new function execution context. While that function executes, its context is active; returning resumes execution in the previous context.
 
 ```js
 function calculateTotal(price, tax) {
-  const total = price + tax;
-  return total;
+  return price + tax;
 }
 
-const result = calculateTotal(100, 21);
+const total = calculateTotal(100, 21);
 ```
 
-While `calculateTotal()` executes, its context becomes the active execution context. When the function returns, execution resumes in the previous context.
-
-Nested function calls create nested execution contexts:
-
-```js
-function multiply(a, b) {
-  return a * b;
-}
-
-function calculate(price, quantity) {
-  return multiply(price, quantity);
-}
-
-calculate(20, 3);
-```
-
-Active execution contexts are managed through a call stack. Each function call adds execution state to the stack, and returning removes it.
-
-Recursive calls therefore consume additional stack space:
-
-```js
-function recurse() {
-  recurse();
-}
-
-recurse();
-```
-
-Unbounded recursion eventually exceeds the available call stack and produces a `RangeError`.
+Active execution contexts form the execution stack. Nested and recursive calls therefore create additional execution contexts until they return.
 
 ---
 
 ## Bindings and Declarations
 
-Declarations create **bindings** that associate identifiers with values.
+Declarations create bindings between identifiers and values.
 
-```js
-var legacy = 'A';
-let current = 'B';
-const fixed = 'C';
-```
+![JavaScript Bindings and Declarations](/docs/javascript/javascript-bindings-and-declarations.png)
 
-`let` permits reassignment:
-
-```js
-let status = 'pending';
-status = 'completed';
-```
-
-`const` prevents reassignment of the binding:
-
-```js
-const status = 'pending';
-
-status = 'completed';
-// TypeError
-```
-
-It does not make an object immutable:
+`const` prevents reassignment of the binding, not mutation of the referenced object:
 
 ```js
 const user = {
@@ -91,199 +42,63 @@ const user = {
 user.name = 'Grace';
 ```
 
-Declarations are processed according to different initialization rules.
+Function declarations, `var`, `let`, and `const` have different initialization behavior before execution reaches their declaration.
 
-Function declarations can be referenced before their textual declaration:
-
-```js
-greet();
-
-function greet() {
-  console.log('Hello');
-}
-```
-
-A `var` binding exists before execution reaches its declaration and initially contains `undefined`:
-
-```js
-console.log(value); // undefined
-
-var value = 10;
-```
-
-Lexical bindings created by `let` and `const` also exist before their declaration is evaluated, but remain uninitialized:
-
-```js
-console.log(value);
-// ReferenceError
-
-let value = 10;
-```
-
-The region in which a lexical binding exists but cannot yet be accessed is commonly called the **Temporal Dead Zone (TDZ)**.
+Accessing an uninitialized lexical binding created by `let` or `const` produces a `ReferenceError`. This interval is the **Temporal Dead Zone (TDZ)**.
 
 ---
 
 ## Lexical Scope
 
-JavaScript uses **lexical scoping**: identifier resolution depends on where code is defined in the source structure.
-
-```js
-const environment = 'production';
-
-function deploy() {
-  const service = 'payments';
-
-  function log() {
-    console.log(environment);
-    console.log(service);
-  }
-
-  log();
-}
-
-deploy();
-```
-
-Each scope is associated with a lexical environment that can reference an outer lexical environment. Identifier lookup continues through those outer environments until a matching binding is found or resolution fails.
+JavaScript resolves identifiers according to where code is defined.
 
 ![JavaScript Lexical Scope](/docs/javascript/javascript-lexical-scope.png)
 
-Blocks created by constructs such as `{}`, loops, and conditional statements can introduce lexical scope for `let`, `const`, and class declarations:
+Each lexical environment can reference an outer lexical environment. Resolution continues through that chain until a matching binding is found or lookup fails.
 
-```js
-{
-  const token = 'abc';
-  console.log(token);
-}
-
-console.log(token);
-// ReferenceError
-```
-
-A binding in an inner scope can shadow a binding with the same name in an outer scope:
+Inner bindings can shadow bindings with the same name in an outer environment:
 
 ```js
 const mode = 'global';
 
 function run() {
   const mode = 'local';
-  console.log(mode);
+  return mode;
 }
 
 run(); // local
-console.log(mode); // global
 ```
 
 ---
 
 ## Closures
 
-A function retains access to bindings from the lexical environment in which the function was created, even when it executes later.
+A function retains access to bindings from the lexical environment in which it was created, even when it executes after that environment's originating function has returned.
 
 ```js
 function createCounter() {
   let count = 0;
 
-  return function increment() {
-    count += 1;
-    return count;
-  };
+  return () => ++count;
 }
 
 const counter = createCounter();
 
 counter(); // 1
 counter(); // 2
-counter(); // 3
 ```
 
-The returned function continues to access the `count` binding after `createCounter()` has returned.
-
-Each invocation can create an independent captured environment:
-
-```js
-const first = createCounter();
-const second = createCounter();
-
-first(); // 1
-first(); // 2
-second(); // 1
-```
-
-Closures can encapsulate state without exposing the captured binding directly:
-
-```js
-function createAccount(initialBalance) {
-  let balance = initialBalance;
-
-  return {
-    deposit(amount) {
-      balance += amount;
-    },
-
-    getBalance() {
-      return balance;
-    },
-  };
-}
-```
-
-Captured values remain reachable for as long as a reachable closure depends on them.
+Each function creation can capture a different environment. Captured values remain reachable while a reachable closure depends on them.
 
 ---
 
 ## Values and Types
 
-JavaScript is dynamically typed: types belong to values rather than variable declarations, so the value associated with a binding can change type.
-
-```js
-let value = 42;
-
-value = 'forty-two';
-value = { amount: 42 };
-```
+JavaScript types belong to values rather than declarations.
 
 ![JavaScript Values and Types](/docs/javascript/javascript-values-and-types.png)
 
-`typeof` provides a string describing the runtime category of a value:
-
-```js
-typeof 42; // 'number'
-typeof 42n; // 'bigint'
-typeof 'hello'; // 'string'
-typeof Symbol(); // 'symbol'
-typeof {}; // 'object'
-typeof function () {}; // 'function'
-```
-
-`typeof null` returns `"object"` for historical compatibility:
-
-```js
-typeof null; // 'object'
-```
-
-Primitive values are immutable:
-
-```js
-const text = 'hello';
-
-text[0] = 'H';
-
-console.log(text); // hello
-```
-
-Objects are mutable unless their behavior is restricted explicitly:
-
-```js
-const user = {
-  name: 'Ada',
-};
-
-user.name = 'Grace';
-```
-
-JavaScript assignment always copies a value. When that value refers to an object, both bindings can refer to the same object:
+Primitive values are immutable. Objects are mutable values whose identity can be shared between bindings.
 
 ```js
 const first = {
@@ -294,212 +109,99 @@ const second = first;
 
 second.active = true;
 
-console.log(first.active); // true
+first.active; // true
 ```
+
+Assignment copies a value. When that value refers to an object, the copied value identifies the same object.
 
 ---
 
 ## Operators and Expressions
 
-Expressions evaluate to values, and operators define operations over those values.
+Expressions evaluate to values and operators determine how those values are combined, compared, inspected, or transformed.
 
 ![JavaScript Operators](/docs/javascript/javascript-operators.png)
 
-Operator precedence determines grouping when parentheses do not specify it explicitly:
+Logical operators short-circuit and return operands rather than necessarily returning Booleans:
 
 ```js
-const result = 2 + 3 * 4;
-// 14
-
-const grouped = (2 + 3) * 4;
-// 20
+const name = user.name || 'Anonymous';
 ```
 
-Logical operators use short-circuit evaluation and return operand values rather than forcing Boolean results:
-
-```js
-const cached = null;
-const value = cached || 'fallback';
-
-const user = {
-  profile: true,
-};
-
-const profile = user && user.profile;
-```
-
-Assignment expressions can combine assignment with conditional evaluation:
-
-```js
-let cache;
-
-cache ??= new Map();
-```
-
-Property existence and prototype relationships can be tested directly:
-
-```js
-'name' in user;
-user instanceof Object;
-```
+Operator precedence determines grouping when parentheses do not specify it explicitly.
 
 ---
 
 ## Type Conversion and Coercion
 
-JavaScript can convert values explicitly:
+JavaScript defines explicit and implicit conversion between value types.
 
 ```js
 Number('42'); // 42
 String(42); // '42'
-Boolean(1); // true
 Boolean(0); // false
 ```
 
-Some operations perform implicit coercion:
+Some operators trigger coercion according to their own semantics:
 
 ```js
 '5' + 1; // '51'
 '5' - 1; // 4
 ```
 
-Conditional contexts convert values according to Boolean semantics:
-
-```js
-if ('hello') {
-  console.log('runs');
-}
-
-if (0) {
-  console.log('does not run');
-}
-```
-
-Explicit conversion is useful when the expected type is part of the operation:
-
-```js
-const port = Number(processValue);
-
-if (Number.isNaN(port)) {
-  throw new TypeError('Invalid number');
-}
-```
+Conditional contexts apply Boolean conversion. Explicit conversion is preferable when the expected representation is part of an application's contract.
 
 ---
 
 ## Equality and Identity
 
-Strict equality compares values without performing type coercion:
+JavaScript provides multiple equality algorithms with different semantics.
 
 ```js
-5 === 5; // true
 5 === '5'; // false
-```
-
-Loose equality can perform coercion before comparison:
-
-```js
 5 == '5'; // true
-```
 
-Objects compare by identity:
-
-```js
-const first = {};
-const second = {};
-
-first === second; // false
-
-const same = first;
-
-first === same; // true
-```
-
-`NaN` is not equal to itself under strict equality:
-
-```js
-NaN === NaN; // false
-```
-
-`Object.is()` uses SameValue semantics:
-
-```js
 Object.is(NaN, NaN); // true
 Object.is(0, -0); // false
 ```
 
-Some built-in collections use **SameValueZero**, under which `NaN` matches itself and `0` and `-0` are considered equal.
+Objects compare by identity rather than structural contents:
+
+```js
+{} === {}; // false
+```
+
+Built-in operations can use other equality algorithms. `Map`, `Set`, and several collection operations use **SameValueZero**, where `NaN` matches itself and `0` and `-0` are equivalent.
 
 ---
 
 ## Control Flow Statements
 
-JavaScript statements control which operations execute and how execution proceeds through a program.
+JavaScript provides statements for branching, iteration, and transferring control.
 
 ![JavaScript Control Flow](/docs/javascript/javascript-control-flow.png)
 
-A `switch` continues into subsequent cases unless execution exits the statement:
-
-```js
-switch (status) {
-  case 'pending':
-    prepare();
-    break;
-
-  case 'ready':
-    execute();
-    break;
-
-  default:
-    reject();
-}
-```
-
-`for...of` consumes values from an iterable:
+`for...of` consumes values from an iterable, while `for...in` enumerates property keys:
 
 ```js
 for (const value of values) {
-  console.log(value);
+  // iterable values
 }
-```
 
-`for...in` iterates enumerable property keys:
-
-```js
 for (const key in object) {
-  console.log(key);
+  // enumerable property keys
 }
 ```
 
-Labels allow `break` and `continue` to target an enclosing labeled statement:
-
-```js
-outer: for (const row of matrix) {
-  for (const value of row) {
-    if (value === target) {
-      break outer;
-    }
-  }
-}
-```
+A `switch` continues into subsequent cases unless execution leaves the current flow.
 
 ---
 
 ## Objects and Properties
 
-Objects associate property keys with property descriptors.
+JavaScript objects associate property keys with property descriptors.
 
-```js
-const user = {
-  id: 1,
-  name: 'Ada',
-};
-
-user.name;
-user['name'];
-```
-
-Computed property names allow expressions to determine keys:
+Properties can be addressed with identifiers, computed keys, strings, or Symbols:
 
 ```js
 const key = 'status';
@@ -509,68 +211,25 @@ const job = {
 };
 ```
 
-Properties can be created, updated, and removed:
+![JavaScript Property Descriptors](/docs/javascript/javascript-property-descriptors.png)
+
+`Object.hasOwn()` distinguishes an object's own property from one available through its prototype chain:
 
 ```js
-user.active = true;
-user.name = 'Grace';
-
-delete user.active;
+Object.hasOwn(job, 'status');
 ```
 
-`Object.hasOwn()` checks whether a property belongs directly to an object:
-
-```js
-Object.hasOwn(user, 'name');
-```
-
-Property descriptors control characteristics of a property:
-
-```js
-Object.defineProperty(user, 'id', {
-  value: 1,
-  writable: false,
-  enumerable: true,
-  configurable: false,
-});
-```
-
-Accessors execute functions when a property is read or assigned:
-
-```js
-const account = {
-  firstName: 'Ada',
-  lastName: 'Lovelace',
-
-  get fullName() {
-    return `${this.firstName} ${this.lastName}`;
-  },
-
-  set fullName(value) {
-    [this.firstName, this.lastName] = value.split(' ');
-  },
-};
-```
-
-Object enumeration APIs expose different representations of own enumerable properties:
-
-```js
-Object.keys(user);
-Object.values(user);
-Object.entries(user);
-```
+Accessors define behavior for property reads and writes rather than storing a normal data value.
 
 ---
 
 ## Prototype Chain
 
-Every ordinary object can have another object as its prototype.
-
-When a property is not found directly on an object, lookup continues through its prototype chain.
+Ordinary JavaScript objects can delegate property lookup to another object through their prototype.
 
 ![JavaScript Prototype Chain](/docs/javascript/javascript-prototype-chain.png)
 
-`Object.create()` creates an object with an explicitly selected prototype:
+A prototype can be selected explicitly:
 
 ```js
 const accountPrototype = {
@@ -582,38 +241,18 @@ const accountPrototype = {
 const account = Object.create(accountPrototype);
 
 account.id = 'acc-1';
-
 account.describe();
 ```
 
-The prototype can be inspected explicitly:
-
-```js
-Object.getPrototypeOf(account) === accountPrototype;
-// true
-```
-
-Constructor functions expose a `prototype` property used for instances created with `new`:
-
-```js
-function User(name) {
-  this.name = name;
-}
-
-User.prototype.greet = function () {
-  return `Hello ${this.name}`;
-};
-
-const user = new User('Ada');
-
-user.greet();
-```
+Lookup continues through successive prototypes until the property is found or the chain reaches `null`.
 
 ---
 
 ## Classes
 
-Class syntax defines constructors, methods, inheritance, and class elements while using JavaScript's prototype-based object model.
+Class syntax provides constructors, fields, methods, private elements, static elements, and inheritance while retaining JavaScript's prototype-based object model.
+
+![JavaScript Classes](/docs/javascript/javascript-classes.png)
 
 ```js
 class User {
@@ -624,101 +263,25 @@ class User {
     this.#token = token;
   }
 
-  greet() {
-    return `Hello ${this.name}`;
-  }
-
   get authenticated() {
     return Boolean(this.#token);
   }
 
-  static create(name) {
-    return new User(name, cryptoValue());
+  static create(name, token) {
+    return new User(name, token);
   }
 }
 ```
 
-Private elements are accessible only through the class that declares them:
-
-```js
-user.#token;
-// SyntaxError
-```
-
-Inheritance is expressed with `extends` and `super`:
-
-```js
-class Admin extends User {
-  constructor(name, token, role) {
-    super(name, token);
-    this.role = role;
-  }
-
-  greet() {
-    return `${super.greet()} (${this.role})`;
-  }
-}
-```
-
-Static initialization blocks execute while the class definition is evaluated:
-
-```js
-class Configuration {
-  static values = new Map();
-
-  static {
-    Configuration.values.set('mode', 'production');
-  }
-}
-```
+Private elements are enforced by the language rather than represented as ordinary object properties.
 
 ---
 
 ## Functions
 
-Functions are first-class values. They can be stored, passed to other functions, returned, and assigned to object properties.
+Functions are first-class JavaScript values: they can be assigned, passed, invoked, and returned.
 
-```js
-function add(a, b) {
-  return a + b;
-}
-
-const operation = add;
-
-operation(2, 3);
-```
-
-Function expressions create functions as values:
-
-```js
-const subtract = function (a, b) {
-  return a - b;
-};
-```
-
-Arrow functions provide a concise function form with lexical `this` behavior:
-
-```js
-const multiply = (a, b) => a * b;
-```
-
-Parameters can define default values:
-
-```js
-function connect(host, port = 443) {
-  return { host, port };
-}
-```
-
-Rest parameters collect remaining arguments into an array:
-
-```js
-function sum(...values) {
-  return values.reduce((total, value) => total + value, 0);
-}
-```
-
-Functions can receive or produce other functions:
+A function can therefore produce another function:
 
 ```js
 function createMultiplier(factor) {
@@ -728,103 +291,39 @@ function createMultiplier(factor) {
 const double = createMultiplier(2);
 ```
 
+Arrow functions differ from ordinary functions in several semantics, including their lexical handling of `this`.
+
 ---
 
 ## `this`
 
-The value of `this` depends on how a non-arrow function is invoked.
+For ordinary functions, `this` is determined by how the function is invoked rather than where it was defined.
 
-A method call uses the receiver as `this`:
+![JavaScript this Binding](/docs/javascript/javascript-this-binding.png)
 
-```js
-const user = {
-  name: 'Ada',
-
-  greet() {
-    return this.name;
-  },
-};
-
-user.greet(); // Ada
-```
-
-`call()` and `apply()` invoke a function with an explicit `this` value:
-
-```js
-function greet(prefix) {
-  return `${prefix} ${this.name}`;
-}
-
-greet.call(user, 'Hello');
-
-greet.apply(user, ['Hello']);
-```
-
-`bind()` creates a new function with a bound `this` value:
-
-```js
-const bound = greet.bind(user);
-
-bound('Hello');
-```
-
-Constructor invocation binds `this` to the newly created instance:
-
-```js
-function Account(id) {
-  this.id = id;
-}
-
-const account = new Account('acc-1');
-```
-
-Arrow functions do not create their own `this` binding:
+Arrow functions do not create their own `this` binding and instead use the surrounding lexical `this`:
 
 ```js
 const timer = {
   value: 10,
 
-  start() {
+  read() {
     return () => this.value;
   },
 };
 
-timer.start()(); // 10
+timer.read()(); // 10
 ```
 
 ---
 
 ## Destructuring
 
-Destructuring patterns extract values from objects and iterables into bindings.
+Destructuring patterns extract values from objects or iterables into bindings.
 
-```js
-const user = {
-  id: 1,
-  profile: {
-    name: 'Ada',
-  },
-};
+![JavaScript Destructuring](/docs/javascript/javascript-destructuring.png)
 
-const {
-  id,
-  profile: { name },
-} = user;
-```
-
-Properties can be renamed and defaults can be supplied:
-
-```js
-const { role: userRole = 'user' } = user;
-```
-
-Array destructuring follows iteration order:
-
-```js
-const [first, second] = ['A', 'B', 'C'];
-```
-
-Destructuring can also be used in assignment and parameter patterns:
+Patterns can also appear in function parameters:
 
 ```js
 function printUser({ id, name }) {
@@ -832,101 +331,51 @@ function printUser({ id, name }) {
 }
 ```
 
+Destructuring follows binding and iteration semantics rather than creating a deep copy of the source value.
+
 ---
 
 ## Rest and Spread Syntax
 
-Rest syntax collects remaining values:
+Rest syntax collects remaining values while spread syntax expands values into another construct.
 
 ```js
 const { id, ...attributes } = user;
-```
 
-Spread syntax expands iterable values into calls or array literals:
-
-```js
-const values = [2, 3];
-
-Math.max(1, ...values, 4);
-
-const copy = [...values];
-```
-
-Object spread copies own enumerable properties into a new object:
-
-```js
-const updated = {
+const copy = {
   ...user,
   active: true,
 };
 ```
 
-Spread performs a shallow operation. Nested objects continue to reference the same nested values:
-
-```js
-const original = {
-  profile: {
-    name: 'Ada',
-  },
-};
-
-const copy = {
-  ...original,
-};
-
-copy.profile === original.profile;
-// true
-```
+Object and array spread are shallow operations. Nested object identities are preserved unless explicitly copied.
 
 ---
 
 ## Optional Chaining
 
-Optional chaining stops property access or invocation when the value being tested is `null` or `undefined`.
+Optional chaining stops a continuous access or call chain when the tested value is `null` or `undefined`.
 
 ```js
 const city = user.profile?.address?.city;
-```
 
-It can be used with computed access:
-
-```js
-const first = values?.[0];
-```
-
-and optional calls:
-
-```js
 listener?.(event);
 ```
 
-Short-circuiting applies only along a continuous optional chain:
-
-```js
-const value = object?.nested?.property;
-```
+It does not treat other falsy values such as `0`, `false`, or `''` as missing.
 
 ---
 
 ## Nullish Coalescing
 
-Nullish coalescing returns its right operand only when the left operand is `null` or `undefined`:
-
-```js
-const count = inputCount ?? 10;
-```
-
-It differs from logical OR for valid falsy values:
+The nullish coalescing operator uses its right operand only when its left operand is `null` or `undefined`.
 
 ```js
 0 || 10; // 10
 0 ?? 10; // 0
-
-'' || 'default'; // 'default'
-'' ?? 'default'; // ''
 ```
 
-It can be combined with optional chaining:
+It therefore preserves valid falsy values and composes naturally with optional chaining:
 
 ```js
 const name = user.profile?.name ?? 'Anonymous';
@@ -936,61 +385,19 @@ const name = user.profile?.name ?? 'Anonymous';
 
 ## Arrays
 
-Arrays are ordered, integer-indexed objects with a `length` property and built-in operations for transforming, searching, aggregating, and modifying sequences.
-
-```js
-const values = [10, 20, 30];
-
-values[0]; // 10
-values.length; // 3
-```
+Arrays are ordered, integer-indexed objects with specialized behavior around their `length` property and a collection of sequence operations.
 
 ![JavaScript Array Operations](/docs/javascript/javascript-array-operations.png)
 
-Transformation operations can produce new arrays:
+An important distinction is whether an operation mutates the existing array or returns another array:
 
 ```js
-const doubled = values.map((value) => value * 2);
+const values = [3, 1, 2];
 
-const large = values.filter((value) => value >= 20);
-```
+const sorted = values.toSorted();
 
-Search and test operations express different result semantics:
-
-```js
-values.find((value) => value > 10);
-
-values.some((value) => value > 25);
-
-values.every((value) => value > 0);
-```
-
-Aggregation combines elements into another value:
-
-```js
-const total = values.reduce((sum, value) => sum + value, 0);
-```
-
-Some operations mutate the original array:
-
-```js
-const mutable = [3, 1, 2];
-
-mutable.sort();
-
-console.log(mutable);
-// [1, 2, 3]
-```
-
-Copying alternatives can preserve the original:
-
-```js
-const original = [3, 1, 2];
-
-const sorted = original.toSorted();
-
-console.log(original);
-// [3, 1, 2]
+values; // [3, 1, 2]
+sorted; // [1, 2, 3]
 ```
 
 ---
@@ -1005,557 +412,206 @@ const id = Symbol('id');
 const user = {
   [id]: 123,
 };
-
-user[id]; // 123
 ```
 
-Symbols created separately are distinct:
+Separately created Symbols are distinct, while `Symbol.for()` uses the global Symbol registry.
 
-```js
-Symbol('id') === Symbol('id');
-// false
-```
-
-The global symbol registry can share symbols by key:
-
-```js
-const first = Symbol.for('application.id');
-
-const second = Symbol.for('application.id');
-
-first === second;
-// true
-```
-
-Well-known symbols allow objects to participate in language protocols and operations. `Symbol.iterator`, for example, defines iterable behavior.
+Well-known Symbols expose hooks into language protocols. `Symbol.iterator`, for example, controls iterable behavior.
 
 ---
 
 ## Map and Set
 
-`Map` stores key-value associations without restricting keys to property-key types:
-
-```js
-const metadata = new Map();
-
-const user = {
-  id: 1,
-};
-
-metadata.set(user, { active: true });
-
-metadata.get(user);
-metadata.has(user);
-metadata.delete(user);
-```
-
-`Set` stores unique values:
-
-```js
-const roles = new Set();
-
-roles.add('admin');
-roles.add('user');
-roles.add('admin');
-
-roles.has('admin'); // true
-roles.size; // 2
-```
+`Map` provides key-value associations where keys can be values of any type, while `Set` stores unique values.
 
 ![JavaScript Collections](/docs/javascript/javascript-collections.png)
 
-Both can be iterated:
+Both preserve insertion order during iteration and use SameValueZero for key/value matching.
 
-```js
-for (const [key, value] of metadata) {
-  console.log(key, value);
-}
-
-for (const role of roles) {
-  console.log(role);
-}
-```
+Unlike ordinary object properties, Map keys are not restricted to strings and Symbols.
 
 ---
 
 ## WeakMap and WeakSet
 
-`WeakMap` associates weakly held keys with values:
+`WeakMap` and `WeakSet` maintain weak relationships with their keys or values.
 
 ```js
-const privateData = new WeakMap();
+const metadata = new WeakMap();
 
 const user = {};
 
-privateData.set(user, {
-  token: 'abc',
+metadata.set(user, {
+  active: true,
 });
-
-privateData.get(user);
 ```
 
-A weak association does not by itself keep its key alive.
+A weak association does not by itself keep its object alive.
 
-`WeakSet` stores weakly held values:
-
-```js
-const processed = new WeakSet();
-
-const request = {};
-
-processed.add(request);
-processed.has(request);
-```
-
-Weak collections are intentionally non-enumerable because the lifetime of their entries depends on reachability and garbage collection.
+Weak collections are intentionally non-enumerable because membership can change as objects become unreachable.
 
 ---
 
 ## Iterable and Iterator Protocols
 
-An object is iterable when it provides the iteration protocol identified by `Symbol.iterator`.
+JavaScript iteration is defined through protocols rather than requiring a particular collection type.
 
 ![JavaScript Iteration Protocol](/docs/javascript/javascript-iteration-protocol.png)
 
-A custom iterable can implement the protocol directly:
+An iterable exposes `Symbol.iterator`, which produces an iterator. The iterator produces `{ value, done }` results through `next()`.
 
 ```js
-const range = {
-  from: 1,
-  to: 3,
+const values = source[Symbol.iterator]();
 
-  [Symbol.iterator]() {
-    let current = this.from;
-    const end = this.to;
-
-    return {
-      next() {
-        if (current <= end) {
-          return {
-            value: current++,
-            done: false,
-          };
-        }
-
-        return {
-          value: undefined,
-          done: true,
-        };
-      },
-    };
-  },
-};
+values.next();
 ```
 
-Language constructs that consume iterables can use it:
-
-```js
-for (const value of range) {
-  console.log(value);
-}
-
-const values = [...range];
-```
-
-An iterator can also be consumed manually:
-
-```js
-const iterator = range[Symbol.iterator]();
-
-iterator.next();
-iterator.next();
-```
+Language constructs such as `for...of` and spread syntax consume this protocol.
 
 ---
 
 ## Generators
 
-Generator functions produce generator objects that implement the iterator protocol.
+Generator functions create resumable generator objects.
 
 ```js
 function* range(from, to) {
-  for (let current = from; current <= to; current += 1) {
-    yield current;
+  for (let value = from; value <= to; value++) {
+    yield value;
   }
 }
 
-const iterator = range(1, 3);
-
-iterator.next();
-iterator.next();
-```
-
-Generators suspend execution at `yield` and resume when iteration continues.
-
-They can therefore be consumed by iterable syntax:
-
-```js
 for (const value of range(1, 3)) {
   console.log(value);
 }
 ```
 
-`yield*` delegates iteration to another iterable:
+`yield` suspends generator execution while preserving its execution state. Iteration resumes it later.
 
-```js
-function* combined() {
-  yield 1;
-  yield* [2, 3];
-  yield 4;
-}
-```
-
-Values can also be passed back into a suspended generator through `next()`:
-
-```js
-function* receive() {
-  const value = yield 'ready';
-
-  return value;
-}
-
-const generator = receive();
-
-generator.next();
-generator.next('received');
-```
+`yield*` delegates iteration to another iterable.
 
 ---
 
 ## Async Iteration
 
-Asynchronous iterables provide values whose retrieval can itself be asynchronous.
-
-```js
-const source = {
-  async *[Symbol.asyncIterator]() {
-    yield await Promise.resolve(1);
-    yield await Promise.resolve(2);
-    yield await Promise.resolve(3);
-  },
-};
-```
-
-`for await...of` consumes asynchronous iterables:
-
-```js
-for await (const value of source) {
-  console.log(value);
-}
-```
-
-An asynchronous iterator can be consumed directly:
-
-```js
-const iterator = source[Symbol.asyncIterator]();
-
-await iterator.next();
-await iterator.next();
-```
-
-Async generators combine generator suspension with asynchronous execution:
+The asynchronous iteration protocol allows retrieving each next value asynchronously.
 
 ```js
 async function* loadPages() {
-  let page = 1;
-
-  while (page <= 3) {
+  for (let page = 1; page <= 3; page++) {
     yield await loadPage(page);
-    page += 1;
   }
 }
+
+for await (const page of loadPages()) {
+  consume(page);
+}
 ```
+
+Async iterables expose `Symbol.asyncIterator`, and `for await...of` consumes the resulting asynchronous iterator.
 
 ---
 
 ## Promises
 
-A Promise represents the eventual settlement of an asynchronous operation.
+A Promise represents an eventual settlement.
 
 ![JavaScript Promise States](/docs/javascript/javascript-promise-states.png)
 
-A Promise can be created directly:
+Promise reactions form chains. A value returned by a reaction fulfills the next Promise, while a thrown value rejects it:
 
 ```js
-const promise = new Promise((resolve, reject) => {
-  performOperation((error, value) => {
-    if (error) {
-      reject(error);
-      return;
-    }
+const userId = fetchUser().then((user) => {
+  if (!user) {
+    throw new Error('User not found');
+  }
 
-    resolve(value);
-  });
+  return user.id;
 });
 ```
 
-`then()` registers fulfillment and rejection reactions and returns a new Promise:
+Promise resolution can adopt the state of another Promise or thenable rather than simply storing it as an ordinary value.
 
-```js
-const transformed = promise.then((value) => value * 2);
-```
+![JavaScript Promise Combinators](/docs/javascript/javascript-promise-combinators.png)
 
-Returned values become the fulfillment value of the next Promise, while thrown errors become rejections:
-
-```js
-promise
-  .then((value) => {
-    if (!value) {
-      throw new Error('Missing value');
-    }
-
-    return value.id;
-  })
-  .catch((error) => {
-    console.error(error);
-  });
-```
-
-`finally()` runs after settlement without replacing the original outcome unless it throws or returns a rejected Promise:
-
-```js
-promise.finally(() => {
-  releaseResource();
-});
-```
-
-Promise combinators coordinate multiple Promise-like inputs:
-
-```js
-const [user, permissions] = await Promise.all([loadUser(), loadPermissions()]);
-
-const results = await Promise.allSettled([firstOperation(), secondOperation()]);
-
-const first = await Promise.race([request(), timeout()]);
-
-const available = await Promise.any([primary(), replica()]);
-```
+`finally()` runs after settlement while normally preserving the preceding fulfillment value or rejection reason.
 
 ---
 
 ## Async Functions and `await`
 
-An `async` function always returns a Promise:
+An `async` function always returns a Promise.
+
+`await` suspends evaluation of that async function until the awaited value settles. It does not synchronously block JavaScript execution outside the function.
+
+A rejected awaited Promise throws at the suspension point and can participate in normal exception handling:
 
 ```js
-async function getValue() {
-  return 42;
-}
+try {
+  const data = await loadData();
 
-getValue().then(console.log);
-```
-
-`await` suspends evaluation of the async function until the awaited value is resolved, without blocking synchronous execution outside that function:
-
-```js
-async function loadUser() {
-  const response = await getUser();
-
-  return response.user;
+  return data;
+} catch (error) {
+  throw new Error('Unable to load data', { cause: error });
 }
 ```
 
-A rejected awaited Promise throws at the suspension point:
+Independent operations should not become sequential merely because `await` is available:
 
 ```js
-async function load() {
-  try {
-    return await getData();
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
+const [user, roles] = await Promise.all([loadUser(), loadRoles()]);
 ```
 
-Independent operations can begin before awaiting their combined result:
-
-```js
-const userPromise = loadUser();
-
-const rolesPromise = loadRoles();
-
-const [user, roles] = await Promise.all([userPromise, rolesPromise]);
-```
-
-Sequential awaits instead establish an execution dependency:
-
-```js
-const user = await loadUser();
-
-const permissions = await loadPermissions(user.id);
-```
+Sequential awaits are appropriate when the later operation actually depends on the earlier result.
 
 ---
 
 ## Jobs and Promise Reactions
 
-Promise reactions do not execute synchronously when they are registered.
-
-```js
-console.log('A');
-
-Promise.resolve().then(() => {
-  console.log('B');
-});
-
-console.log('C');
-```
-
-The synchronous execution completes before the Promise reaction runs:
-
-```text
-A
-C
-B
-```
+Promise reactions execute as JavaScript jobs after the current synchronous execution completes.
 
 ![JavaScript Jobs and Promise Reactions](/docs/javascript/javascript-jobs-promise-reactions.png)
 
-Multiple reactions are processed according to the order in which their jobs are queued:
+`await` continuations participate in the same Promise-related scheduling semantics.
 
-```js
-Promise.resolve().then(() => console.log('first'));
-
-Promise.resolve().then(() => console.log('second'));
-```
-
-`await` continuation is also scheduled through Promise-related job semantics:
-
-```js
-async function run() {
-  console.log('inside A');
-
-  await null;
-
-  console.log('inside B');
-}
-
-console.log('outside A');
-
-run();
-
-console.log('outside B');
-```
-
-The host environment determines how JavaScript jobs interact with host-provided work such as timers, I/O, rendering, or process events.
+The host environment determines how these JavaScript jobs interact with host-provided work such as timers, networking, rendering, or process events.
 
 ---
 
 ## Errors and Exceptions
 
-Errors can be represented by `Error` objects and propagated with `throw`:
-
-```js
-function divide(a, b) {
-  if (b === 0) {
-    throw new RangeError('Division by zero');
-  }
-
-  return a / b;
-}
-```
-
-`try...catch` intercepts thrown values:
+JavaScript propagates exceptional control flow through `throw` and handles it with `try`, `catch`, and `finally`.
 
 ```js
 try {
-  divide(10, 0);
+  await initialize();
 } catch (error) {
-  console.error(error.message);
-}
-```
-
-`finally` executes after the `try`/`catch` flow regardless of whether an exception occurred:
-
-```js
-try {
-  acquireResource();
-  performWork();
+  throw new Error('Initialization failed', { cause: error });
 } finally {
-  releaseResource();
+  releaseResources();
 }
 ```
 
-Uncaught exceptions propagate through active function calls:
+Thrown values propagate through active function calls until intercepted.
 
-```js
-function inner() {
-  throw new Error('Failure');
-}
+Built-in Error subclasses communicate common failure categories, while application-specific errors can extend `Error` when a distinct semantic type is useful.
 
-function outer() {
-  inner();
-}
-
-try {
-  outer();
-} catch (error) {
-  console.error(error);
-}
-```
-
-Custom error types can extend built-in Error classes:
-
-```js
-class ValidationError extends Error {
-  constructor(message, options) {
-    super(message, options);
-    this.name = 'ValidationError';
-  }
-}
-```
-
-An error can preserve its originating cause:
-
-```js
-try {
-  await loadConfiguration();
-} catch (error) {
-  throw new Error('Application initialization failed', { cause: error });
-}
-```
-
-Promise rejections participate in the same error flow when consumed through `await`:
-
-```js
-try {
-  await failingOperation();
-} catch (error) {
-  console.error(error);
-}
-```
+Promise rejections consumed through `await` enter the same exception flow at the `await` expression.
 
 ---
 
 ## ECMAScript Modules
 
-ECMAScript modules provide file-level module scope and explicit dependency relationships.
+ECMAScript Modules provide module scope and explicit dependency relationships through `import` and `export`.
 
-Named exports expose selected bindings:
-
-```js
-export const timeout = 5000;
-
-export function connect() {
-  // ...
-}
-```
-
-Named imports reference those exported bindings:
-
-```js
-import { timeout, connect } from './client.js';
-```
-
-Exports are **live bindings** rather than copied snapshots:
+Imported bindings are **live bindings** rather than copied snapshots:
 
 ```js
 // counter.js
 export let count = 0;
 
 export function increment() {
-  count += 1;
+  count++;
 }
 ```
 
@@ -1563,56 +619,18 @@ export function increment() {
 // app.js
 import { count, increment } from './counter.js';
 
-console.log(count); // 0
-
 increment();
 
 console.log(count); // 1
 ```
 
-Default exports provide a distinguished export:
-
-```js
-export default class Client {
-  // ...
-}
-```
-
-```js
-import Client from './client.js';
-```
-
-A module namespace object can collect a module's exports:
-
-```js
-import * as config from './config.js';
-
-console.log(config.timeout);
-```
-
-Dynamic `import()` loads a module through a Promise-based expression:
-
-```js
-const module = await import('./feature.js');
-
-module.activate();
-```
-
-Modules support top-level `await`:
-
-```js
-const configuration = await loadConfiguration();
-
-export { configuration };
-```
+Dynamic `import()` performs Promise-based module loading, while modules can use `await` at top level.
 
 ---
 
 ## Strict Mode
 
-Strict mode changes selected JavaScript semantics and converts some otherwise silent behavior into errors.
-
-It can be enabled for a script or function with the strict-mode directive:
+Strict mode changes selected JavaScript semantics and turns some otherwise silent behavior into errors.
 
 ```js
 'use strict';
@@ -1621,129 +639,45 @@ value = 10;
 // ReferenceError
 ```
 
-Assignments to non-writable properties throw in strict mode:
+It also changes behaviors such as plain-function `this` substitution and assignments that would otherwise fail silently.
 
-```js
-'use strict';
-
-const object = {};
-
-Object.defineProperty(object, 'id', {
-  value: 1,
-  writable: false,
-});
-
-object.id = 2;
-// TypeError
-```
-
-Plain function invocation does not substitute the global object for `this`:
-
-```js
-'use strict';
-
-function inspect() {
-  return this;
-}
-
-inspect(); // undefined
-```
-
-ECMAScript modules and class bodies execute with strict semantics automatically.
+ECMAScript Modules and class bodies already execute using strict semantics.
 
 ---
 
 ## WeakRef and FinalizationRegistry
 
-`WeakRef` creates a weak reference that does not by itself keep its target alive:
+`WeakRef` allows observing an object without the reference itself keeping that object alive.
 
 ```js
-let object = {
-  id: 1,
-};
-
 const reference = new WeakRef(object);
 
-reference.deref();
-```
-
-`deref()` returns the target while it remains available, otherwise it can return `undefined`:
-
-```js
 const value = reference.deref();
-
-if (value) {
-  console.log(value.id);
-}
 ```
 
-A program cannot rely on when or whether garbage collection will make the target unavailable.
+`deref()` can return `undefined` once the target is no longer available.
 
-`FinalizationRegistry` allows a cleanup callback to be registered for an object that may later become unreachable:
+`FinalizationRegistry` can register a callback associated with eventual reclamation, but garbage collection and finalization timing are nondeterministic.
 
-```js
-const registry = new FinalizationRegistry((heldValue) => {
-  console.log('Finalized:', heldValue);
-});
-
-let resource = {};
-
-registry.register(resource, 'resource-1');
-
-resource = null;
-```
-
-Finalization timing is nondeterministic and must not be used for correctness-critical application flow.
+Neither feature should therefore be used to implement correctness-critical resource lifecycle.
 
 ---
 
 ## Proxy and Reflect
 
-`Proxy` can intercept fundamental operations performed on another object.
+`Proxy` intercepts fundamental operations performed on an object.
 
 ```js
-const target = {
-  name: 'Ada',
-};
-
 const proxy = new Proxy(target, {
   get(target, property, receiver) {
-    console.log(`Reading ${String(property)}`);
-
     return Reflect.get(target, property, receiver);
   },
 });
-
-proxy.name;
 ```
 
-Different traps correspond to different object operations:
+`Reflect` exposes functions corresponding to fundamental object operations and provides the normal operation that a Proxy trap often forwards to.
 
-```js
-const proxy = new Proxy(target, {
-  set(target, property, value, receiver) {
-    if (property === 'age' && value < 0) {
-      throw new RangeError('Invalid age');
-    }
-
-    return Reflect.set(target, property, value, receiver);
-  },
-});
-```
-
-`Reflect` exposes functions corresponding to fundamental object operations:
-
-```js
-Reflect.get(target, 'name');
-
-Reflect.set(target, 'active', true);
-
-Reflect.has(target, 'name');
-
-Reflect.deleteProperty(target, 'temporary');
-```
-
-Proxy traps must preserve the invariants required by the underlying object operation.
+Proxy traps must preserve the invariants required by the intercepted operation.
 
 ---
 
@@ -1764,9 +698,7 @@ export class UserStore {
   }
 
   get(id) {
-    const user = this.#users.get(id);
-
-    return user ? { ...user } : undefined;
+    return this.#users.get(id);
   }
 
   *[Symbol.iterator]() {
@@ -1780,48 +712,33 @@ export class UserStore {
 
 import { UserStore } from './user-store.js';
 
-const store = new UserStore();
-
 export async function loadUsers(ids, loadUser) {
-  const results = await Promise.allSettled(ids.map((id) => loadUser(id)));
+  const store = new UserStore();
+
+  const results = await Promise.allSettled(ids.map(loadUser));
 
   for (const result of results) {
-    if (result.status !== 'fulfilled') {
-      continue;
+    if (result.status === 'fulfilled') {
+      store.add(result.value);
     }
-
-    store.add(result.value);
   }
 
   return store;
-}
-
-export function createUserReader(store) {
-  return (id) => {
-    const user = store.get(id);
-
-    return {
-      id,
-      name: user?.profile?.name ?? 'Unknown',
-    };
-  };
 }
 ```
 
 ```js
 // app.js
 
-import { loadUsers, createUserReader } from './user-service.js';
+import { loadUsers } from './user-service.js';
 
 try {
   const store = await loadUsers(['1', '2', '3'], loadUser);
 
-  const readUser = createUserReader(store);
-
   for (const user of store) {
-    console.log(readUser(user.id));
+    console.log(user.profile?.name ?? 'Unknown');
   }
 } catch (error) {
-  console.error('Unable to load users', error);
+  console.error(error);
 }
 ```
