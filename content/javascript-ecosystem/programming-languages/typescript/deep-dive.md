@@ -88,16 +88,9 @@ Arrays model collections of values, while tuples encode type information about i
 A tuple can also preserve information around a variable-length portion of a sequence:
 
 ```ts
-type Command = [
-  name: string,
-  ...args: string[],
-];
+type Command = [name: string, ...args: string[]];
 
-const command: Command = [
-  'deploy',
-  '--production',
-  '--force',
-];
+const command: Command = ['deploy', '--production', '--force'];
 ```
 
 This makes tuples useful when position itself carries meaning, particularly for function parameters and strongly typed sequences.
@@ -116,9 +109,7 @@ Function overloads expose multiple valid call signatures while sharing one imple
 function format(value: string): string;
 function format(value: number): string;
 
-function format(
-  value: string | number,
-): string {
+function format(value: string | number): string {
   return String(value);
 }
 ```
@@ -134,10 +125,7 @@ Callers interact with the overload signatures rather than the broader implementa
 TypeScript derives types from expressions and their surrounding context, reducing the need for explicit annotations.
 
 ```ts
-const users = [
-  'Alice',
-  'Bob',
-];
+const users = ['Alice', 'Bob'];
 
 users.forEach((user) => {
   user.toUpperCase();
@@ -157,8 +145,7 @@ Explicit annotations remain useful when defining intentional boundaries, especia
 A type assertion tells the compiler to treat a value as a specified type.
 
 ```ts
-const user =
-  input as User;
+const user = input as User;
 ```
 
 An assertion changes TypeScript's view of the expression; it does not inspect or validate the value at runtime.
@@ -208,11 +195,9 @@ Declarations with the same compatible interface name contribute to the resulting
 A type alias assigns a reusable name to a type expression.
 
 ```ts
-type Id =
-  string | number;
+type Id = string | number;
 
-type Point =
-  [number, number];
+type Point = [number, number];
 ```
 
 Unlike interfaces, aliases are not restricted to object-shaped contracts and can name unions, intersections, tuples, primitives, functions, and transformed types.
@@ -262,20 +247,12 @@ function handle(result: Result) {
 Custom predicates can communicate runtime checks back into the type system:
 
 ```ts
-function isUser(
-  value: unknown,
-): value is User {
-  if (
-    typeof value !== 'object' ||
-    value === null
-  ) {
+function isUser(value: unknown): value is User {
+  if (typeof value !== 'object' || value === null) {
     return false;
   }
 
-  return (
-    'name' in value &&
-    typeof value.name === 'string'
-  );
+  return 'name' in value && typeof value.name === 'string';
 }
 ```
 
@@ -290,9 +267,7 @@ When the predicate returns `true`, TypeScript narrows the corresponding value to
 Generics allow types to remain parameterized while preserving relationships between inputs and outputs.
 
 ```ts
-function identity<T>(
-  value: T,
-): T {
+function identity<T>(value: T): T {
   return value;
 }
 ```
@@ -300,13 +275,7 @@ function identity<T>(
 Constraints restrict which types are valid without discarding their more specific information.
 
 ```ts
-function getProperty<
-  T,
-  K extends keyof T,
->(
-  object: T,
-  key: K,
-): T[K] {
+function getProperty<T, K extends keyof T>(object: T, key: K): T[K] {
   return object[key];
 }
 ```
@@ -321,8 +290,7 @@ const user = {
   name: 'Alice',
 };
 
-const name =
-  getProperty(user, 'name');
+const name = getProperty(user, 'name');
 ```
 
 The resulting type remains `string` without explicitly supplying `T` or `K`.
@@ -348,10 +316,7 @@ Here, `keyof T` produces the available property keys, while `T[K]` retrieves the
 Conditional types select a result based on a type relationship:
 
 ```ts
-type Unwrap<T> =
-  T extends Promise<infer U>
-    ? U
-    : T;
+type Unwrap<T> = T extends Promise<infer U> ? U : T;
 ```
 
 `infer` captures part of the matched type so it can be reused in the resulting branch.
@@ -376,13 +341,7 @@ type User = {
   createdAt: Date;
 };
 
-type UserUpdate =
-  Partial<
-    Pick<
-      User,
-      'name' | 'email'
-    >
-  >;
+type UserUpdate = Partial<Pick<User, 'name' | 'email'>>;
 ```
 
 `UserUpdate` derives its fields from `User` while making only the selected properties optional. Changes to the original property types continue to propagate into the derived type.
@@ -397,9 +356,7 @@ type UserUpdate =
 
 ```ts
 type Config = {
-  mode:
-    | 'development'
-    | 'production';
+  mode: 'development' | 'production';
 
   retries: number;
 };
@@ -423,13 +380,9 @@ It differs from a type assertion because it performs a compatibility check inste
 TypeScript can explicitly mark module dependencies that exist only in the type system.
 
 ```ts
-import type {
-  User,
-} from './user';
+import type { User } from './user';
 
-export type {
-  User,
-};
+export type { User };
 ```
 
 Type-only imports and exports communicate that the referenced declaration is not required as a runtime value.
