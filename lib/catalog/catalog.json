@@ -173,14 +173,15 @@
       "id": "express",
       "title": "Express",
       "category": "js-backend",
-      "description": "Learn what Express is, how it works, where it fits within backend architectures, and the most common ways it is used to build web applications and APIs.",
+      "description": "Middleware order, routes, request boundaries, responses, and errors in Express 5.",
       "contentPath": "javascript-ecosystem/frameworks/backend/express",
-      "status": "complete",
+      "status": "review",
       "icon": "express.png",
       "tags": [],
       "prerequisites": ["nodejs", "http"],
       "related": ["nestjs", "supertest"],
-      "order": 3
+      "order": 3,
+      "readingFile": "reading"
     },
     {
       "id": "nestjs",
@@ -239,14 +240,15 @@
       "id": "jest",
       "title": "Jest",
       "category": "js-testing",
-      "description": "Learn what Jest is, why it exists, how it fits into modern software development, and how it helps developers build reliable JavaScript and TypeScript applications through automated testing.",
+      "description": "Execution, assertions, async completion, mocks, isolation, and timers in Jest 30.",
       "contentPath": "javascript-ecosystem/frameworks/testing/jest",
-      "status": "complete",
+      "status": "review",
       "icon": "jest.png",
       "tags": ["testing"],
       "prerequisites": ["javascript"],
       "related": ["supertest", "testcontainers", "nestjs"],
-      "order": 8
+      "order": 8,
+      "readingFile": "reading"
     },
     {
       "id": "nestjs-swagger",
