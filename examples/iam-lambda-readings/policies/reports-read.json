@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadOnlyOrderExports",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::example-order-exports/reports/*"
+    },
+    {
+      "Sid": "ListOnlyReports",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::example-order-exports",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": ["reports/*"]
+        }
+      }
+    }
+  ]
+}

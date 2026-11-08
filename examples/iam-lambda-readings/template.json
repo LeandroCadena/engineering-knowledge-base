@@ -1,0 +1,198 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Reading example: standard SQS batch to an atomic accepted-command record. No external side effects.",
+  "Parameters": {
+    "ArtifactBucket": {
+      "Type": "String",
+      "MinLength": 3,
+      "Description": "Existing same-region S3 bucket containing the packaged function."
+    },
+    "ArtifactKey": {
+      "Type": "String",
+      "MinLength": 1,
+      "Description": "Immutable object key for function.zip."
+    },
+    "FunctionName": {
+      "Type": "String",
+      "Default": "kb-iam-lambda-worker",
+      "MaxLength": 64,
+      "AllowedPattern": "[A-Za-z0-9-_]+",
+      "Description": "Choose a unique name in this account and region."
+    }
+  },
+  "Resources": {
+    "DeadLetters": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "MessageRetentionPeriod": 1209600,
+        "SqsManagedSseEnabled": true
+      }
+    },
+    "Commands": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "VisibilityTimeout": 125,
+        "SqsManagedSseEnabled": true,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": ["DeadLetters", "Arn"]
+          },
+          "maxReceiveCount": 5
+        }
+      }
+    },
+    "AcceptedCommands": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "BillingMode": "PAY_PER_REQUEST",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "pk",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "pk",
+            "KeyType": "HASH"
+          }
+        ],
+        "PointInTimeRecoverySpecification": {
+          "PointInTimeRecoveryEnabled": true
+        }
+      }
+    },
+    "WorkerLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${FunctionName}"
+        },
+        "RetentionInDays": 7
+      }
+    },
+    "WorkerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "WorkerResources",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"],
+                  "Resource": {
+                    "Fn::GetAtt": ["Commands", "Arn"]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["dynamodb:PutItem", "dynamodb:GetItem"],
+                  "Resource": {
+                    "Fn::GetAtt": ["AcceptedCommands", "Arn"]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${FunctionName}:*"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Worker": {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": ["WorkerLogs"],
+      "Properties": {
+        "FunctionName": {
+          "Ref": "FunctionName"
+        },
+        "Runtime": "nodejs24.x",
+        "Architectures": ["arm64"],
+        "Handler": "src/handler.handler",
+        "Role": {
+          "Fn::GetAtt": ["WorkerRole", "Arn"]
+        },
+        "MemorySize": 256,
+        "Timeout": 20,
+        "ReservedConcurrentExecutions": 2,
+        "Environment": {
+          "Variables": {
+            "TABLE_NAME": {
+              "Ref": "AcceptedCommands"
+            }
+          }
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "S3Key": {
+            "Ref": "ArtifactKey"
+          }
+        }
+      }
+    },
+    "QueueMapping": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": ["Commands", "Arn"]
+        },
+        "FunctionName": {
+          "Ref": "Worker"
+        },
+        "BatchSize": 10,
+        "MaximumBatchingWindowInSeconds": 1,
+        "FunctionResponseTypes": ["ReportBatchItemFailures"],
+        "ScalingConfig": {
+          "MaximumConcurrency": 2
+        },
+        "Enabled": true
+      }
+    }
+  },
+  "Outputs": {
+    "QueueUrl": {
+      "Value": {
+        "Ref": "Commands"
+      }
+    },
+    "DeadLetterQueueUrl": {
+      "Value": {
+        "Ref": "DeadLetters"
+      }
+    },
+    "TableName": {
+      "Value": {
+        "Ref": "AcceptedCommands"
+      }
+    },
+    "Function": {
+      "Value": {
+        "Ref": "Worker"
+      }
+    }
+  }
+}
