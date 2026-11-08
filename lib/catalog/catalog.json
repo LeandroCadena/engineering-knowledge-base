@@ -312,14 +312,15 @@
       "id": "oauth-2",
       "title": "OAuth 2.0",
       "category": "web",
-      "description": "Learn what OAuth 2.0 is, why delegated authorization exists, how applications obtain limited access to protected resources, and where OAuth fits within modern software architectures.",
+      "description": "Authorization roles, client types, authorization code with PKCE, token exchange, scopes, refresh rotation, client credentials, and integration boundaries.",
       "contentPath": "protocols/authorization/oauth-2",
-      "status": "complete",
+      "status": "review",
       "icon": "oauth.png",
       "tags": ["security", "identity"],
-      "prerequisites": [],
-      "related": ["openid-connect", "jwt"],
-      "order": 13
+      "prerequisites": ["http"],
+      "related": ["jwt", "openid-connect", "sessions-cookies"],
+      "order": 13,
+      "readingFile": "reading"
     },
     {
       "id": "openid-connect",
@@ -338,14 +339,15 @@
       "id": "jwt",
       "title": "JWT",
       "category": "web",
-      "description": "Understand what JSON Web Tokens are, why they exist, how they carry verifiable claims between systems, and where they fit within modern application architectures.",
+      "description": "Claim sets, JWS and JWE, signing authority, validation policy, trusted key distribution, rotation, and authorization boundaries.",
       "contentPath": "standards/token-formats/jwt",
-      "status": "complete",
+      "status": "review",
       "icon": "jwt.png",
       "tags": ["security", "identity"],
-      "prerequisites": [],
-      "related": ["oauth-2", "openid-connect", "sessions-cookies", "application-security"],
-      "order": 15
+      "prerequisites": ["http"],
+      "related": ["oauth-2", "openid-connect", "hmac"],
+      "order": 15,
+      "readingFile": "reading"
     },
     {
       "id": "api-keys",
