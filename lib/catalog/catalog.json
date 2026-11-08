@@ -134,14 +134,15 @@
       "id": "javascript",
       "title": "JavaScript",
       "category": "js-languages",
-      "description": "Understand what JavaScript is, how it is executed, where it fits within runtimes and software systems, and the problems it is commonly used to solve.",
+      "description": "Values, scope, closures, object identity, functions, prototypes, collections, promises, and module semantics for backend JavaScript.",
       "contentPath": "javascript-ecosystem/programming-languages/javascript",
-      "status": "complete",
+      "status": "review",
       "icon": "javascript.png",
       "tags": [],
       "prerequisites": [],
       "related": [],
-      "order": 0
+      "order": 0,
+      "readingFile": "reading"
     },
     {
       "id": "typescript",
@@ -269,14 +270,15 @@
       "id": "http",
       "title": "HTTP",
       "category": "web",
-      "description": "Learn what HTTP is, how applications exchange information, where HTTP fits within modern software architectures, and how it enables communication across the web.",
+      "description": "Request semantics, representations, caching, conditional updates, connections, browser boundaries, and failure handling in HTTP APIs.",
       "contentPath": "protocols/communication/http",
-      "status": "complete",
+      "status": "review",
       "icon": "http.png",
       "tags": ["networking"],
       "prerequisites": [],
       "related": ["rest", "tls", "openapi"],
-      "order": 10
+      "order": 10,
+      "readingFile": "reading"
     },
     {
       "id": "rest",

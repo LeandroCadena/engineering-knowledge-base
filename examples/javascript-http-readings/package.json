@@ -1,0 +1,13 @@
+{
+  "name": "javascript-http-readings-example",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test src/*.test.js",
+    "demo": "node src/demo.js",
+    "start": "node src/main.js"
+  }
+}
