@@ -410,14 +410,15 @@
       "id": "mongodb",
       "title": "MongoDB",
       "category": "databases",
-      "description": "Learn what MongoDB is, how it stores and queries data, where it fits within modern application architectures, and the most common scenarios in which document databases are used.",
+      "description": "BSON documents, schema and access-pattern modeling, atomic updates, compound indexes, aggregation, transactions, replica-set consistency, sharding, and Node.js operations.",
       "contentPath": "databases/non-relational-databases/mongoDB",
-      "status": "complete",
+      "status": "review",
       "icon": "mongodb.png",
       "tags": [],
-      "prerequisites": [],
-      "related": [],
-      "order": 20
+      "prerequisites": ["nodejs"],
+      "related": ["postgresql", "hmac", "distributed-systems"],
+      "order": 20,
+      "readingFile": "reading"
     },
     {
       "id": "redis",
@@ -515,14 +516,15 @@
       "id": "hmac",
       "title": "HMAC",
       "category": "security",
-      "description": "Understand what HMAC is, why it is used, and where message authentication fits within secure application architectures.",
+      "description": "Keyed message authentication, exact signed bytes, encoding and constant-time comparison, request binding, freshness, replay, shared-key rotation, and webhook persistence.",
       "contentPath": "standards/cryptography/hmac",
-      "status": "complete",
+      "status": "review",
       "icon": "hmac.png",
       "tags": ["security"],
-      "prerequisites": [],
-      "related": ["api-keys", "jwt", "application-security"],
-      "order": 28
+      "prerequisites": ["nodejs", "http"],
+      "related": ["mongodb", "tls", "api-keys"],
+      "order": 28,
+      "readingFile": "reading"
     },
     {
       "id": "prisma",
