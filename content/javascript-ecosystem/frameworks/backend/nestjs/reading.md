@@ -480,11 +480,3 @@ No. Nest abstractions preserve much of the module/provider/controller model, but
 :::
 
 [Executable example and setup instructions](https://github.com/LeandroCadena/engineering-knowledge-base/tree/codex/nestjs-unified-reading/examples/nestjs-reading)
-
-## Official References
-
-- [Modules](https://docs.nestjs.com/modules), [controllers](https://docs.nestjs.com/controllers), [providers](https://docs.nestjs.com/providers), and [custom providers](https://docs.nestjs.com/fundamentals/custom-providers).
-- [Injection scopes](https://docs.nestjs.com/fundamentals/injection-scopes) and [request lifecycle](https://docs.nestjs.com/faq/request-lifecycle).
-- [Pipes](https://docs.nestjs.com/pipes), [validation](https://docs.nestjs.com/techniques/validation), [guards](https://docs.nestjs.com/guards), [interceptors](https://docs.nestjs.com/interceptors), and [exception filters](https://docs.nestjs.com/exception-filters).
-- [Execution context](https://docs.nestjs.com/fundamentals/execution-context), [dynamic modules](https://docs.nestjs.com/fundamentals/dynamic-modules), [configuration](https://docs.nestjs.com/techniques/configuration), [lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events), and [testing](https://docs.nestjs.com/fundamentals/testing).
-- [RxJS Observables](https://rxjs.dev/guide/observable).

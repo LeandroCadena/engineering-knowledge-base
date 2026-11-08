@@ -26,7 +26,7 @@ Unit/integration testing, idempotency, deduplication, retries, and similar techn
 
 ## Ownership
 
-The `concepts` list is an editorial map of primary explanations and specific applications. It powers “Connect the foundations” in the reader. It cannot automatically detect duplicated prose; authors must still review content boundaries. The initial map covers dependency inversion, transactions, idempotency/delivery guarantees, async tests, event loop/backpressure, runtime validation, message authentication, and trust boundaries.
+The `concepts` list is an editorial map of primary explanations and specific applications. Related-reading links provide cross-topic navigation without a separate foundations panel. It cannot automatically detect duplicated prose; authors must still review content boundaries. The initial map covers dependency inversion, transactions, idempotency/delivery guarantees, async tests, event loop/backpressure, runtime validation, message authentication, and trust boundaries.
 
 Examples:
 

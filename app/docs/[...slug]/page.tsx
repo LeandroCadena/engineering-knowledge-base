@@ -5,7 +5,6 @@ import { getDocumentBySlug, getMarkdownMetadata } from '@/lib/content';
 import {
   categoryHref,
   categoryTrail,
-  concepts,
   getTopic,
   relatedTopics,
   statusLabels,
@@ -46,9 +45,6 @@ export default async function DocumentPage({ params }: Props) {
   const minutes = await topicMinutes(topic);
   const related = relatedTopics(topic);
   const prerequisites = topic.prerequisites.map(getTopic).filter((t) => t !== undefined);
-  const applications = concepts.filter(
-    (concept) => concept.applications.includes(topic.id) && concept.owner !== topic.id,
-  );
   const href = topicHref(topic);
   return (
     <>
@@ -139,28 +135,6 @@ export default async function DocumentPage({ params }: Props) {
                 ? metadata.updatedAt.toISOString().slice(0, 10)
                 : String(metadata.updatedAt)}
             </p>
-          )}
-          {!!applications.length && (
-            <section className="mt-10 rounded-xl border border-zinc-800 p-5">
-              <h2 className="font-semibold">Connect the foundations</h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                These concepts have a primary explanation elsewhere in the knowledge base.
-              </p>
-              <ul className="mt-3 space-y-2 text-sm">
-                {applications.map((concept) => {
-                  const owner = getTopic(concept.owner)!;
-                  return (
-                    <li key={concept.id}>
-                      {concept.title}:{' '}
-                      <Link href={topicHref(owner)} className="text-emerald-400 hover:underline">
-                        {owner.title}
-                        {owner.status === 'planned' ? ' (planned)' : ''}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
           )}
           <nav
             aria-label="Document navigation"

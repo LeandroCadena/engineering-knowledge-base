@@ -18,3 +18,11 @@ The same `configureApp()` installs the prefix and ValidationPipe in production b
 The parent Next.js app excludes this independent example from its compiler and lint scope. `npm test` here compiles every example file before running the executable behavior tests.
 
 The additional `mechanisms.ts` examples cover a positive-integer pipe, a domain-error filter, and an injected client's initialization/cleanup hooks. Tests verify transformation/rejection, the custom 404 response, awaited lifecycle order, and Observable composition. The resource hook uses a controlled client contract rather than opening a real external connection.
+
+## Reference sources
+
+- [Modules](https://docs.nestjs.com/modules), [controllers](https://docs.nestjs.com/controllers), [providers](https://docs.nestjs.com/providers), and [custom providers](https://docs.nestjs.com/fundamentals/custom-providers).
+- [Injection scopes](https://docs.nestjs.com/fundamentals/injection-scopes) and [request lifecycle](https://docs.nestjs.com/faq/request-lifecycle).
+- [Pipes](https://docs.nestjs.com/pipes), [validation](https://docs.nestjs.com/techniques/validation), [guards](https://docs.nestjs.com/guards), [interceptors](https://docs.nestjs.com/interceptors), and [exception filters](https://docs.nestjs.com/exception-filters).
+- [Execution context](https://docs.nestjs.com/fundamentals/execution-context), [dynamic modules](https://docs.nestjs.com/fundamentals/dynamic-modules), [configuration](https://docs.nestjs.com/techniques/configuration), [lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events), and [testing](https://docs.nestjs.com/fundamentals/testing).
+- [RxJS Observables](https://rxjs.dev/guide/observable).
