@@ -326,14 +326,15 @@
       "id": "openid-connect",
       "title": "OpenID Connect",
       "category": "web",
-      "description": "Understand what OpenID Connect is, how applications authenticate users, and how identity information is securely shared using OAuth 2.0 and JWT.",
+      "description": "Provider trust, ID Token validation, nonce and authentication age, UserInfo binding, account mapping, application sessions, and logout boundaries.",
       "contentPath": "protocols/identity/openid-connect",
       "status": "review",
-      "icon": null,
+      "icon": "openid-connect.svg",
       "tags": ["security", "identity"],
-      "prerequisites": [],
-      "related": [],
-      "order": 14
+      "prerequisites": ["oauth-2", "jwt"],
+      "related": ["sessions-cookies", "application-security"],
+      "order": 14,
+      "readingFile": "reading"
     },
     {
       "id": "jwt",
@@ -366,14 +367,15 @@
       "id": "sessions-cookies",
       "title": "Sessions & Cookies",
       "category": "web",
-      "description": "Understand how web applications maintain user state across multiple HTTP requests using sessions and cookies.",
+      "description": "Cookie scope and SameSite, opaque and self-contained sessions, ID rotation, expiry, CSRF, shared stores, concurrency, and logout.",
       "contentPath": "web/state-management/sessions-cookies",
       "status": "review",
-      "icon": null,
+      "icon": "sessions-cookies.svg",
       "tags": ["security", "identity"],
-      "prerequisites": [],
-      "related": [],
-      "order": 17
+      "prerequisites": ["http"],
+      "related": ["openid-connect", "redis", "jwt"],
+      "order": 17,
+      "readingFile": "reading"
     },
     {
       "id": "tls",
