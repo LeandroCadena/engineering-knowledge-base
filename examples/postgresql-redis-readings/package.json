@@ -1,0 +1,15 @@
+{
+  "name": "postgresql-redis-readings-example",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 src/*.test.js"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.15",
+    "redis": "5.12.1"
+  }
+}
