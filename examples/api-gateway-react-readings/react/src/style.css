@@ -1,0 +1,51 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #10151e;
+  color: #e8edf5;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 760px;
+  padding: 24px;
+  margin: auto;
+}
+input,
+button {
+  font: inherit;
+  padding: 10px;
+  border: 1px solid #6c8399;
+  border-radius: 6px;
+}
+input {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+button {
+  cursor: pointer;
+  margin: 6px;
+}
+label {
+  display: block;
+  margin: 10px 0;
+}
+ul {
+  list-style: none;
+  padding: 0;
+}
+li {
+  border: 1px solid #48617b;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+}
+[role='alert'] {
+  color: #ffb5ac;
+}
+:focus-visible {
+  outline: 3px solid #52e0c4;
+  outline-offset: 3px;
+}
