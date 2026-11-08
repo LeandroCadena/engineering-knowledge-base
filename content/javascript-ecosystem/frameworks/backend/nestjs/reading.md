@@ -1,29 +1,26 @@
 ---
 title: NestJS
-description: Build the dependency graph, follow a request, and test the boundaries of a NestJS application.
+description: Modules, dependency injection, request processing, configuration, and testing in NestJS 11.
 icon: nestjs.png
-updatedAt: 2026-11-07
+updatedAt: 2026-11-08
 ---
 
 # NestJS
 
-NestJS organizes Node.js applications around **modules**, an **injection container**, and a **request pipeline**. Node executes the code; an HTTP adapter connects Nest to Express by default or Fastify when selected. Nest supplies application structure, not a database, an authentication system, or automatic scalability.
+NestJS is a Node.js framework that organizes an application into **modules**, constructs its dependencies through an **injection container**, and processes requests through a defined **execution pipeline**. It uses TypeScript classes and decorators to describe these relationships.
 
-**Scope:** NestJS 11, TypeScript with decorator metadata, and HTTP applications. The examples follow one Orders API. They cover the core framework, not every integration package. You should already understand classes, promises, HTTP, and basic dependency inversion.
+Node.js runs the application. An HTTP adapter connects Nest to Express by default, or Fastify when selected. Nest defines the application structure above that adapter; database access, identity verification, and business rules remain application responsibilities.
 
-By the end, you should be able to trace how a provider is resolved, place behavior in the right request layer, and test an endpoint without accidentally omitting its runtime configuration.
+This reading covers NestJS 11 and HTTP applications. The examples use an Orders API: a controller receives requests, a service coordinates operations, and a repository stores orders. TypeScript classes, promises, HTTP, and dependency inversion are assumed knowledge.
 
-## Build the application graph
+## Modules
 
-A module declares the objects it owns and the dependencies it exposes. A controller maps HTTP routes to methods. A provider supplies behavior or a value; services, repositories, configuration, and SDK clients can all be providers.
-
-![AppModule imports OrdersModule. OrdersController receives OrdersService. The service resolves ORDERS_REPOSITORY to an in-memory adapter; only OrdersService is exported.](/docs/nestjs/v2/dependency-graph.svg)
+A module groups a feature's controllers and providers and declares which dependencies other modules may use. `@Module()` attaches that configuration to a class; Nest reads it when constructing the application.
 
 ```ts
 @Module({
-  imports: [],
   controllers: [OrdersController],
-  providers: [OrdersService, { provide: ORDERS_REPOSITORY, useClass: InMemoryOrdersRepository }],
+  providers: [OrdersService],
   exports: [OrdersService],
 })
 export class OrdersModule {}
@@ -32,26 +29,77 @@ export class OrdersModule {}
 export class AppModule {}
 ```
 
-This excerpt focuses on module visibility; the runnable example also registers its guard and interceptor. `imports` contains modules, not service classes. `providers` registers dependencies in this module. `exports` makes selected provider tokens available to importing modules. `controllers` registers HTTP entry points; a controller is not an exported service.
+`AppModule` is the root: Nest starts there and follows its imports to discover the rest of the application. A module can import another module, which can import more modules. This creates the **module graph**; it is different from a directory tree or a list of TypeScript imports.
 
-If PaymentsModule imports OrdersModule, its providers can inject OrdersService. They cannot inject ORDERS_REPOSITORY unless OrdersModule exports that token too. Exporting a service does not export its entire dependency graph.
+| Field         | Meaning                                                                           |
+| ------------- | --------------------------------------------------------------------------------- |
+| `imports`     | Other modules whose exported providers this module needs.                         |
+| `controllers` | Classes that expose this module's request handlers.                               |
+| `providers`   | Dependencies registered in this module's container scope.                         |
+| `exports`     | Provider tokens, or imported modules, intentionally exposed to importing modules. |
 
-Nest uses decorators and runtime metadata to discover classes and resolve constructor dependencies. `@Injectable()` alone does not register a provider; a module still has to provide it. Two modules that independently register the same service can create separate instances. Import the owning module when you intend to share its exported instance.
+Providers are private to their module unless exported. If PaymentsModule imports OrdersModule, PaymentsService can inject the exported OrdersService. It cannot inject an internal OrdersRepository unless that provider is also exported.
 
-At startup, `NestFactory.create(AppModule)` builds the reachable module graph and resolves providers. Async factory providers can delay readiness until their promises resolve. `app.listen()` initializes the application if needed and binds the HTTP server. `app.init()` initializes it without opening a listening port, which is useful in tests.
+A TypeScript `import` makes a symbol available to the compiler; a module's `imports` makes exported providers available to Nest's container. One does not substitute for the other. Put modules in `imports`, not service classes.
+
+`@Global()` makes a module's exported providers available across the application after that module has been imported. It can suit shared configuration, but ordinary feature dependencies are easier to trace through explicit imports.
+
+## Controllers
+
+A controller defines the HTTP entry points for a feature. `@Controller('orders')` supplies a route prefix; a method decorator supplies the HTTP verb and remaining path. The method's name does not determine its URL.
 
 ```ts
-const app = await NestFactory.create(AppModule);
-configureApp(app); // Shared with the HTTP tests below.
-app.enableShutdownHooks();
-await app.listen(3001);
+@Controller('orders')
+export class OrdersController {
+  constructor(private readonly orders: OrdersService) {}
+
+  @Get(':id')
+  find(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.orders.find(id);
+  }
+}
 ```
 
-For a worker or CLI with no HTTP listener, `createApplicationContext(AppModule)` provides the container and lifecycle hooks without an HTTP request pipeline. Transport-specific controllers, guards, and pipes need the corresponding transport application.
+With the application's global prefix set to `api`, this method handles `GET /api/orders/:id`. For `/api/orders/123`, `@Param('id')` extracts `"123"`; ParseUUIDPipe rejects it before the method executes because it is not a valid UUID.
 
-## Resolve dependencies by token
+`@Body()`, `@Query()`, and `@Headers()` extract values from other request locations. Extraction is separate from validation: declaring an argument as `number` does not convert an incoming string. Pipes perform runtime transformation and validation.
 
-A token identifies a dependency at runtime. A class can serve as its own token. Strings and symbols let a consumer depend on a contract while the module chooses the implementation.
+The constructor receives OrdersService through dependency injection. The handler delegates the operation rather than creating the service, opening a database connection, or implementing persistence itself.
+
+Nest awaits a returned promise and passes its result through response processing. A successful standard handler defaults to status 200; POST defaults to 201. `@HttpCode()` overrides the status, while thrown HTTP exceptions select an error status.
+
+Use the standard return-value model unless platform-specific response control is required. `@Res()` normally makes the handler responsible for sending the response; returning an object alone may leave that request unfinished. `@Res({ passthrough: true })` allows header/cookie changes while retaining Nest's normal response handling. Direct Express response methods are not automatically portable to Fastify.
+
+## Providers & Dependency Injection
+
+A provider is a value Nest can resolve and supply to another object. A service is one kind of provider; repositories, SDK clients, factories, and configuration values can also be providers.
+
+### Injection by class
+
+```ts
+@Injectable()
+export class OrdersService {
+  find(id: string) {
+    return { id };
+  }
+}
+
+@Module({
+  controllers: [OrdersController],
+  providers: [OrdersService],
+})
+export class OrdersModule {}
+```
+
+Registering `OrdersService` uses that class as both the **token** identifying the dependency and the implementation to construct. Nest reads the controller's constructor metadata, finds the class token, resolves its provider, and passes the resulting instance to the constructor.
+
+Without injection, the controller might call `new OrdersService()` and become responsible for constructing the service's own dependencies too. With injection, construction belongs to the container; the controller declares what it requires.
+
+`@Injectable()` enables a class to participate in this metadata-based process. It does not register the class globally: a module must still provide it, and consumers must have access through the module graph. A class serving as a runtime token must not be imported only with `import type`.
+
+### Custom tokens and implementations
+
+A class token couples the consumer to that class's identity. A custom token lets the module choose an implementation without changing the consumer. For OrdersService, a repository contract separates order operations from a particular storage adapter.
 
 ```ts
 export interface OrdersRepository {
@@ -70,129 +118,114 @@ export class OrdersService {
   create(input: CreateOrderDto) {
     return this.repository.insert(input);
   }
-
-  async find(id: string) {
-    const order = await this.repository.find(id);
-    if (!order) throw new NotFoundException('Order not found');
-    return order;
-  }
 }
 ```
 
-The interface disappears during compilation. Nest needs the symbol supplied to `@Inject()`, not the interface name. Export and reuse the **same symbol**: creating another `Symbol('ORDERS_REPOSITORY')` produces a different token despite the identical label. Likewise, a class used as an implicit injection token must remain a runtime import, not an `import type`.
+```ts
+@Module({
+  controllers: [OrdersController],
+  providers: [OrdersService, { provide: ORDERS_REPOSITORY, useClass: InMemoryOrdersRepository }],
+  exports: [OrdersService],
+})
+export class OrdersModule {}
+```
 
-| Registration                           | Container behavior                                                      | Use it for                                 |
-| -------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------ |
-| `useClass: Adapter`                    | Constructs the implementation and resolves its dependencies.            | Replaceable adapters.                      |
-| `useValue: object`                     | Supplies that exact value.                                              | Configuration and controlled test doubles. |
-| `useFactory: factory, inject: [TOKEN]` | Calls a factory with resolved dependencies; awaits a returned promise.  | Configured clients and async setup.        |
-| `useExisting: OtherToken`              | Aliases an existing provider rather than constructing another instance. | Multiple contracts for one object.         |
+The interface checks the implementation at compile time but disappears at runtime. `@Inject(ORDERS_REPOSITORY)` supplies the runtime lookup key. The provider registration associates that key with an adapter; Nest constructs the adapter and supplies it to the service.
 
-If Nest cannot resolve a dependency, inspect the failing constructor index, token identity, local registration, and the exporting/importing modules. TypeScript imports do not grant container visibility. An `undefined` token can also come from a circular file import or an erased type.
+![OrdersModule owns its controller, service, and repository adapter. Only OrdersService is exported.](/docs/nestjs/v2/dependency-graph.svg)
 
-A provider cycle and a module cycle are different graphs. Prefer extracting a shared responsibility or changing dependency direction. `forwardRef()` can defer a circular reference when refactoring is impractical; it does not remove the coupling or establish a safe construction order.
+Importing modules receive OrdersService without receiving direct access to its private repository. Replacing the repository provider with a database adapter or test double changes the binding, not the service's constructor.
+
+Export and reuse the same symbol. Two calls to `Symbol('ORDERS_REPOSITORY')` create different tokens even when their descriptions match.
+
+| Registration  | How the value is obtained                                                               |
+| ------------- | --------------------------------------------------------------------------------------- |
+| `useClass`    | Nest constructs the implementation and resolves its constructor dependencies.           |
+| `useValue`    | Nest supplies the exact object or value provided.                                       |
+| `useFactory`  | Nest calls a function with the tokens listed in `inject`; it awaits a returned promise. |
+| `useExisting` | Nest aliases another provider token, reusing its resolved object.                       |
+
+If a dependency cannot be resolved, inspect the constructor parameter index, token identity, registration, and module exports/imports. Registering the same service independently in two modules can create separate instances; importing its owning module shares its exported provider.
+
+A circular dependency means construction requires returning to an object or module already being resolved. Extracting a shared responsibility or changing dependency direction often removes the cycle. `forwardRef()` can defer a reference, but does not remove coupling or guarantee a useful construction order.
 
 :::check{question="Why can PaymentsService inject OrdersService but not its repository?"}
-OrdersModule exports OrdersService, so importing modules can resolve that token. Its repository remains private to OrdersModule. The container constructs OrdersService with its private dependency; consumers receive the service, not access to all of its dependencies.
+OrdersModule exports the service token but keeps its repository token private. The container resolves that private dependency while constructing OrdersService. Exporting a service does not export every dependency behind it.
 :::
 
-## Choose instance lifetime deliberately
+## Provider Scopes
 
-Scope controls reuse inside a Nest application context. It does not coordinate separate Node processes or containers.
+Scope determines when Nest creates and reuses provider instances. The boundary is one application context and provider registration, not every process running the same code.
 
-![Default scope shares one provider per registration. Request scope gives each request its own subtree. Transient scope gives each consuming provider its own instance.](/docs/nestjs/v2/provider-lifetimes.svg)
+![Default scope shares an instance; request scope separates requests; transient scope separates consumers.](/docs/nestjs/v2/provider-lifetimes.svg)
 
-| Scope       | Lifetime                                                         | Consequence                                                 |
-| ----------- | ---------------------------------------------------------------- | ----------------------------------------------------------- |
-| `DEFAULT`   | Shared for the provider registration in the application context. | Keep request-specific mutable state out of instance fields. |
-| `REQUEST`   | Resolved for each request context.                               | Consumers depending on it also become request-scoped.       |
-| `TRANSIENT` | Dedicated instance for each consuming provider.                  | It is not a fresh object on every method call.              |
+With **DEFAULT**, two controllers injecting the same registered service receive the same instance. Requests through either controller reuse that object. Mutable fields therefore belong to the shared service, not to an individual request.
 
-Use `@Injectable({ scope: Scope.REQUEST })` only when the dependency truly needs a per-request lifetime. If OrdersService depends on a request-scoped TenantContext, OrdersService becomes request-scoped too. Transient dependencies do not cause that same scope propagation.
+With **REQUEST**, request A and request B get separate instances. A controller handling request A receives the instance for A's context. If OrdersService injects a request-scoped TenantContext, OrdersService also becomes request-scoped because its dependency must match the request.
 
-Request context can sometimes travel through explicit arguments or Node's AsyncLocalStorage instead. A singleton must not store `currentUser` in a field: overlapping requests can overwrite one another even though JavaScript execution uses one main thread. Singleton state also disappears on restart and is not shared across replicas; the example's in-memory repository is a demonstration adapter, not durable storage.
-
-## Follow one HTTP request
-
-The route below combines a prefix, controller path, and handler path:
+With **TRANSIENT**, different consuming providers receive separate instances. A controller that receives one transient helper normally keeps that helper; Nest does not construct a new helper on every method call. Injecting a transient dependency does not make the consumer transient.
 
 ```ts
-@Controller('orders')
-export class OrdersController {
-  constructor(private readonly orders: OrdersService) {}
-
-  @Get(':id')
-  find(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.orders.find(id);
-  }
-}
+@Injectable({ scope: Scope.REQUEST })
+export class TenantContext {}
 ```
 
-With `app.setGlobalPrefix('api')`, it handles `GET /api/orders/:id`. `@Body()`, `@Param()`, `@Query()`, and `@Headers()` select incoming values; they do not make untrusted input valid. A type annotation does not convert query strings or validate JSON.
+Use request scope when instance lifetime genuinely follows the request. Explicit arguments or Node's AsyncLocalStorage can carry context without rebuilding the same provider graph for every request.
 
-Nest awaits a returned promise and serializes the result. Standard handlers return 200 by default, except POST handlers, which default to 201. `@HttpCode()` overrides that status. Direct `@Res()` handling transfers response responsibility to your handler; use `@Res({ passthrough: true })` when setting headers/cookies while retaining Nest's normal return-value handling. Express and Fastify response APIs differ.
+A singleton must not store a request's `currentUser` in a shared field: asynchronous requests overlap and can overwrite it. Singleton state also disappears on restart and is not shared between replicas. The example's in-memory repository demonstrates injection; it is not durable storage.
 
-![A request passes middleware, guards, interceptor entry, pipes, and the handler. Successful results unwind interceptors. Guard denial and unhandled exceptions leave the success path through exception handling.](/docs/nestjs/v2/request-path.svg)
-
-| Mechanism        | Question it answers                                              | Example                                                         |
-| ---------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- |
-| Middleware       | What needs processing on the raw HTTP request?                   | Request identity established by authentication middleware.      |
-| Guard            | May this handler execute?                                        | Check a permission from route metadata.                         |
-| Pipe             | Is this argument valid, and what value should reach the handler? | Validate a DTO; parse a UUID or integer.                        |
-| Interceptor      | What surrounds downstream execution?                             | Wrap a result, measure execution, or translate selected errors. |
-| Exception filter | How should an uncaught exception become a transport response?    | Map a domain error to an HTTP response contract.                |
-
-Guards run before pipes. Therefore a guard cannot rely on a DTO having passed ValidationPipe. An interceptor starts after guards and wraps pipes plus handler execution: it can observe a pipe failure, but cannot observe a request already rejected by a guard. Use an earlier layer for logging that must cover every incoming request.
-
-Global guards execute before controller guards, which execute before route guards. Pipes have global/controller/route/parameter bindings; do not use incidental parameter evaluation order to coordinate business operations. Interceptors unwind in reverse nesting order: global → controller → route on entry, then route → controller → global on the successful return path. Returning a stream without calling `next.handle()` short-circuits downstream execution.
-
-Filters run only for uncaught exceptions. Nest's built-in HTTP layer recognizes HttpException subclasses; an unknown error receives a generic 500 response. Keep stack traces and private details in server-side logs. Filters are resolved from the most local applicable binding outward; they are not a chain that automatically forwards an exception after one has handled it.
-
-:::check{question="An unauthenticated POST also contains an invalid body. Which error wins?"}
-If a guard rejects the request, execution stops before validation pipes. A guard that returns false produces 403 by default; an authentication guard can instead throw UnauthorizedException for 401. The body never reaches the controller.
+:::check{question="A default-scoped service injects a request-scoped provider. Is the service still shared?"}
+No. Request scope propagates to dependent consumers. Each request context resolves its own service instance and its own request-scoped dependency.
 :::
 
-## Use metadata for handler-specific policy
+## Request Lifecycle
 
-ExecutionContext exposes the selected handler/class and the transport arguments. A guard reads the rule through Reflector; a decorator only records the rule.
+A request enters through the HTTP adapter. Nest applies the mechanisms bound to the selected route, executes the handler if they allow it, and processes the result. An exception interrupts that path unless an earlier layer handles it.
+
+![Middleware precedes guards. Interceptors wrap pipes and the handler. Successful results unwind interceptors; failures enter exception handling.](/docs/nestjs/v2/request-path.svg)
+
+### Middleware
+
+Middleware receives the underlying HTTP request, response, and `next` function. It can read or modify the request before guards run. Calling `next()` passes control onward; sending a response ends that middleware's request path. Doing neither can leave the request hanging.
+
+Request IDs and HTTP authentication integration commonly fit here. Register middleware through a module's `configure(consumer: MiddlewareConsumer)` method or `app.use()`. Unlike a guard, ordinary middleware does not receive Nest's ExecutionContext for inspecting the selected handler's metadata.
+
+### Guards
+
+A guard decides whether execution may proceed. Its `canActivate(context)` returns a boolean, a promise, or an Observable. A true result allows the next guard or pipeline stage; false causes a default 403 response. A guard can throw UnauthorizedException when its policy requires 401 instead.
+
+Guards run globally, then at controller level, then at route level. All applicable guards must allow execution. They run before pipes, so a permission check cannot assume the request's DTO has already been validated or transformed.
+
+Authentication establishes who the caller is; authorization decides what that identity may do. A guard may perform either, but a decorator declaring a permission does neither on its own.
+
+:::check{question="An anonymous POST has an invalid body. Which error is returned first?"}
+If the guard rejects it, execution stops before the validation pipe. A false result gives 403 by default; a guard that throws UnauthorizedException gives 401. The invalid body never reaches the handler.
+:::
+
+### Pipes
+
+A pipe receives a handler argument, returns the value the handler should receive, or throws if the input is unacceptable. It can validate without changing the value, transform it, or do both. An exception prevents the handler from receiving that argument.
 
 ```ts
-export const RequirePermission = (permission: string) => SetMetadata('permission', permission);
-
 @Injectable()
-export class PermissionGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
-
-  canActivate(context: ExecutionContext): boolean {
-    const required = this.reflector.getAllAndOverride<string>('permission', [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (!required) return true;
-    const request = context.switchToHttp().getRequest<{ user?: { permissions: string[] } }>();
-    return request.user?.permissions.includes(required) ?? false;
+export class PositiveIntPipe implements PipeTransform<string, number> {
+  transform(value: string): number {
+    const parsed = Number(value);
+    if (!/^\d+$/.test(value) || !Number.isSafeInteger(parsed) || parsed < 1) {
+      throw new BadRequestException('Expected a positive integer');
+    }
+    return parsed;
   }
 }
 ```
 
-```ts
-@Post()
-@UseGuards(PermissionGuard)
-@RequirePermission('orders:create')
-create(@Body() input: CreateOrderDto) {
-  return this.orders.create(input);
-}
-```
+Applied as `@Param('quantity', PositiveIntPipe) quantity: number`, this pipe converts `"12"` to `12` and rejects `"0"`, `"1.5"`, or `"abc"`. Register the class as a provider when its dependencies need container resolution. `new PositiveIntPipe()` also works here because it has no dependencies.
 
-This guard expects a verified `request.user` from an earlier authentication step. It does not authenticate a header or validate a token. The sample's test-only middleware injects an identity fixture; its executable server deliberately denies protected writes until authentication is supplied. Never treat a client-provided role header as verified identity.
+Built-in ParseIntPipe, ParseBoolPipe, and ParseUUIDPipe cover common parameter contracts. Pipes can be bound globally, to controllers/routes, or to individual arguments. Do not use argument evaluation order to coordinate business operations.
 
-`getAllAndOverride()` checks handler metadata before controller metadata in this ordering. A custom parameter decorator can extract the established user, but extracting a value is not authorization. For RPC or WebSockets, inspect `context.getType()` and use the appropriate host; `switchToHttp()` is not transport-neutral.
+#### DTO validation
 
-Register DI-dependent global guards/interceptors/filters with `APP_GUARD`, `APP_INTERCEPTOR`, or `APP_FILTER` providers in a module. `new PermissionGuard(...)` outside the container requires you to supply its dependencies yourself. `@Global()` makes a module's exports broadly visible once imported; use it sparingly because it hides dependency relationships.
-
-## Validate input at the boundary
-
-A DTO class exists at runtime and carries validation metadata. An interface or a generic type alone cannot supply those rules.
+A DTO class describes the input passed into an operation. Decorators on its properties supply runtime validation rules; an interface or a type annotation alone supplies no runtime checks.
 
 ```ts
 export class CreateOrderDto {
@@ -204,29 +237,30 @@ export class CreateOrderDto {
   quantity!: number;
 }
 
-export function configureApp(app: INestApplication) {
-  app.setGlobalPrefix('api');
-  app.useGlobalPipes(
-    new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
-}
+app.useGlobalPipes(
+  new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  }),
+);
 ```
 
-The decorators come from `class-validator`; `class-transformer` supports DTO transformation. `transform` enables conversion to the expected DTO representation; it does **not** make every nested property convert automatically. In this configuration, JSON `quantity: "2"` fails `@IsInt()` rather than becoming the number 2. Use explicit transformations when your contract requires them. `ParseIntPipe` or `ParseBoolPipe` makes primitive parameter conversion explicit.
+The property decorators come from `class-validator`; `class-transformer` supports creating DTO instances. `transform` does not automatically convert every body property to its TypeScript type. With these settings, `quantity: "2"` fails IsInt rather than becoming the number 2. Use explicit transformation when the contract requires it.
 
-`whitelist` identifies allowed properties by validation metadata, not by TypeScript property declarations. With `forbidNonWhitelisted`, extra input is rejected instead of silently removed. For nested DTO validation, use a runtime child class plus `@ValidateNested()` and `@Type(() => ChildDto)`; plain nested types are insufficient.
+`whitelist` recognizes properties with validation metadata, not merely properties declared in TypeScript. Adding `forbidNonWhitelisted` rejects unknown fields instead of silently stripping them. Nested validation needs a child DTO class, `@ValidateNested()`, and `@Type(() => ChildDto)` so runtime transformation knows the child type.
 
-DTO validity does not establish a business invariant. A quantity can be a positive integer and still exceed inventory. Enforce that rule in the application/domain layer and preserve atomicity in persistence. Validation also does not replace authorization or protection against duplicate operations.
+A valid DTO does not establish a business invariant. A positive quantity can still exceed available stock. Enforce that rule in the service/domain and preserve atomicity in persistence; neither a pipe nor TypeScript provides database transactions or idempotency.
 
-:::check{question="Why can a property typed number still arrive as a string?"}
-TypeScript checks compile-time usage; it does not rewrite HTTP input. Runtime conversion needs a pipe or configured transformation. Validation metadata then decides whether the resulting value is acceptable.
+:::check{question="Why can a property declared as number still arrive as a string?"}
+TypeScript annotations do not rewrite network input. Runtime transformation must convert the value; validation determines whether the resulting value satisfies the contract.
 :::
 
-## Wrap results without swallowing errors
+### Interceptors
+
+An interceptor surrounds downstream execution. It runs after guards but before pipes and the handler. `next.handle()` returns an Observable representing downstream results and failures; returning that stream allows Nest to consume it and send the response.
+
+An **Observable** describes a sequence of values and a possible terminal completion or error. A subscription starts consuming that sequence. Operators compose transformations without requiring the interceptor to subscribe manually. For a normal HTTP handler returning one object or promise, the stream carries its result; it is not automatically a multi-response HTTP stream.
 
 ```ts
 @Injectable()
@@ -237,17 +271,80 @@ export class EnvelopeInterceptor implements NestInterceptor {
 }
 ```
 
-Bound with `@UseInterceptors(EnvelopeInterceptor)`, it turns a successful handler result into `{ data: result }`. `map()` does not turn a thrown NotFoundException into success; the error still propagates. Use `catchError()` only when intentionally translating or recovering from an error. Returning a normal value there can silently change a failure into a successful response.
+Here, `pipe()` composes RxJS operators; it is unrelated to Nest's PipeTransform validation contract. `map()` transforms a successful result into `{ data: result }`. Returning a normal value from an error-recovery operator can instead turn a failure into success, so recovery must be intentional.
 
-Use `finalize()` for cleanup/measurement on stream termination, including errors and unsubscription. An interceptor's duration covers the downstream execution it wraps, not all time spent in middleware and guards. A manually managed response may bypass ordinary response mapping. These differences matter when interpreting latency or designing a uniform API envelope.
+`@UseInterceptors(EnvelopeInterceptor)` binds this behavior to a controller or handler. `next.handle()` continues downstream execution; returning another Observable without calling it can short-circuit that execution, such as serving a cached response.
 
-:::check{question="Will the envelope interceptor wrap a denied guard response?"}
-No. Guards execute before the interceptor is entered. The default exception layer formats the denial. A uniform success/error contract needs deliberate coordination between interceptors and exception handling.
+Interceptors nest: global → controller → route on entry, then route → controller → global on a successful return. An entered interceptor can observe pipe or handler failures, but not a guard rejection that happened before it ran. Its duration also excludes time already spent in middleware and guards. `finalize()` can perform cleanup or measurement when the stream terminates.
+
+:::check{question="Does the envelope interceptor wrap a guard's denial response?"}
+No. Guards run before interceptors enter. A consistent error response belongs in exception handling; an interceptor mapping successful values does not automatically format those errors.
 :::
 
-## Configure modules and resource lifecycle
+### Exception Filters
 
-A dynamic module is module metadata returned by a method. It lets the importing module supply options or choose providers. `register`, `forRoot`, and `forFeature` are library conventions; their meanings depend on the package.
+A filter translates an uncaught exception into a transport response. Nest already handles HttpException subclasses and returns a generic 500 for unrecognized errors. A custom filter can translate an application-specific error without making the service depend on HTTP status codes.
+
+```ts
+export class OrderMissingError extends Error {}
+
+@Catch(OrderMissingError)
+export class OrderMissingFilter implements ExceptionFilter<OrderMissingError> {
+  constructor(private readonly adapterHost: HttpAdapterHost) {}
+
+  catch(_error: OrderMissingError, host: ArgumentsHost) {
+    this.adapterHost.httpAdapter.reply(
+      host.switchToHttp().getResponse(),
+      { statusCode: 404, code: 'ORDER_NOT_FOUND' },
+      404,
+    );
+  }
+}
+```
+
+The service throws OrderMissingError when its repository cannot find the order. `@Catch()` selects that error type; `catch()` receives the failure and current transport arguments. HttpAdapterHost supplies the HTTP adapter, which sends the body with status 404 without directly calling an Express-only response method.
+
+Register the filter and bind it with `@UseFilters(OrderMissingFilter)` on the orders controller. It handles the selected error type, leaving unrelated failures to other applicable handlers. Keep private details in server logs, not public error bodies.
+
+Nest checks the most local applicable filter binding before broader bindings. Once a filter handles an error, the same error is not automatically passed through a sequence of other filters. Filters do not execute on the normal successful response path.
+
+## Execution Context & Metadata
+
+ExecutionContext gives a guard or interceptor the selected handler, its controller class, and access to transport arguments. That lets policy depend on the operation being requested rather than only on a raw URL.
+
+```ts
+export const RequirePermission = (permission: string) =>
+  SetMetadata('permission', permission);
+
+@Post()
+@UseGuards(PermissionGuard)
+@RequirePermission('orders:create')
+create(@Body() input: CreateOrderDto) {
+  return this.orders.create(input);
+}
+```
+
+`RequirePermission` stores the string `orders:create` under the metadata key `permission`. It does not execute the permission check. PermissionGuard uses Reflector to retrieve the stored rule and compares it with the established user's permissions:
+
+```ts
+const required = this.reflector.getAllAndOverride<string>('permission', [
+  context.getHandler(),
+  context.getClass(),
+]);
+if (!required) return true;
+const request = context.switchToHttp().getRequest<{ user?: { permissions: string[] } }>();
+return request.user?.permissions.includes(required) ?? false;
+```
+
+The array gives handler metadata precedence over controller metadata. The user must come from an earlier identity-verification step; a client-supplied role header is not verified identity. A custom parameter decorator can extract that established user for a handler, but extraction does not replace authorization.
+
+`switchToHttp()` accesses HTTP arguments. For WebSockets or RPC, inspect `context.getType()` and select the matching transport context. The container can be reused across transports; HTTP-specific request access cannot.
+
+Use module providers with `APP_GUARD`, `APP_INTERCEPTOR`, or `APP_FILTER` to bind DI-dependent behavior globally. Constructing an object with `new` outside the container means supplying its dependencies yourself.
+
+## Dynamic Modules
+
+A static module always declares the same metadata. A dynamic module returns metadata from a method, allowing its importer to supply configuration or choose providers.
 
 ```ts
 @Module({})
@@ -260,24 +357,81 @@ export class ClientModule {
     };
   }
 }
-// imports: [ClientModule.register('https://provider.example')]
 ```
 
-For async configuration, the module can expose `registerAsync()` using `imports`, `inject`, and `useFactory`. This is module setup, not a network client created anew for each request. `@nestjs/config` supplies ConfigModule and ConfigService; validate environment values at startup and fail before serving traffic if required settings are invalid. A TypeScript generic such as `get<number>()` does not by itself convert an environment string to a number.
+An importing module supplies its options through the module import:
 
-| Hook                          | Resource responsibility                                             |
-| ----------------------------- | ------------------------------------------------------------------- |
-| `onModuleInit()`              | Initialize a provider after its host module's dependencies resolve. |
-| `onApplicationBootstrap()`    | Run after modules initialize, before listening.                     |
-| `onModuleDestroy()`           | Begin cleanup when application shutdown is triggered.               |
-| `beforeApplicationShutdown()` | Finish pre-close work before connections close.                     |
-| `onApplicationShutdown()`     | Run after connections have closed.                                  |
+```ts
+imports: [ClientModule.register('https://provider.example')];
+```
 
-Enable signal-triggered hooks with `app.enableShutdownHooks()`; tests should explicitly `await app.close()`. Async hooks can delay lifecycle completion. Request-scoped objects do not participate in the application's lifecycle hooks. Closing Nest is not a guarantee that all external work was drained: coordinate workers, database pools, timeouts, and deployment termination budgets. SIGKILL cannot run cleanup.
+Nest adds the returned providers/exports to the module's metadata. The configured value becomes an injectable dependency, rather than a constructor argument manually passed through every consumer.
 
-## Test container wiring and HTTP behavior separately
+`registerAsync()` implementations commonly use `imports`, `inject`, and `useFactory` to obtain options from another provider. Async factories can delay dependency construction until their promises resolve. `register`, `forRoot`, and `forFeature` are conventions defined by each library; they are not separate Nest module primitives.
 
-A service test can construct a plain class with a fake repository. A Nest container test additionally verifies token resolution and module configuration. An HTTP test exercises routing, guards, pipes, response mapping, and exception behavior.
+## Application Configuration
+
+Configuration should be loaded and validated before the application serves traffic. An invalid required URL or port should fail startup rather than fail only when a particular endpoint is called.
+
+`@nestjs/config` provides ConfigModule to load settings and ConfigService to inject access to them. `ConfigModule.forRoot({ isGlobal: true })` can make that configuration available application-wide. A startup `validate` function or a validation schema checks environment values and returns the parsed configuration.
+
+Environment values start as strings. `config.get<number>('PORT')` describes an expected TypeScript type; it does not itself parse a numeric environment variable. Validate and convert settings at the boundary. Keep secrets out of source code and error responses.
+
+HTTP settings also belong in one shared setup function:
+
+```ts
+export function configureApp(app: INestApplication) {
+  app.setGlobalPrefix('api');
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+}
+```
+
+Both production bootstrap and HTTP tests call this function. That prevents a test application from silently missing a prefix or ValidationPipe that production uses.
+
+## Application Lifecycle
+
+`NestFactory.create(AppModule)` builds the module graph and resolves dependencies. `app.init()` initializes the application without opening a listening port; `app.listen()` initializes it if necessary and binds the server. A worker or CLI can use `createApplicationContext()` for dependency injection and lifecycle hooks without an HTTP listener.
+
+Hooks attach resource work to those lifecycle stages:
+
+| Hook                          | When it runs                                                       |
+| ----------------------------- | ------------------------------------------------------------------ |
+| `onModuleInit()`              | After the host module's dependencies are resolved.                 |
+| `onApplicationBootstrap()`    | After modules initialize, before the application starts listening. |
+| `onModuleDestroy()`           | When application shutdown begins.                                  |
+| `beforeApplicationShutdown()` | Before application connections close, after destruction hooks.     |
+| `onApplicationShutdown()`     | After application connections close.                               |
+
+```ts
+@Injectable()
+export class ClientLifecycle implements OnModuleInit, OnModuleDestroy {
+  constructor(@Inject(EXTERNAL_CLIENT) private readonly client: ExternalClient) {}
+
+  async onModuleInit() {
+    await this.client.connect();
+  }
+
+  async onModuleDestroy() {
+    await this.client.close();
+  }
+}
+```
+
+ExternalClient is the connection contract and EXTERNAL_CLIENT its token. Registering both lets Nest await connection setup during initialization and cleanup during shutdown. The constructor receives dependencies; the hooks perform the asynchronous resource work.
+
+Call `app.enableShutdownHooks()` during bootstrap to run hooks for supported process signals. In tests, explicitly `await app.close()`. Request-scoped objects do not receive application lifecycle hooks. Closing Nest does not automatically finish every worker, timer, or external operation: drain work and close resources within the deployment's termination budget. SIGKILL cannot execute cleanup.
+
+## Testing
+
+Different test boundaries prove different things. Constructing a service directly checks its behavior with supplied dependencies. A Nest testing module additionally checks container registration and resolution. An HTTP application test exercises routes, guards, pipes, interceptors, and error handling.
+
+### Provider and module tests
 
 ```ts
 const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
@@ -287,15 +441,17 @@ const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
 
 try {
   const service = moduleRef.get(OrdersService);
-  // Assert service behavior using the controlled repository.
+  // Verify the operation using the controlled repository.
 } finally {
   await moduleRef.close();
 }
 ```
 
-`.get()` retrieves a static provider. Request/transient providers require scoped resolution with `.resolve()` and an appropriate context when reuse matters. Replacing a provider by token keeps the consumer unchanged; replacing a guard in every test can hide broken authorization, so retain real-pipeline tests too.
+`createTestingModule()` declares the test's module graph. `overrideProvider()` replaces the repository binding before construction. `compile()` resolves that graph; `get()` retrieves a static provider for assertions. Request/transient providers require `.resolve()` with a suitable context when instance reuse matters.
 
-For HTTP, create an application from the testing module, apply the **same configuration function** used by bootstrap, then initialize it. `compile()` alone does not execute HTTP bootstrap configuration.
+This test can prove that OrdersService uses its repository correctly. It cannot prove SQL constraints, transactions, or real network behavior when those dependencies are replaced with fakes.
+
+### HTTP application tests
 
 ```ts
 const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -309,55 +465,26 @@ try {
 }
 ```
 
-Supertest can exercise the initialized server object without an explicit production listening port. A mocked repository cannot prove SQL constraints or transactional behavior; those need persistence integration tests. See the separate Jest, Supertest, and Testcontainers readings for their tooling rather than redefining assertions here.
+`createNestApplication()` adds the HTTP application around the test module. `configureApp()` installs production's shared settings; importing AppModule does not execute `main.ts`. `init()` initializes the pipeline, and Supertest sends a request through the resulting server object without requiring a production port.
 
-### Run the complete example
+The 400 assertion checks that the actual UUID pipe rejects the argument. A valid but missing UUID should instead reach the service and return the filter's 404 contract. Test both paths: replacing guards or pipes in every test can hide a broken request pipeline.
 
-The repository's `examples/nestjs-reading` directory contains the imports, registrations, repository adapter, bootstrap, and tests omitted from the focused excerpts above.
+The example tests use a test-only identity fixture for authorized requests, not a production authentication implementation. Their in-memory repository does not persist across restarts. The Jest, Supertest, and Testcontainers readings cover their respective testing tools.
 
-```bash
-cd examples/nestjs-reading
-npm ci
-npm test
-```
-
-The test suite verifies guard-before-validation behavior, DTO rejection, successful POST/GET with an envelope, 400 versus 404, and repository replacement by token. It uses an in-memory adapter and an explicitly test-only identity fixture; it does not claim to test a database or production authentication.
-
-:::check{question="A test passes but production rejects the same DTO. What would you inspect first?"}
-Check that the test application installs the same global pipes and settings as bootstrap. Creating a TestingModule does not automatically run main.ts. Also compare the identity fixture, dependency overrides, HTTP adapter, and DTO transformation settings.
+:::check{question="A test accepts a DTO that production rejects. What should you inspect first?"}
+Check whether the test application installed the same validation and transformation configuration as production. Creating a TestingModule does not execute bootstrap. Then inspect identity fixtures, provider overrides, and the selected HTTP adapter.
 :::
 
-## Diagnose the boundary that failed
-
-| Symptom                                   | Inspect first                                                                   |
-| ----------------------------------------- | ------------------------------------------------------------------------------- |
-| Cannot resolve dependencies               | Token identity, provider registration, module imports/exports, runtime imports. |
-| Two supposed singleton objects differ     | Duplicate registration, separate application contexts, or separate processes.   |
-| Permission check sees raw strings         | Guards run before pipes; do not assume validated arguments there.               |
-| Extra DTO fields reach business logic     | Global pipe installation, whitelist settings, and validation metadata.          |
-| Logger misses denied requests             | An interceptor does not surround guards.                                        |
-| Tests leave the process alive             | Application/module closure and independently created timers, pools, or clients. |
-| A service cycle needs repeated forwardRef | Responsibility boundaries and dependency direction, not only decorators.        |
-
-:::check{question="Does switching Express to Fastify make every existing handler portable?"}
-No. Nest abstractions preserve much of the controller/provider model, but direct request/response APIs, middleware, and platform-specific plugins can require changes. The adapter also does not remove Node's event-loop constraints.
+:::check{question="Does replacing Express with Fastify make every existing handler portable?"}
+No. Nest abstractions preserve much of the module/provider/controller model, but direct request/response methods, middleware, and platform-specific plugins can require changes. The adapter also does not remove Node's event-loop constraints.
 :::
 
-:::check{question="A singleton service injects a request-scoped dependency. How many service instances exist?"}
-The consumer becomes request-scoped: each request context gets its own resolved service instance. DEFAULT is a declared preference, not a way to force a request-scoped dependency to become globally shared.
-:::
+[Executable example and setup instructions](https://github.com/LeandroCadena/engineering-knowledge-base/tree/codex/nestjs-unified-reading/examples/nestjs-reading)
 
-## Trace the complete operation
+## Official References
 
-For an authorized `POST /api/orders`, the adapter receives HTTP input, earlier authentication establishes identity, and the guard evaluates handler metadata. The interceptor wraps the downstream stream; ValidationPipe validates the DTO; the controller delegates to OrdersService. The container has already supplied the repository selected by its token. The adapter returns the created order through the interceptor's envelope with status 201.
-
-A missing permission stops before DTO validation. An invalid DTO stops before the service. A repository failure propagates through interceptor error handling into the exception layer unless deliberately handled. None of those mechanisms supplies database transactions, idempotency, or verified identity automatically; those remain explicit application responsibilities.
-
-## Official references
-
-These references extend the focused reading; they are not required to complete it.
-
-- [First steps](https://docs.nestjs.com/first-steps), [controllers](https://docs.nestjs.com/controllers), and [modules](https://docs.nestjs.com/modules).
-- [Custom providers](https://docs.nestjs.com/fundamentals/custom-providers), [injection scopes](https://docs.nestjs.com/fundamentals/injection-scopes), and [dynamic modules](https://docs.nestjs.com/fundamentals/dynamic-modules).
-- [Request lifecycle](https://docs.nestjs.com/faq/request-lifecycle), [guards](https://docs.nestjs.com/guards), [execution context](https://docs.nestjs.com/fundamentals/execution-context), [interceptors](https://docs.nestjs.com/interceptors), and [exception filters](https://docs.nestjs.com/exception-filters).
-- [Validation](https://docs.nestjs.com/techniques/validation), [configuration](https://docs.nestjs.com/techniques/configuration), [lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events), and [testing](https://docs.nestjs.com/fundamentals/testing).
+- [Modules](https://docs.nestjs.com/modules), [controllers](https://docs.nestjs.com/controllers), [providers](https://docs.nestjs.com/providers), and [custom providers](https://docs.nestjs.com/fundamentals/custom-providers).
+- [Injection scopes](https://docs.nestjs.com/fundamentals/injection-scopes) and [request lifecycle](https://docs.nestjs.com/faq/request-lifecycle).
+- [Pipes](https://docs.nestjs.com/pipes), [validation](https://docs.nestjs.com/techniques/validation), [guards](https://docs.nestjs.com/guards), [interceptors](https://docs.nestjs.com/interceptors), and [exception filters](https://docs.nestjs.com/exception-filters).
+- [Execution context](https://docs.nestjs.com/fundamentals/execution-context), [dynamic modules](https://docs.nestjs.com/fundamentals/dynamic-modules), [configuration](https://docs.nestjs.com/techniques/configuration), [lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events), and [testing](https://docs.nestjs.com/fundamentals/testing).
+- [RxJS Observables](https://rxjs.dev/guide/observable).

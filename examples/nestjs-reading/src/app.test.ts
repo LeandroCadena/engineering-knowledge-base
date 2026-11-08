@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { BadRequestException } from '@nestjs/common';
+import { of, firstValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { ClientLifecycle, EXTERNAL_CLIENT, PositiveIntPipe } from './mechanisms';
 import {
   AppModule,
   configureApp,
@@ -67,9 +71,10 @@ test('POST returns 201 with an envelope and GET retrieves the created order', as
 });
 test('parameter pipe rejects malformed UUID; service reports valid but missing UUID', async () => {
   await request(app.getHttpServer()).get('/api/orders/not-a-uuid').expect(400);
-  await request(app.getHttpServer())
+  const missing = await request(app.getHttpServer())
     .get('/api/orders/95a23415-1ea7-4884-b1d4-0899b600d8cc')
     .expect(404);
+  assert.deepEqual(missing.body, { statusCode: 404, code: 'ORDER_NOT_FOUND' });
 });
 test('repository can be replaced by its token without opening a server', async () => {
   const order: Order = { id: '95a23415-1ea7-4884-b1d4-0899b600d8cc', productId, quantity: 3 };
@@ -83,4 +88,47 @@ test('repository can be replaced by its token without opening a server', async (
   } finally {
     await moduleRef.close();
   }
+});
+
+test('custom pipe transforms valid input and rejects invalid or unsafe values', () => {
+  const pipe = new PositiveIntPipe();
+  assert.equal(pipe.transform('12'), 12);
+  for (const value of ['0', '-1', '1.5', 'abc', '', '9007199254740992']) {
+    assert.throws(() => pipe.transform(value), BadRequestException);
+  }
+});
+
+test('application init and close await resource lifecycle hooks', async () => {
+  const events: string[] = [];
+  const moduleRef = await Test.createTestingModule({
+    providers: [
+      ClientLifecycle,
+      {
+        provide: EXTERNAL_CLIENT,
+        useValue: {
+          connect: async () => {
+            await Promise.resolve();
+            events.push('connected');
+          },
+          close: async () => {
+            await Promise.resolve();
+            events.push('closed');
+          },
+        },
+      },
+    ],
+  }).compile();
+  assert.deepEqual(events, []);
+  try {
+    await moduleRef.init();
+    assert.deepEqual(events, ['connected']);
+  } finally {
+    await moduleRef.close();
+  }
+  assert.deepEqual(events, ['connected', 'closed']);
+});
+
+test('observable composition transforms the value when subscribed', async () => {
+  const stream = of({ id: 'order-1' }).pipe(map((data) => ({ data })));
+  assert.deepEqual(await firstValueFrom(stream), { data: { id: 'order-1' } });
 });

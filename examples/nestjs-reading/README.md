@@ -16,3 +16,5 @@ Tests install **test-only identity middleware** to exercise an authorized reques
 The same `configureApp()` installs the prefix and ValidationPipe in production bootstrap and HTTP tests. Tests verify the guard runs before validation, numeric strings and extra properties fail validation, successful requests use the response envelope, invalid IDs produce 400, missing records produce 404, and dependency replacement works without HTTP. Every application/module created in tests is closed.
 
 The parent Next.js app excludes this independent example from its compiler and lint scope. `npm test` here compiles every example file before running the executable behavior tests.
+
+The additional `mechanisms.ts` examples cover a positive-integer pipe, a domain-error filter, and an injected client's initialization/cleanup hooks. Tests verify transformation/rejection, the custom 404 response, awaited lifecycle order, and Observable composition. The resource hook uses a controlled client contract rather than opening a real external connection.

@@ -10,11 +10,11 @@ import {
   Injectable,
   Module,
   NestInterceptor,
-  NotFoundException,
   Param,
   ParseUUIDPipe,
   Post,
   SetMetadata,
+  UseFilters,
   UseGuards,
   UseInterceptors,
   ValidationPipe,
@@ -24,6 +24,7 @@ import type { INestApplication } from '@nestjs/common';
 import { IsInt, IsUUID, Min } from 'class-validator';
 import { randomUUID } from 'node:crypto';
 import { map } from 'rxjs/operators';
+import { OrderMissingError, OrderMissingFilter } from './mechanisms';
 
 export type Order = { id: string; productId: string; quantity: number };
 export interface OrdersRepository {
@@ -62,7 +63,7 @@ export class OrdersService {
   }
   async find(id: string) {
     const order = await this.repository.find(id);
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) throw new OrderMissingError('Order not found');
     return order;
   }
 }
@@ -90,6 +91,7 @@ export class EnvelopeInterceptor implements NestInterceptor {
 }
 
 @Controller('orders')
+@UseFilters(OrderMissingFilter)
 @UseInterceptors(EnvelopeInterceptor)
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
@@ -113,6 +115,7 @@ export class OrdersController {
     OrdersService,
     PermissionGuard,
     EnvelopeInterceptor,
+    OrderMissingFilter,
     { provide: ORDERS_REPOSITORY, useClass: InMemoryOrdersRepository },
   ],
   exports: [OrdersService],
