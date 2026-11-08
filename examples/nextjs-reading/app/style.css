@@ -1,0 +1,37 @@
+:root {
+  color-scheme: dark;
+  background: #10151e;
+  color: #e8edf5;
+  font-family: system-ui, sans-serif;
+}
+body {
+  max-width: 850px;
+  margin: auto;
+  padding: 24px;
+}
+header {
+  line-height: 2;
+  border-bottom: 1px solid #59718a;
+  padding-bottom: 16px;
+}
+a {
+  color: #6fe4d3;
+}
+button,
+input {
+  font: inherit;
+  padding: 10px;
+  margin: 6px;
+  border-radius: 6px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+label {
+  display: block;
+}
+[role='alert'] {
+  color: #ffb5ac;
+}
+:focus-visible {
+  outline: 3px solid #6fe4d3;
+}

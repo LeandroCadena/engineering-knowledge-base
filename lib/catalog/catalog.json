@@ -218,14 +218,15 @@
       "id": "nextjs",
       "title": "Next.js",
       "category": "js-frontend",
-      "description": "Understand what Next.js is, why it exists, and how it extends React to build production-ready web applications with server-side capabilities, optimized rendering, and modern full-stack features.",
+      "description": "App Router composition, Server and Client Components, request-time rendering and streaming, Cache Components, mutations and authorization, Route Handlers, navigation, Proxy, and deployment boundaries.",
       "contentPath": "javascript-ecosystem/frameworks/full-stack/nextjs",
-      "status": "complete",
+      "status": "review",
       "icon": "nextjs.png",
       "tags": [],
-      "prerequisites": [],
-      "related": [],
-      "order": 6
+      "prerequisites": ["react", "typescript"],
+      "related": ["nodejs", "http", "sessions-cookies", "application-security"],
+      "order": 6,
+      "readingFile": "reading"
     },
     {
       "id": "tailwind-css",
