@@ -204,14 +204,15 @@
       "id": "react",
       "title": "React",
       "category": "js-frontend",
-      "description": "Learn what React is, how it builds user interfaces from reusable components, where it fits within frontend architectures, and the most common ways it is used in modern applications.",
+      "description": "Components and rendering, state snapshots and batching, keys and identity, hooks and effects, async races, forms and Actions, context, performance, server rendering, and UI testing.",
       "contentPath": "javascript-ecosystem/libraries/frontend/react",
-      "status": "complete",
+      "status": "review",
       "icon": "react.png",
       "tags": [],
-      "prerequisites": [],
-      "related": [],
-      "order": 5
+      "prerequisites": ["javascript", "typescript"],
+      "related": ["nextjs", "jest", "http"],
+      "order": 5,
+      "readingFile": "reading"
     },
     {
       "id": "nextjs",
@@ -494,14 +495,15 @@
       "id": "api-gateway",
       "title": "AWS API Gateway",
       "category": "aws",
-      "description": "Learn what Amazon API Gateway is, why it exists, how it manages API traffic, and how it fits into modern cloud architectures.",
+      "description": "API product boundaries, routes and integrations, Lambda payload contracts, authorization, CORS, deployments, throttling, private connectivity, timeouts, and operational diagnosis.",
       "contentPath": "cloud/aws/api-management/api-gateway",
-      "status": "complete",
+      "status": "review",
       "icon": "api-gateway.png",
       "tags": ["api"],
-      "prerequisites": [],
-      "related": [],
-      "order": 26
+      "prerequisites": ["http", "aws-iam", "aws-lambda"],
+      "related": ["rest", "jwt", "oauth-2", "openapi"],
+      "order": 26,
+      "readingFile": "reading"
     },
     {
       "id": "docker",

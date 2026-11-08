@@ -1,0 +1,261 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "HTTP API JWT route to a read-only Lambda fixture; requires a real issuer and audience.",
+  "Parameters": {
+    "JwtIssuer": {
+      "Type": "String",
+      "AllowedPattern": "https://.+",
+      "Description": "Real OIDC issuer with supported discovery/JWKS; no trailing slash unless issuer requires it."
+    },
+    "JwtAudience": {
+      "Type": "String",
+      "MinLength": 1
+    },
+    "WebOrigin": {
+      "Type": "String",
+      "Default": "https://app.example.com",
+      "AllowedPattern": "https://[^/]+",
+      "Description": "Exact browser origin; replace the example value."
+    },
+    "DemoOwnerSubject": {
+      "Type": "String",
+      "Default": "user-1",
+      "MinLength": 1,
+      "Description": "Token subject that owns the fixture order. Not an authentication credential."
+    },
+    "FunctionName": {
+      "Type": "String",
+      "Default": "kb-orders-http-api",
+      "MaxLength": 64,
+      "AllowedPattern": "[A-Za-z0-9-_]+"
+    }
+  },
+  "Resources": {
+    "FunctionLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${FunctionName}"
+        },
+        "RetentionInDays": 7
+      }
+    },
+    "GatewayLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 7
+      }
+    },
+    "FunctionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "FunctionLogs",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${FunctionName}:*"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "OrdersFunction": {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": [
+        "FunctionLogs"
+      ],
+      "Properties": {
+        "FunctionName": {
+          "Ref": "FunctionName"
+        },
+        "Runtime": "nodejs24.x",
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Timeout": 3,
+        "Role": {
+          "Fn::GetAtt": [
+            "FunctionRole",
+            "Arn"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "DEMO_OWNER_SUBJECT": {
+              "Ref": "DemoOwnerSubject"
+            }
+          }
+        },
+        "Code": {
+          "ZipFile": "const orders = new Map([\n  [\n    'order-104',\n    { id: 'order-104', owner: process.env.DEMO_OWNER_SUBJECT || 'user-1', status: 'paid' },\n  ],\n]);\nexports.createHandler = function createHandler(repository) {\n  return async function handler(event) {\n    const reply = (statusCode, value) => ({\n      statusCode,\n      headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },\n      body: JSON.stringify(value),\n      isBase64Encoded: false,\n    });\n    if (\n      event?.version !== '2.0' ||\n      event.routeKey !== 'GET /orders/{orderId}' ||\n      event.requestContext?.http?.method !== 'GET'\n    )\n      return reply(400, { error: 'unsupported_event' });\n    const jwt = event.requestContext?.authorizer?.jwt;\n    const subject = jwt?.claims?.sub;\n    if (typeof subject !== 'string' || !subject) return reply(401, { error: 'unauthenticated' });\n    if (!Array.isArray(jwt.scopes) || !jwt.scopes.includes('orders:read'))\n      return reply(403, { error: 'insufficient_scope' });\n    const id = event.pathParameters?.orderId;\n    if (typeof id !== 'string' || !/^order-[0-9]{1,12}$/.test(id))\n      return reply(400, { error: 'invalid_id' });\n    try {\n      const order = await repository.find(id);\n      if (!order || order.owner !== subject) return reply(404, { error: 'not_found' });\n      return reply(200, { id: order.id, status: order.status });\n    } catch {\n      return reply(503, { error: 'orders_unavailable' });\n    }\n  };\n};\nexports.handler = exports.createHandler({\n  async find(id) {\n    return orders.get(id);\n  },\n});\n"
+        }
+      }
+    },
+    "HttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "ProtocolType": "HTTP",
+        "Name": "knowledge-base-orders",
+        "CorsConfiguration": {
+          "AllowOrigins": [
+            {
+              "Ref": "WebOrigin"
+            }
+          ],
+          "AllowMethods": [
+            "GET",
+            "OPTIONS"
+          ],
+          "AllowHeaders": [
+            "Authorization"
+          ],
+          "MaxAge": 300
+        }
+      }
+    },
+    "JwtAuthorizer": {
+      "Type": "AWS::ApiGatewayV2::Authorizer",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "Name": "AccessToken",
+        "AuthorizerType": "JWT",
+        "IdentitySource": [
+          "$request.header.Authorization"
+        ],
+        "JwtConfiguration": {
+          "Issuer": {
+            "Ref": "JwtIssuer"
+          },
+          "Audience": [
+            {
+              "Ref": "JwtAudience"
+            }
+          ]
+        }
+      }
+    },
+    "OrdersIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "OrdersFunction",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0",
+        "TimeoutInMillis": 5000
+      }
+    },
+    "OrderRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /orders/{orderId}",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "JwtAuthorizer"
+        },
+        "AuthorizationScopes": [
+          "orders:read"
+        ],
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "OrdersIntegration"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "InvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "OrdersFunction"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceAccount": {
+          "Ref": "AWS::AccountId"
+        },
+        "SourceArn": {
+          "Fn::Sub": "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/GET/orders/*"
+        }
+      }
+    },
+    "Stage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "ThrottlingBurstLimit": 10,
+          "ThrottlingRateLimit": 5
+        },
+        "AccessLogSettings": {
+          "DestinationArn": {
+            "Fn::GetAtt": [
+              "GatewayLogs",
+              "Arn"
+            ]
+          },
+          "Format": "{\"requestId\": \"$context.requestId\", \"routeKey\": \"$context.routeKey\", \"status\": \"$context.status\", \"integrationError\": \"$context.integrationErrorMessage\"}"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiEndpoint": {
+      "Value": {
+        "Fn::GetAtt": [
+          "HttpApi",
+          "ApiEndpoint"
+        ]
+      }
+    },
+    "Function": {
+      "Value": {
+        "Ref": "OrdersFunction"
+      }
+    }
+  }
+}
