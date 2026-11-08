@@ -49,3 +49,9 @@ test('reading estimate includes images and never silently caps at forty minutes'
   assert(readingMinutes('word '.repeat(8000)) > 40);
   assert(readingMinutes('![chart](/chart.png)\n'.repeat(10)) >= 3);
 });
+
+test('code tracing contributes separately from prose reading time', () => {
+  const plain = 'word '.repeat(200);
+  const code = '```ts\n' + 'execute();\n'.repeat(30) + '```';
+  assert(readingMinutes(plain + code) >= readingMinutes(plain) + 2);
+});

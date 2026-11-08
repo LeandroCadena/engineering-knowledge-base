@@ -44,3 +44,11 @@ html {
 #reading-content h3 {
   scroll-margin-top: 9rem;
 }
+
+#reading-content pre code {
+  display: block;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+}

@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { MarkdownRenderer } from '@/components/markdown/markdown-renderer';
 import { getDocumentBySlug, getMarkdownMetadata } from '@/lib/content';
 import {
   categoryHref,
   categoryTrail,
-  concepts,
   getTopic,
   relatedTopics,
   statusLabels,
@@ -19,7 +18,7 @@ import { ReadingProgress } from '@/components/catalog/reading-progress';
 type Props = { params: Promise<{ slug: string[] }> };
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const explicit = ['overview', 'deep-dive'].includes(slug.at(-1) ?? '');
+  const explicit = ['overview', 'deep-dive', 'reading'].includes(slug.at(-1) ?? '');
   const topic = topicByContentPath((explicit ? slug.slice(0, -1) : slug).join('/'));
   return { title: topic ? `${topic.title} · Engineering KB` : 'Engineering KB' };
 }
@@ -31,20 +30,21 @@ export default async function DocumentPage({ params }: Props) {
     slug.some((segment) => segment.includes('..') || segment.includes('\\'))
   )
     notFound();
-  const explicit = ['overview', 'deep-dive'].includes(slug.at(-1) ?? '');
-  const part = explicit ? slug.at(-1)! : 'overview';
+  const explicit = ['overview', 'deep-dive', 'reading'].includes(slug.at(-1) ?? '');
   const technologyPath = explicit ? slug.slice(0, -1) : slug;
   const topic = topicByContentPath(technologyPath.join('/'));
-  const markdown = await getDocumentBySlug(slug);
-  if (!markdown || !topic) notFound();
+  if (!topic) notFound();
+  if (topic.readingFile && explicit) redirect(topicHref(topic));
+  const part = topic.readingFile ?? (explicit ? slug.at(-1)! : 'overview');
+  const markdown = await getDocumentBySlug(
+    topic.readingFile ? [...technologyPath, topic.readingFile] : slug,
+  );
+  if (!markdown) notFound();
   const { metadata, content } = getMarkdownMetadata(markdown);
   const headings = documentHeadings(content);
   const minutes = await topicMinutes(topic);
   const related = relatedTopics(topic);
   const prerequisites = topic.prerequisites.map(getTopic).filter((t) => t !== undefined);
-  const applications = concepts.filter(
-    (concept) => concept.applications.includes(topic.id) && concept.owner !== topic.id,
-  );
   const href = topicHref(topic);
   return (
     <>
@@ -65,26 +65,36 @@ export default async function DocumentPage({ params }: Props) {
             </p>
             <div className="mt-4 flex flex-wrap gap-3 text-xs text-zinc-400">
               <span>{statusLabels[topic.status]}</span>
-              <span>~{minutes} min · Overview + Deep dive</span>
+              <span>
+                ~{minutes} min · {topic.readingFile ? 'Complete reading' : 'Overview + Deep dive'}
+              </span>
               {minutes && minutes > 40 ? (
                 <span className="text-amber-400">
                   Above the 40-minute target · editorial revision planned
                 </span>
               ) : null}
             </div>
-            <nav aria-label="Reading parts" className="mt-5 flex gap-2">
-              {['overview', 'deep-dive'].map((value) => (
-                <Link
-                  key={value}
-                  href={`${href}/${value}`}
-                  aria-current={part === value ? 'page' : undefined}
-                  className={`rounded-lg px-4 py-2 text-sm ${part === value ? 'bg-zinc-100 font-semibold text-zinc-950' : 'bg-zinc-900 text-zinc-400 hover:text-white'}`}
-                >
-                  {value === 'overview' ? 'Overview' : 'Deep dive'}
-                </Link>
-              ))}
-            </nav>
-            <ReadingProgress key={slug.join('/')} topicId={topic.id} part={part} href={href} />
+            {!topic.readingFile && (
+              <nav aria-label="Reading parts" className="mt-5 flex gap-2">
+                {['overview', 'deep-dive'].map((value) => (
+                  <Link
+                    key={value}
+                    href={`${href}/${value}`}
+                    aria-current={part === value ? 'page' : undefined}
+                    className={`rounded-lg px-4 py-2 text-sm ${part === value ? 'bg-zinc-100 font-semibold text-zinc-950' : 'bg-zinc-900 text-zinc-400 hover:text-white'}`}
+                  >
+                    {value === 'overview' ? 'Overview' : 'Deep dive'}
+                  </Link>
+                ))}
+              </nav>
+            )}
+            <ReadingProgress
+              key={slug.join('/')}
+              topicId={topic.id}
+              part={part}
+              href={href}
+              unified={!!topic.readingFile}
+            />
             {!!prerequisites.length && (
               <p className="mt-4 text-sm leading-7 text-zinc-400">
                 Recommended foundations:{' '}
@@ -113,7 +123,7 @@ export default async function DocumentPage({ params }: Props) {
             </ul>
           </details>
           <article key={`${topic.id}-${part}`} id="reading-content" className="mx-auto max-w-3xl">
-            {metadata.description && (
+            {metadata.description && !topic.readingFile && (
               <p className="mb-8 text-lg leading-8 text-zinc-400">{metadata.description}</p>
             )}
             <MarkdownRenderer content={content} />
@@ -126,28 +136,6 @@ export default async function DocumentPage({ params }: Props) {
                 : String(metadata.updatedAt)}
             </p>
           )}
-          {!!applications.length && (
-            <section className="mt-10 rounded-xl border border-zinc-800 p-5">
-              <h2 className="font-semibold">Connect the foundations</h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                These concepts have a primary explanation elsewhere in the knowledge base.
-              </p>
-              <ul className="mt-3 space-y-2 text-sm">
-                {applications.map((concept) => {
-                  const owner = getTopic(concept.owner)!;
-                  return (
-                    <li key={concept.id}>
-                      {concept.title}:{' '}
-                      <Link href={topicHref(owner)} className="text-emerald-400 hover:underline">
-                        {owner.title}
-                        {owner.status === 'planned' ? ' (planned)' : ''}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          )}
           <nav
             aria-label="Document navigation"
             className="mt-10 flex flex-wrap justify-between gap-4 border-t border-zinc-800 pt-6"
@@ -158,12 +146,14 @@ export default async function DocumentPage({ params }: Props) {
             >
               ← Back to {categoryTrail(topic.category).at(-1)!.title}
             </Link>
-            <Link
-              href={`${href}/${part === 'overview' ? 'deep-dive' : 'overview'}`}
-              className="text-sm font-medium text-emerald-400"
-            >
-              {part === 'overview' ? 'Continue to Deep dive →' : 'Back to Overview →'}
-            </Link>
+            {!topic.readingFile && (
+              <Link
+                href={`${href}/${part === 'overview' ? 'deep-dive' : 'overview'}`}
+                className="text-sm font-medium text-emerald-400"
+              >
+                {part === 'overview' ? 'Continue to Deep dive →' : 'Back to Overview →'}
+              </Link>
+            )}
           </nav>
         </div>
         <aside className="sticky top-32 hidden max-h-[75vh] overflow-y-auto border-l border-zinc-800 pl-5 lg:block">

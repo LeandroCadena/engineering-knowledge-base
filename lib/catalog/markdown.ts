@@ -56,12 +56,17 @@ export function documentHeadings(markdown: string): Heading[] {
   return headings;
 }
 export function readingMinutes(markdown: string): number {
-  const words = markdown
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .split(/\s+/)
-    .filter(Boolean).length;
+  let codeLines = 0;
+  const prose = markdown
+    .replace(/```[^\n]*\n([\s\S]*?)```/g, (_block, code: string) => {
+      codeLines += code.split('\n').filter((line) => line.trim()).length;
+      return '';
+    })
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '');
+  const words = prose.split(/\s+/).filter(Boolean).length;
   const images = [...markdown.matchAll(/!\[[^\]]*\]\([^)]*\)/g)].length;
-  return Math.max(1, Math.ceil(words / 180 + images * 0.3));
+  // Allow time to trace code and inspect diagrams; this is an estimate, not a cap.
+  return Math.max(1, Math.ceil(words / 180 + codeLines * 0.08 + images * 0.5));
 }
 export function searchableText(markdown: string): string {
   return markdown

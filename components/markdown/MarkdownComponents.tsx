@@ -1,3 +1,4 @@
+import { KnowledgeCheck } from './MarkdownBlocks/KnowledgeCheck';
 import type { ComponentProps } from 'react';
 import type { Components } from 'react-markdown';
 
@@ -6,12 +7,26 @@ import { Example } from './MarkdownBlocks/Example';
 import { Misconceptions } from './MarkdownBlocks/Misconceptions';
 
 type CustomMarkdownComponents = Components & {
+  KnowledgeCheck: typeof KnowledgeCheck;
   AtAGlance: (props: ComponentProps<'section'>) => React.ReactNode;
   Misconceptions: (props: ComponentProps<'section'>) => React.ReactNode;
   Example: (props: ComponentProps<'details'>) => React.ReactNode;
 };
 
 export const markdownComponents: CustomMarkdownComponents = {
+  img: ({ src, alt }) => (
+    <a
+      href={typeof src === 'string' ? src : undefined}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Open image: ${alt ?? 'diagram'}`}
+    >
+      {/* Native dimensions preserve each document image's aspect ratio. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt ?? ''} loading="lazy" />
+    </a>
+  ),
+  KnowledgeCheck,
   AtAGlance,
   Misconceptions,
   Example,

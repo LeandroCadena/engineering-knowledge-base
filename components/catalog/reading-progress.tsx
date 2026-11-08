@@ -28,7 +28,7 @@ function parse(value: string | null): Records {
         ([, p]) =>
           p &&
           typeof p === 'object' &&
-          (p.part === 'overview' || p.part === 'deep-dive') &&
+          (p.part === 'overview' || p.part === 'deep-dive' || p.part === 'reading') &&
           typeof p.section === 'string' &&
           Number.isFinite(p.percent) &&
           p.percent >= 0 &&
@@ -47,12 +47,15 @@ export function ReadingProgress({
   topicId,
   part,
   href,
+  unified = false,
 }: {
   topicId: string;
   part: string;
   href: string;
+  unified?: boolean;
 }) {
-  const saved = useProgress()[topicId];
+  const stored = useProgress()[topicId];
+  const saved = unified && stored?.part !== 'reading' ? undefined : stored;
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let interacted = false;
@@ -131,13 +134,13 @@ export function ReadingProgress({
       <span>
         Reading position saved on this device
         {saved
-          ? ` · ${saved.part === 'overview' ? 'Overview' : 'Deep dive'} ${saved.percent}%`
+          ? ` · ${saved.part === 'reading' ? 'Reading' : saved.part === 'overview' ? 'Overview' : 'Deep dive'} ${saved.percent}%`
           : ''}
         .
       </span>
       {saved && (
         <Link
-          href={`${href}/${saved.part}${saved.section ? `#${saved.section}` : ''}`}
+          href={`${href}${saved.part === 'reading' ? '' : `/${saved.part}`}${saved.section ? `#${saved.section}` : ''}`}
           className="font-medium text-emerald-400 hover:text-emerald-200"
         >
           Resume saved section
@@ -149,7 +152,7 @@ export function ReadingProgress({
 export function ContinueReading({
   topics,
 }: {
-  topics: { id: string; title: string; href: string }[];
+  topics: { id: string; title: string; href: string; unified?: boolean }[];
 }) {
   const records = useProgress();
   const latest = Object.entries(records)
@@ -160,7 +163,7 @@ export function ContinueReading({
   const progress = latest[1];
   return (
     <Link
-      href={`${topic.href}/${progress.part}${progress.section ? `#${progress.section}` : ''}`}
+      href={`${topic.href}${topic.unified || progress.part === 'reading' ? '' : `/${progress.part}`}${progress.section && (!topic.unified || progress.part === 'reading') ? `#${progress.section}` : ''}`}
       className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-900 bg-emerald-950/30 p-5"
     >
       <span>
@@ -168,7 +171,8 @@ export function ContinueReading({
         <span className="mt-1 block font-semibold">{topic.title}</span>
       </span>
       <span className="text-sm text-zinc-400">
-        {progress.part === 'overview' ? 'Overview' : 'Deep dive'} · {progress.percent}%{' '}
+        {topic.unified ? 'Reading' : progress.part === 'overview' ? 'Overview' : 'Deep dive'} ·{' '}
+        {topic.unified && progress.part !== 'reading' ? 0 : progress.percent}%{' '}
         <span aria-hidden="true">→</span>
       </span>
     </Link>

@@ -8,7 +8,7 @@ import { readingMinutes, searchableText } from './markdown';
 export const topicDocuments = cache(async (topic: Topic) => {
   if (!topic.contentPath) return [];
   return Promise.all(
-    ['overview', 'deep-dive'].map(async (part) => {
+    (topic.readingFile ? [topic.readingFile] : ['overview', 'deep-dive']).map(async (part) => {
       const raw = await readFile(
         path.join(process.cwd(), 'content', topic.contentPath!, `${part}.md`),
         'utf8',
@@ -54,7 +54,9 @@ export const searchEntries = cache(async (): Promise<SearchEntry[]> => {
         id: topic.id,
         title: topic.title,
         part: doc.part,
-        href: `/docs/${topic.contentPath}/${doc.part}`,
+        href: topic.readingFile
+          ? `/docs/${topic.contentPath}`
+          : `/docs/${topic.contentPath}/${doc.part}`,
         status: topic.status,
         text: `${context} ${searchableText(doc.content)}`,
       }));
