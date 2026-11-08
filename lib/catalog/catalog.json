@@ -147,27 +147,29 @@
       "id": "typescript",
       "title": "TypeScript",
       "category": "js-languages",
-      "description": "Learn how TypeScript extends JavaScript with static typing, type inference, generics, interfaces, advanced types, and tooling to build scalable and maintainable applications.",
+      "description": "Static contracts, inference, narrowing, generics, type transformations, runtime boundaries, and Node-oriented compiler configuration.",
       "contentPath": "javascript-ecosystem/programming-languages/typescript",
-      "status": "complete",
+      "status": "review",
       "icon": "typescript.png",
       "tags": [],
       "prerequisites": ["javascript"],
       "related": ["zod", "eslint"],
-      "order": 1
+      "order": 1,
+      "readingFile": "reading"
     },
     {
       "id": "nodejs",
       "title": "Node.js",
       "category": "js-languages",
-      "description": "Understand what Node.js is, how it executes JavaScript, where it fits in modern software systems, and the problems it is designed to solve.",
+      "description": "Runtime execution, event-loop scheduling, I/O, streams, cancellation, concurrency, and process diagnostics in Node.js 24.",
       "contentPath": "javascript-ecosystem/runtimes/nodejs",
-      "status": "complete",
+      "status": "review",
       "icon": "nodejs.png",
       "tags": ["debugging"],
       "prerequisites": ["javascript"],
       "related": ["vscode-debugger", "chrome-devtools", "pino"],
-      "order": 2
+      "order": 2,
+      "readingFile": "reading"
     },
     {
       "id": "express",
