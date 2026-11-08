@@ -1,0 +1,38 @@
+services:
+  api:
+    build: .
+    ports:
+      - '127.0.0.1:8080:8080'
+    environment:
+      PORT: '8080'
+      DATA_DIR: /data
+    volumes:
+      - notes:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    init: true
+    stop_grace_period: 10s
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 100
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ['CMD', 'node', 'dist/healthcheck.js']
+      interval: 3s
+      timeout: 2s
+      retries: 5
+      start_period: 3s
+  probe:
+    build: .
+    command: ['node', 'dist/probe.js']
+    environment:
+      API_URL: http://api:8080
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  notes:

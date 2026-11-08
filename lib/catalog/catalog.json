@@ -505,14 +505,15 @@
       "id": "docker",
       "title": "Docker",
       "category": "delivery",
-      "description": "Understand what Docker is, why containers exist, how they work, and why Docker became the standard platform for packaging and running applications consistently across environments.",
+      "description": "Images and build inputs, container isolation and lifecycle, storage, networking, Compose readiness, runtime configuration, resource limits, registries, and failure diagnosis.",
       "contentPath": "containers/platforms/docker",
-      "status": "complete",
+      "status": "review",
       "icon": "docker.png",
       "tags": [],
-      "prerequisites": [],
+      "prerequisites": ["nodejs"],
       "related": ["ecs-ecr", "testcontainers", "github-actions"],
-      "order": 27
+      "order": 27,
+      "readingFile": "reading"
     },
     {
       "id": "hmac",
