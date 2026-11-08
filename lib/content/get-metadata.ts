@@ -5,7 +5,7 @@ export type DocumentMetadata = {
   description?: string;
   icon?: string;
   order?: number;
-  updatedAt?: string;
+  updatedAt?: string | Date;
 };
 
 export function getMarkdownMetadata(markdown: string) {
