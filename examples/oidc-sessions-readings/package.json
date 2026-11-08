@@ -1,0 +1,20 @@
+{
+  "name": "oidc-sessions-readings",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test src/*.test.js",
+    "demo": "node src/demo.js",
+    "test:browser": "node browser-check.mjs"
+  },
+  "dependencies": {
+    "jose": "^6.0.0",
+    "cookie": "^1.0.2"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}
