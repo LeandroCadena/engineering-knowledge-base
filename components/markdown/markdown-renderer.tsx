@@ -1,3 +1,4 @@
+import { headingPlugin } from '@/lib/catalog/markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkDirective from 'remark-directive';
 import remarkGfm from 'remark-gfm';
@@ -13,7 +14,7 @@ type MarkdownRendererProps = {
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkDirective, directivePlugin]}
+      remarkPlugins={[remarkGfm, remarkDirective, directivePlugin, headingPlugin]}
       components={markdownComponents}
     >
       {content}
