@@ -13,7 +13,7 @@ This reading uses commands available in Redis 7.2 with a Node.js client. Example
 
 ## Keys, Values & Execution
 
-A key identifies one value and its data type. Naming conventions such as order:42 or session:token are application organization, not directories, schemas, or access control by themselves. Include tenant, purpose, and schema version where they affect meaning.
+A key identifies one value and its data type. Naming conventions such as `order:42` or `session:token` are application organization, not directories, schemas, or access control by themselves. Include tenant, purpose, and schema version where they affect meaning.
 
 ```redis
 SET order:42 '{"id":"42","quantity":2}' EX 60
@@ -200,7 +200,7 @@ AOF everysec typically trades a recent loss window for throughput; actual guaran
 
 WAIT can wait for replica acknowledgements for preceding writes, but does not make Redis a strongly consistent CP system or guarantee every acknowledged write survives every failover. Replica reads can lag and cannot automatically supply read-your-writes.
 
-Cluster-aware clients follow MOVED and transient ASK redirections as appropriate. Hash tags such as order:{42}:value and order:{42}:lease colocate related keys for same-slot operations. Colocation does not combine many keys into one transaction, and concentrating all traffic under one hash tag can create a hotspot.
+Cluster-aware clients follow MOVED and transient ASK redirections as appropriate. Hash tags such as `order:{42}:value` and `order:{42}:lease` colocate related keys for same-slot operations. Colocation does not combine many keys into one transaction, and concentrating all traffic under one hash tag can create a hotspot.
 
 ## Node.js Clients & Operations
 
