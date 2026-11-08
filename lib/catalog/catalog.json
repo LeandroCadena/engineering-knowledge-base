@@ -354,14 +354,15 @@
       "id": "api-keys",
       "title": "API Keys",
       "category": "web",
-      "description": "Understand what API Keys are, how they associate requests with clients or projects, and where they fit within API access and security.",
+      "description": "Secret and publishable credentials, issuance, verification storage, client and tenant authorization, quotas, rotation, revocation, and exposure recovery.",
       "contentPath": "web/authentication/api-keys",
-      "status": "complete",
+      "status": "review",
       "icon": "api-keys.png",
       "tags": ["security"],
-      "prerequisites": [],
-      "related": [],
-      "order": 16
+      "prerequisites": ["http", "tls"],
+      "related": ["hmac", "oauth-2", "application-security"],
+      "order": 16,
+      "readingFile": "reading"
     },
     {
       "id": "sessions-cookies",
@@ -381,14 +382,15 @@
       "id": "tls",
       "title": "TLS",
       "category": "web",
-      "description": "Understand what TLS is, why secure communication is necessary, how TLS protects data, and why it has become the standard protocol for secure communication on the Internet.",
+      "description": "TLS 1.3 handshake, certificate paths and service identity, traffic keys, resumption and replay, mutual TLS, termination boundaries, and Node.js verification.",
       "contentPath": "protocols/transport-security/tls",
       "status": "review",
-      "icon": null,
+      "icon": "tls.svg",
       "tags": ["security", "networking"],
-      "prerequisites": [],
-      "related": [],
-      "order": 18
+      "prerequisites": ["http"],
+      "related": ["api-keys", "hmac", "application-security"],
+      "order": 18,
+      "readingFile": "reading"
     },
     {
       "id": "postgresql",
