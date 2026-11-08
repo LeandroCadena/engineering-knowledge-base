@@ -388,14 +388,15 @@
       "id": "postgresql",
       "title": "PostgreSQL",
       "category": "databases",
-      "description": "Learn what PostgreSQL is, how it stores and retrieves persistent data, where it fits in modern software architectures, and the most common ways it is used.",
+      "description": "Relational contracts, SQL, indexes, transactions, MVCC, concurrency, durability, and operational diagnosis in PostgreSQL.",
       "contentPath": "databases/relational-databases/postgresql",
-      "status": "complete",
+      "status": "review",
       "icon": "postgresql.png",
       "tags": [],
       "prerequisites": [],
       "related": ["prisma", "testcontainers", "distributed-systems"],
-      "order": 19
+      "order": 19,
+      "readingFile": "reading"
     },
     {
       "id": "mongodb",
@@ -414,14 +415,15 @@
       "id": "redis",
       "title": "Redis",
       "category": "databases",
-      "description": "Understand what Redis is, why in-memory databases exist, and how applications achieve extremely fast data access.",
+      "description": "Data structures, atomic commands, expiration, cache consistency, transactions, leases, streams, persistence, and Redis operations.",
       "contentPath": "databases/in-memory-databases/redis",
-      "status": "complete",
+      "status": "review",
       "icon": "redis.png",
       "tags": ["messaging"],
       "prerequisites": [],
       "related": ["bullmq", "distributed-systems"],
-      "order": 21
+      "order": 21,
+      "readingFile": "reading"
     },
     {
       "id": "rabbitmq",
