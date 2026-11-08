@@ -864,14 +864,15 @@
       "id": "design-patterns",
       "title": "Design Patterns",
       "category": "foundations",
-      "description": "Strategy, Adapter, Factory, Decorator, Observer, and their trade-offs.",
-      "contentPath": null,
-      "status": "planned",
-      "icon": null,
+      "description": "Choosing and composing creational, structural and behavioral patterns in TypeScript, with backend examples, contract boundaries, failure semantics and alternatives.",
+      "contentPath": "foundations/design-patterns",
+      "status": "review",
+      "icon": "design-patterns.svg",
       "tags": [],
-      "prerequisites": [],
-      "related": [],
-      "order": 54
+      "prerequisites": ["solid"],
+      "related": ["backend-architecture", "ddd", "nestjs", "distributed-systems"],
+      "order": 54,
+      "readingFile": "reading"
     },
     {
       "id": "ddd",
