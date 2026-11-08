@@ -45,9 +45,15 @@ The catalog contains 57 readings: 29 available and 28 planned (20 technologies/t
 2. For available content, point `contentPath` at a directory under `content/` containing `overview.md` and `deep-dive.md`. Preserve existing paths when reorganizing the menu.
 3. Add images under `public/docs/` and optional icons under `public/icons/`. The catalog icon controls the menu; frontmatter remains content metadata.
 4. Register shared concepts with one owner. A planned owner must remain visibly marked as planned when linked.
-5. Aim for 30–35 minutes including code and images, with a 40-minute maximum for the combined reading. Estimates use 180 words/minute plus 18 seconds per image and need human review, especially for code-heavy material.
+5. Aim for 30–35 minutes including code and images, with a 40-minute maximum for the combined reading. Estimates use 180 prose words/minute, about five seconds per non-empty code line, and 30 seconds per image and need human review, especially for code-heavy material.
 6. Run catalog validation, tests, lint, type checking, and build.
 
 The validator checks duplicate IDs and content paths, category and prerequisite cycles, references, Markdown/icon/image paths, and coverage of every existing Overview. Tests verify search behavior, heading/TOC anchor agreement, and uncapped reading estimates.
 
 See [CATALOG.md](CATALOG.md) for the navigation and ownership conventions.
+
+### Unified-reading pilot
+
+NestJS uses `readingFile: "reading"` in the catalog. Its canonical topic URL loads `reading.md`; the old `/overview` and `/deep-dive` URLs redirect there. Other topics retain their two-part structure. The earlier NestJS Markdown and images stay in git for comparison, but are excluded from the active search and duration estimate. Progress is stored as a unified reading; older positions resume at its beginning rather than an unrelated heading.
+
+Use `:::check{question="..."}` containers for accessible, collapsed knowledge checks. Answers use ordinary Markdown. No raw HTML is enabled.

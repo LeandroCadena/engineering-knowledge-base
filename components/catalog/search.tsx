@@ -102,11 +102,13 @@ export function Search() {
               >
                 <span className="font-medium text-zinc-100">{result.title}</span>
                 <span className="ml-2 text-xs text-zinc-400">
-                  {result.part === 'deep-dive'
-                    ? 'Deep dive'
-                    : result.part === 'overview'
-                      ? 'Overview'
-                      : 'Planned'}
+                  {result.part === 'reading'
+                    ? 'Reading'
+                    : result.part === 'deep-dive'
+                      ? 'Deep dive'
+                      : result.part === 'overview'
+                        ? 'Overview'
+                        : 'Planned'}
                 </span>
                 <p className="mt-1 text-xs leading-5 text-zinc-400">{result.excerpt}</p>
               </Link>

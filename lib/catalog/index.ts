@@ -15,6 +15,7 @@ export type Topic = {
   category: string;
   description: string;
   contentPath: string | null;
+  readingFile?: string;
   status: Status;
   icon: string | null;
   tags: string[];

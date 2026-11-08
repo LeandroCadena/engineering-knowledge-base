@@ -24,7 +24,12 @@ export default function HomePage() {
       <ContinueReading
         topics={topics
           .filter((t) => t.contentPath)
-          .map((t) => ({ id: t.id, title: t.title, href: `/docs/${t.contentPath}` }))}
+          .map((t) => ({
+            id: t.id,
+            title: t.title,
+            href: `/docs/${t.contentPath}`,
+            unified: !!t.readingFile,
+          }))}
       />
       <section
         aria-label="Knowledge areas"

@@ -38,7 +38,8 @@ for (const topic of topics) {
   if (topic.icon) await access(path.join(root, 'public/icons', topic.icon));
   if (topic.contentPath) {
     assert(!topic.contentPath.split('/').includes('..'), 'Unsafe content path');
-    for (const part of ['overview', 'deep-dive']) {
+    if (topic.readingFile) assert(/^[a-z0-9-]+$/.test(topic.readingFile), 'Unsafe reading file');
+    for (const part of topic.readingFile ? [topic.readingFile] : ['overview', 'deep-dive']) {
       const text = await readFile(
         path.join(root, 'content', topic.contentPath, `${part}.md`),
         'utf8',

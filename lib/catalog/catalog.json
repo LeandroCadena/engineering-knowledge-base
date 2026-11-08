@@ -186,14 +186,15 @@
       "id": "nestjs",
       "title": "NestJS",
       "category": "js-backend",
-      "description": "Understand NestJS as an architectural framework for Node.js applications, its core application model, platform abstraction, and place in modern backend systems.",
+      "description": "Module boundaries, dependency injection, request execution, validation, and testing in one connected reading.",
       "contentPath": "javascript-ecosystem/frameworks/backend/nestjs",
-      "status": "complete",
+      "status": "review",
       "icon": "nestjs.png",
       "tags": ["testing"],
       "prerequisites": ["typescript", "nodejs"],
       "related": ["prisma", "bullmq", "nestjs-swagger", "jest", "solid"],
-      "order": 4
+      "order": 4,
+      "readingFile": "reading"
     },
     {
       "id": "react",
