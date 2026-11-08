@@ -798,14 +798,15 @@
       "id": "solid",
       "title": "Software Design & SOLID",
       "category": "foundations",
-      "description": "Cohesion, coupling, composition, abstractions, and dependency inversion.",
-      "contentPath": null,
-      "status": "planned",
-      "icon": null,
+      "description": "Cohesion and coupling, information hiding, behavioral contracts, the five SOLID principles, composition, Clean Code, error boundaries, and incremental refactoring in TypeScript.",
+      "contentPath": "foundations/software-design-solid",
+      "status": "review",
+      "icon": "solid.svg",
       "tags": [],
-      "prerequisites": [],
-      "related": [],
-      "order": 49
+      "prerequisites": ["typescript"],
+      "related": ["design-patterns", "backend-architecture", "ddd", "nestjs", "jest"],
+      "order": 49,
+      "readingFile": "reading"
     },
     {
       "id": "backend-architecture",
