@@ -466,27 +466,29 @@
       "id": "aws-iam",
       "title": "AWS IAM",
       "category": "aws",
-      "description": "Understand what AWS Identity and Access Management (IAM) is, how it authorizes access to AWS resources, and why it serves as the foundation of security across nearly every AWS service.",
+      "description": "Principals and temporary credentials, policy statements and conditions, role trust and PassRole, policy evaluation boundaries, cross-account access, federation, and authorization diagnosis.",
       "contentPath": "cloud/aws/security/IAM",
-      "status": "complete",
+      "status": "review",
       "icon": "aws-iam.png",
       "tags": ["security"],
       "prerequisites": [],
-      "related": [],
-      "order": 24
+      "related": ["aws-lambda", "api-keys", "application-security", "github-actions"],
+      "order": 24,
+      "readingFile": "reading"
     },
     {
       "id": "aws-lambda",
       "title": "AWS Lambda",
       "category": "aws",
-      "description": "Learn what AWS Lambda is, why it exists, how serverless computing works, and how Lambda fits into modern cloud architectures.",
+      "description": "Handler contracts, execution environment reuse, invocation-specific retries, SQS batch failures, persistent deduplication, concurrency, IAM, networking, deployment versions, and observability.",
       "contentPath": "cloud/aws/compute/lambda",
-      "status": "complete",
+      "status": "review",
       "icon": "aws-lambda.png",
       "tags": [],
-      "prerequisites": [],
-      "related": [],
-      "order": 25
+      "prerequisites": ["nodejs", "aws-iam"],
+      "related": ["sqs", "dynamodb", "api-gateway", "cloudwatch", "distributed-systems"],
+      "order": 25,
+      "readingFile": "reading"
     },
     {
       "id": "api-gateway",
