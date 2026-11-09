@@ -881,14 +881,15 @@
       "id": "ddd",
       "title": "Domain Modeling & DDD",
       "category": "foundations",
-      "description": "Invariants, entities, value objects, aggregates, and bounded contexts.",
-      "contentPath": null,
-      "status": "planned",
-      "icon": null,
+      "description": "Domain discovery, ubiquitous language, subdomains, bounded contexts, context maps, entities, value objects, aggregates, invariants, lifecycle modeling, persistence, and domain events in TypeScript.",
+      "contentPath": "foundations/ddd",
+      "status": "review",
+      "icon": "ddd.svg",
       "tags": [],
-      "prerequisites": [],
-      "related": [],
-      "order": 55
+      "prerequisites": ["backend-architecture"],
+      "related": ["solid", "microservices", "event-driven-architecture"],
+      "order": 55,
+      "readingFile": "reading"
     },
     {
       "id": "application-security",
@@ -902,6 +903,34 @@
       "prerequisites": [],
       "related": [],
       "order": 56
+    },
+    {
+      "id": "microservices",
+      "title": "Microservices",
+      "category": "foundations",
+      "description": "Service boundaries, data ownership, contracts, synchronous and asynchronous collaboration, independent deployment, failure isolation, security, operations, and incremental extraction.",
+      "contentPath": "foundations/microservices",
+      "status": "review",
+      "icon": "microservices.svg",
+      "tags": ["distributed"],
+      "prerequisites": ["distributed-systems", "backend-architecture"],
+      "related": ["ddd", "event-driven-architecture", "nestjs"],
+      "order": 57,
+      "readingFile": "reading"
+    },
+    {
+      "id": "event-driven-architecture",
+      "title": "Event-Driven Architecture",
+      "category": "messaging",
+      "description": "Event and command semantics, contract evolution, outbox and inbox transactions, delivery and ordering, projections, replay, sagas, and operational recovery.",
+      "contentPath": "messaging/event-driven-architecture",
+      "status": "review",
+      "icon": "event-driven-architecture.svg",
+      "tags": ["messaging", "distributed"],
+      "prerequisites": ["distributed-systems"],
+      "related": ["microservices", "ddd", "kafka", "rabbitmq"],
+      "order": 58,
+      "readingFile": "reading"
     }
   ],
   "concepts": [
