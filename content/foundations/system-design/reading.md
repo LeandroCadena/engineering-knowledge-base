@@ -124,7 +124,7 @@ recovery spare capacity = service rate − new arrival rate
 approximate drain time = backlog ÷ recovery spare capacity
 ```
 
-At 1,000 jobs/second arriving and 800 processed for 120 seconds, an initially empty queue accumulates approximately 24,000 jobs. If arrivals then fall to 200/second, 600/second remain available for recovery, giving an idealized drain time of 40 seconds. If new arrivals continue at 800/second, there is no spare capacity to drain the backlog. Variable service times, retries and outages require a richer model.
+As a separate stress scenario, consider 1,000 jobs/second arriving and 800 processed for 120 seconds. An initially empty queue accumulates approximately 24,000 jobs. If arrivals then fall to 200/second, 600/second remain available for recovery, giving an idealized drain time of 40 seconds. If new arrivals continue at 800/second, there is no spare capacity to drain the backlog. Variable service times, retries and outages require a richer model.
 
 ![A burst grows the backlog, and recovery arrivals consume part of processing capacity before the backlog can drain.](/docs/system-design/v1/queue-recovery.svg)
 

@@ -17,7 +17,7 @@ npm start
 - At a stable plateau with a 120 ms **mean**, corresponding mean in-flight work is about 111 requests. Little's Law requires a stable boundary and uses means, not a tail percentile.
 - An assumed representative per-instance benchmark of 200 requests/second, planned at 65%, gives eight instances plus one reserve. This is linear arithmetic, not a benchmark, instance recommendation or availability-zone sizing model.
 - One million new records/day × 30 days × 1,000 bytes × 1.4 assumed overhead × three **total** copies = 126 GB, using decimal units. Backups, logs, deletes, compaction, network traffic and changing record sizes are excluded.
-- A constant-rate burst of 1,000 arrivals/second against 800 completions/second for 120 seconds creates 24,000 waiting jobs. Recovery at 200 new arrivals/second gives 600 spare completions/second and 40 seconds to drain. With no spare capacity, `drainSeconds` is `null`; this is a fluid approximation, not a queue simulation or latency distribution.
+- An independent queue stress scenario (not derived from the API request mix) uses a constant-rate burst of 1,000 arrivals/second against 800 completions/second for 120 seconds. This creates 24,000 waiting jobs. Recovery at 200 new arrivals/second gives 600 spare completions/second and 40 seconds to drain. With no spare capacity, `drainSeconds` is `null`; this is a fluid approximation, not a queue simulation or latency distribution.
 - Three independent required 99.9% components produce 99.7002999% series availability. Correlated failures, optional dependencies and failover are outside that model.
 - A **time-based** 99.9% objective over 30 days allows 43.2 minutes outside target. A request-based SLO has a request-based error budget instead.
 
