@@ -135,6 +135,14 @@
       "parent": null,
       "order": 16,
       "tags": ["go"]
+    },
+    {
+      "id": "ai",
+      "title": "AI & LLM Engineering",
+      "description": "Model integration, retrieval, agent execution, and stateful AI orchestration.",
+      "parent": null,
+      "order": 17,
+      "tags": ["ai", "llm"]
     }
   ],
   "topics": [
@@ -1012,6 +1020,53 @@
       "prerequisites": ["postgresql"],
       "related": ["prisma", "testcontainers", "event-driven-architecture", "distributed-systems"],
       "order": 63,
+      "readingFile": "reading"
+    },
+    {
+      "id": "llm-integration",
+      "title": "LLM Fundamentals & Integration",
+      "category": "ai",
+      "description": "Tokens and context, OpenAI/Anthropic adapters, structured outputs, RAG, evaluation, operational budgets, and trust boundaries.",
+      "contentPath": "ai/llm-integration",
+      "status": "review",
+      "icon": "llm-integration.svg",
+      "tags": ["ai", "llm", "rag"],
+      "prerequisites": ["typescript", "http"],
+      "related": ["ai-agents", "langgraph", "application-security", "opentelemetry"],
+      "order": 64,
+      "readingFile": "reading"
+    },
+    {
+      "id": "ai-agents",
+      "title": "AI Agents",
+      "category": "ai",
+      "description": "Bounded model-tool loops, trusted actor context, operation-bound approval, idempotency, memory, budgets, and trajectory evaluation.",
+      "contentPath": "ai/ai-agents",
+      "status": "review",
+      "icon": "ai-agents.svg",
+      "tags": ["ai", "agents"],
+      "prerequisites": ["llm-integration"],
+      "related": [
+        "langgraph",
+        "application-security",
+        "distributed-systems",
+        "event-driven-architecture"
+      ],
+      "order": 65,
+      "readingFile": "reading"
+    },
+    {
+      "id": "langgraph",
+      "title": "LangGraph",
+      "category": "ai",
+      "description": "State schemas, reducers, graph routing, checkpoints, interrupt/resume semantics, side-effect identity, streaming, and testing.",
+      "contentPath": "ai/langgraph",
+      "status": "review",
+      "icon": "langgraph.svg",
+      "tags": ["ai", "agents", "orchestration"],
+      "prerequisites": ["typescript", "ai-agents"],
+      "related": ["llm-integration", "postgresql", "distributed-systems", "opentelemetry"],
+      "order": 66,
       "readingFile": "reading"
     }
   ],

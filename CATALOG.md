@@ -6,6 +6,7 @@
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Engineering Foundations   | Software design/SOLID, application architecture, system design, distributed systems, data structures, patterns, DDD. |
 | JavaScript Ecosystem      | Languages/runtime, backend frameworks, frontend/full stack, ecosystem libraries, testing, and tooling.               |
+| AI & LLM Engineering      | Model integration, RAG, agent policy, stateful orchestration, and runtimes.                                          |
 | Go Ecosystem              | Go language, concurrency, backend services, and tooling.                                                             |
 | Web, APIs & Identity      | HTTP, REST, OpenAPI, API Keys, Sessions/Cookies, OAuth, OIDC, JWT, TLS.                                              |
 | Databases                 | PostgreSQL, MongoDB, Redis.                                                                                          |
@@ -17,7 +18,7 @@
 
 A topic belongs where its responsibility fits, not wherever it happens to be used. PostgreSQL does not become a JavaScript topic because examples use Node. Prisma and BullMQ do belong to that ecosystem. Related links reuse the original document rather than duplicate it.
 
-The current hierarchy uses ten root areas, six JS subcategories, and an AWS subcategory. Avoid adding intermediate levels that do not help readers choose. Use `order` on categories/topics for deliberate ordering; physical directory names do not determine display titles.
+The current hierarchy uses eleven root areas, six JS subcategories, and an AWS subcategory. Avoid adding intermediate levels that do not help readers choose. Use `order` on categories/topics for deliberate ordering; physical directory names do not determine display titles.
 
 ## Two kinds of readings
 
