@@ -1,0 +1,54 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1000 370"
+  role="img"
+  aria-label="Producer owns closure, cancellation reaches bounded workers, and joining precedes result return"
+>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#67d5e5" />
+    </marker>
+  </defs>
+  <rect width="1000" height="370" rx="16" fill="#0f172a" />
+  <g font-family="system-ui,sans-serif">
+    <path d="M285 80H370" fill="none" stroke="#67d5e5" stroke-width="3" marker-end="url(#a)" />
+    <path d="M630 80H715" fill="none" stroke="#67d5e5" stroke-width="3" marker-end="url(#a)" />
+    <path d="M500 230V130" fill="none" stroke="#67d5e5" stroke-width="3" marker-end="url(#a)" />
+    <path d="M845 130V230" fill="none" stroke="#67d5e5" stroke-width="3" marker-end="url(#a)" />
+    <rect x="25" y="30" width="260" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="155.0" y="68" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      Producer
+    </text>
+    <text x="155.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Owns jobs + close
+    </text>
+    <rect x="370" y="30" width="260" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="500.0" y="68" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      Fixed workers
+    </text>
+    <text x="500.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      One writer per index
+    </text>
+    <rect x="715" y="30" width="260" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="845.0" y="68" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      Join
+    </text>
+    <text x="845.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Wait for every worker
+    </text>
+    <rect x="370" y="230" width="260" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="500.0" y="268" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      Context
+    </text>
+    <text x="500.0" y="304" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Cooperative cancellation
+    </text>
+    <rect x="715" y="230" width="260" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="845.0" y="268" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      Return
+    </text>
+    <text x="845.0" y="304" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Result or first error
+    </text>
+  </g>
+</svg>

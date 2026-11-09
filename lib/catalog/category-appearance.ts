@@ -2,6 +2,7 @@
 export const areaColors: Record<string, string> = {
   foundations: '#b9a0f5',
   javascript: '#f3d85e',
+  'go-ecosystem': '#67d5e5',
   web: '#66d7eb',
   databases: '#7cb4ff',
   messaging: '#fbaf75',
@@ -24,6 +25,7 @@ export type CategoryMotif =
 export const categoryMotifs: Record<string, CategoryMotif> = {
   foundations: 'layers',
   javascript: 'code',
+  'go-ecosystem': 'code',
   web: 'window',
   databases: 'data',
   messaging: 'events',
