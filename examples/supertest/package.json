@@ -1,0 +1,22 @@
+{
+  "name": "supertest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "24.10.0",
+    "supertest": "7.3.2",
+    "@types/express": "5.0.6"
+  },
+  "dependencies": {
+    "express": "5.2.1"
+  }
+}
