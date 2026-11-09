@@ -127,6 +127,14 @@
       "parent": "cloud",
       "order": 15,
       "tags": []
+    },
+    {
+      "id": "go-ecosystem",
+      "title": "Go Ecosystem",
+      "description": "Go language, concurrency, backend services, and tooling.",
+      "parent": null,
+      "order": 16,
+      "tags": ["go"]
     }
   ],
   "topics": [
@@ -962,6 +970,48 @@
       "tags": ["api", "graphql"],
       "prerequisites": ["http", "typescript"],
       "related": ["rest", "nestjs", "application-security", "postgresql"],
+      "readingFile": "reading"
+    },
+    {
+      "id": "sonarqube-coverage",
+      "title": "SonarQube / Code Coverage",
+      "category": "quality",
+      "description": "Static analysis, coverage evidence, LCOV import, quality profiles and gates, new-code baselines, exclusions, and CI enforcement.",
+      "contentPath": "quality/sonarqube-coverage",
+      "status": "review",
+      "icon": "sonarqube-coverage.svg",
+      "tags": ["quality", "coverage"],
+      "prerequisites": ["jest", "github-actions"],
+      "related": ["eslint", "application-security", "testcontainers"],
+      "order": 61,
+      "readingFile": "reading"
+    },
+    {
+      "id": "go",
+      "title": "Go",
+      "category": "go-ecosystem",
+      "description": "Value semantics, interfaces, errors, goroutines, synchronization, cancellation, backend boundaries, race detection, and profiling.",
+      "contentPath": "go-ecosystem/go",
+      "status": "review",
+      "icon": "go.svg",
+      "tags": ["go", "concurrency"],
+      "prerequisites": [],
+      "related": ["nodejs", "http", "distributed-systems", "docker"],
+      "order": 62,
+      "readingFile": "reading"
+    },
+    {
+      "id": "sql-server",
+      "title": "SQL Server",
+      "category": "databases",
+      "description": "T-SQL, constraints, indexes and plans, isolation, rowversion, transactional idempotency, outbox, Node.js access, and recovery.",
+      "contentPath": "databases/relational-databases/sql-server",
+      "status": "review",
+      "icon": "sql-server.svg",
+      "tags": ["sql", "transactions"],
+      "prerequisites": ["postgresql"],
+      "related": ["prisma", "testcontainers", "event-driven-architecture", "distributed-systems"],
+      "order": 63,
       "readingFile": "reading"
     }
   ],

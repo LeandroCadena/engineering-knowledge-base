@@ -1,0 +1,46 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 950 490"
+  role="img"
+  aria-label="A tenant-scoped locked lookup chooses replay or atomic order and outbox insertion; failures roll back"
+>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#7cb4ff" />
+    </marker>
+  </defs>
+  <rect width="950" height="490" rx="16" fill="#0f172a" />
+  <g font-family="system-ui,sans-serif">
+    <path d="M360 130 225 210" fill="none" stroke="#7cb4ff" stroke-width="3" marker-end="url(#a)" />
+    <path d="M590 130 725 210" fill="none" stroke="#7cb4ff" stroke-width="3" marker-end="url(#a)" />
+    <path d="M725 310V360" fill="none" stroke="#7cb4ff" stroke-width="3" marker-end="url(#a)" />
+    <rect x="280" y="30" width="390" height="100" rx="12" fill="#172033" stroke="#7cb4ff" />
+    <text x="475.0" y="68" text-anchor="middle" fill="#7cb4ff" font-size="23" font-weight="600">
+      Locked indexed lookup
+    </text>
+    <text x="475.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Tenant + idempotency key
+    </text>
+    <rect x="30" y="210" width="390" height="100" rx="12" fill="#172033" stroke="#7cb4ff" />
+    <text x="225.0" y="248" text-anchor="middle" fill="#7cb4ff" font-size="23" font-weight="600">
+      Existing matching payload
+    </text>
+    <text x="225.0" y="284" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Return stored order
+    </text>
+    <rect x="530" y="210" width="390" height="100" rx="12" fill="#172033" stroke="#7cb4ff" />
+    <text x="725.0" y="248" text-anchor="middle" fill="#7cb4ff" font-size="23" font-weight="600">
+      New request
+    </text>
+    <text x="725.0" y="284" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Insert order + outbox
+    </text>
+    <rect x="530" y="360" width="390" height="100" rx="12" fill="#172033" stroke="#7cb4ff" />
+    <text x="725.0" y="398" text-anchor="middle" fill="#7cb4ff" font-size="23" font-weight="600">
+      Commit together
+    </text>
+    <text x="725.0" y="434" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Failure → rollback both
+    </text>
+  </g>
+</svg>

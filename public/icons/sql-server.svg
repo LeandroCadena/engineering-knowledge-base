@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="sql-server">
+  <ellipse cx="32" cy="14" rx="23" ry="9" fill="#172b48" stroke="#7cb4ff" stroke-width="3" />
+  <path
+    d="M9 14V48C9 61 55 61 55 48V14 M9 31C9 44 55 44 55 31"
+    fill="none"
+    stroke="#7cb4ff"
+    stroke-width="3"
+  />
+  <path d="M18 22V48M46 22V48" stroke="#7cb4ff" stroke-width="2" opacity=".6" />
+</svg>

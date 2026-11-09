@@ -1,0 +1,83 @@
+name: Quality, Go and SQL Server examples
+on:
+  pull_request:
+    paths:
+      - 'examples/sonarqube-coverage/**'
+      - 'examples/go/**'
+      - 'examples/sql-server/**'
+      - '.github/workflows/quality-go-sql-examples.yml'
+permissions:
+  contents: read
+concurrency:
+  group: quality-go-sql-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  coverage:
+    name: coverage-lcov
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: examples/sonarqube-coverage
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: examples/sonarqube-coverage/package-lock.json
+      - run: npm ci
+      - run: npm run coverage
+      - run: npm run verify:report
+  go:
+    name: go-race-vet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: examples/go
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race -count=1 -v ./...
+  sql-server:
+    name: sql-server-integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: examples/sql-server/package-lock.json
+      - name: Generate disposable database password
+        run: |
+          KB_SQL_PASSWORD="Aa1!$(openssl rand -hex 20)"
+          echo "::add-mask::$KB_SQL_PASSWORD"
+          printf 'SQLSERVER_PASSWORD=%s\n' "$KB_SQL_PASSWORD" >> "$GITHUB_ENV"
+      - name: Start development SQL Server on loopback
+        run: |
+          export MSSQL_SA_PASSWORD="$SQLSERVER_PASSWORD"
+          docker run -d --name kb-sql -p 127.0.0.1:1433:1433 \
+            -e ACCEPT_EULA=Y -e MSSQL_PID=Developer -e MSSQL_SA_PASSWORD \
+            mcr.microsoft.com/mssql/server:2022-CU22-ubuntu-22.04
+      - run: npm ci --prefix examples/sql-server
+      - run: npm test --prefix examples/sql-server
+      - name: Database failure diagnostics
+        if: failure()
+        run: docker logs kb-sql || true
+      - name: Remove disposable SQL Server
+        if: always()
+        run: docker rm -f kb-sql || true

@@ -1,0 +1,54 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 900 480"
+  role="img"
+  aria-label="Behavior assertions and LCOV are distinct evidence; the server combines imported coverage with source analysis"
+>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#83d9b4" />
+    </marker>
+  </defs>
+  <rect width="900" height="480" rx="16" fill="#0f172a" />
+  <g font-family="system-ui,sans-serif">
+    <path d="M400 80H500" fill="none" stroke="#83d9b4" stroke-width="3" marker-end="url(#a)" />
+    <path d="M215 130V190" fill="none" stroke="#83d9b4" stroke-width="3" marker-end="url(#a)" />
+    <path d="M215 290 355 350" fill="none" stroke="#83d9b4" stroke-width="3" marker-end="url(#a)" />
+    <path d="M685 290 545 350" fill="none" stroke="#83d9b4" stroke-width="3" marker-end="url(#a)" />
+    <rect x="30" y="30" width="370" height="100" rx="12" fill="#172033" stroke="#83d9b4" />
+    <text x="215.0" y="68" text-anchor="middle" fill="#83d9b4" font-size="23" font-weight="600">
+      Test execution
+    </text>
+    <text x="215.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Selected revision
+    </text>
+    <rect x="500" y="30" width="370" height="100" rx="12" fill="#172033" stroke="#83d9b4" />
+    <text x="685.0" y="68" text-anchor="middle" fill="#83d9b4" font-size="23" font-weight="600">
+      Assertions
+    </text>
+    <text x="685.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Expected business behavior
+    </text>
+    <rect x="30" y="190" width="370" height="100" rx="12" fill="#172033" stroke="#83d9b4" />
+    <text x="215.0" y="228" text-anchor="middle" fill="#83d9b4" font-size="23" font-weight="600">
+      LCOV report
+    </text>
+    <text x="215.0" y="264" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Instrumented execution
+    </text>
+    <rect x="500" y="190" width="370" height="100" rx="12" fill="#172033" stroke="#83d9b4" />
+    <text x="685.0" y="228" text-anchor="middle" fill="#83d9b4" font-size="23" font-weight="600">
+      Source analysis
+    </text>
+    <text x="685.0" y="264" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Configured language rules
+    </text>
+    <rect x="265" y="350" width="370" height="100" rx="12" fill="#172033" stroke="#83d9b4" />
+    <text x="450.0" y="388" text-anchor="middle" fill="#83d9b4" font-size="23" font-weight="600">
+      Quality gate
+    </text>
+    <text x="450.0" y="424" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Configured acceptance policy
+    </text>
+  </g>
+</svg>
