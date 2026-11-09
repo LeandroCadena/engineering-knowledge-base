@@ -19,12 +19,15 @@ test('preview preserves a fitting prefix, counts dividers, and reserves overflow
   let previous = 0;
   for (let width = OVERFLOW_CELL; width <= 1200; width++) {
     const count = fittingPreviewCount(items, width);
-    assert.ok(count >= previous && count <= 10);
-    assert.ok(previewWidth(items, count) + OVERFLOW_CELL <= width);
-    if (count < 10) assert.ok(previewWidth(items, count + 1) + OVERFLOW_CELL > width);
+    assert.ok(count >= previous && count <= items.length);
+    assert.ok(previewWidth(items, count) + (count < items.length ? OVERFLOW_CELL : 0) <= width);
+    if (count < items.length)
+      assert.ok(
+        previewWidth(items, count + 1) + (count + 1 < items.length ? OVERFLOW_CELL : 0) > width,
+      );
     previous = count;
   }
-  assert.equal(fittingPreviewCount(items, 1200), 10);
+  assert.equal(fittingPreviewCount(items, 1200), items.length);
   assert.equal(previewWidth(items, 3), 108);
   assert.equal(previewWidth(items, 4), 161);
 });

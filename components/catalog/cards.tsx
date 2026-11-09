@@ -34,11 +34,11 @@ export function CategoryCard({ category }: { category: Category }) {
         group,
         groupTitle: getCategory(group)?.title ?? category.title,
         available: !!topic.contentPath,
+        href: topicHref(topic),
       })),
   );
   return (
-    <Link
-      href={categoryHref(category)}
+    <article
       className="category-card"
       data-category={category.id}
       data-area={root.id}
@@ -53,24 +53,34 @@ export function CategoryCard({ category }: { category: Category }) {
           <span className="category-card-label">
             {category.parent ? 'Explore section' : 'Explore area'}
           </span>
-          <span className="category-card-arrow" aria-hidden="true">
-            ↗
-          </span>
+          <div className="category-card-meta">
+            <p id={`category-${category.id}-counts`} className="category-card-counts">
+              {sections > 0 && <span>{sections} sections · </span>}
+              {available} available · {readings.length - available} planned
+            </p>
+            <span className="category-card-arrow" aria-hidden="true">
+              ↗
+            </span>
+          </div>
         </div>
-        <h2 id={`category-${category.id}-title`}>{category.title}</h2>
+        <h2 id={`category-${category.id}-title`}>
+          <Link
+            className="category-card-link"
+            href={categoryHref(category)}
+            aria-describedby={`category-${category.id}-description category-${category.id}-counts`}
+          >
+            {category.title}
+          </Link>
+        </h2>
         <p id={`category-${category.id}-description`} className="category-card-description">
           {category.description}
         </p>
         <div className="category-card-footer">
-          <CategoryPreview items={items} />
-          <p id={`category-${category.id}-counts`} className="category-card-counts">
-            {sections > 0 && <span>{sections} sections · </span>}
-            {available} available · {readings.length - available} planned
-          </p>
+          <CategoryPreview items={items} categoryHref={categoryHref(category)} />
         </div>
       </div>
       <span className="category-card-motif" aria-hidden="true" />
-    </Link>
+    </article>
   );
 }
 export async function TopicCard({ topic }: { topic: Topic }) {

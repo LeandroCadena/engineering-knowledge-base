@@ -1,12 +1,12 @@
 export type PreviewItem = {
   id: string;
+  href: string;
   title: string;
   icon: string | null;
   group: string;
   groupTitle: string;
   available: boolean;
 };
-export const PREVIEW_LIMIT = 10;
 export const ICON_CELL = 36;
 export const GROUP_DIVIDER = 17;
 export const OVERFLOW_CELL = 48;
@@ -20,8 +20,7 @@ export function previewWidth(items: Pick<PreviewItem, 'group'>[], count: number)
   return width;
 }
 export function fittingPreviewCount(items: Pick<PreviewItem, 'group'>[], width: number) {
-  const limit = Math.min(items.length, PREVIEW_LIMIT);
-  for (let count = limit; count >= 0; count--) {
+  for (let count = items.length; count >= 0; count--) {
     const required = previewWidth(items, count) + (count < items.length ? OVERFLOW_CELL : 0);
     if (required <= width) return count;
   }
