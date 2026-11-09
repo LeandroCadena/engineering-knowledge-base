@@ -5,6 +5,7 @@ on:
       - 'examples/llm-integration/**'
       - 'examples/ai-agents/**'
       - 'examples/langgraph/**'
+      - 'examples/agentcore/**'
       - '.github/workflows/ai-examples.yml'
 permissions:
   contents: read
@@ -19,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        example: [llm-integration, ai-agents, langgraph]
+        example: [llm-integration, ai-agents, langgraph, agentcore]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -31,3 +32,8 @@ jobs:
           cache-dependency-path: examples/${{ matrix.example }}/package-lock.json
       - run: npm ci --prefix examples/${{ matrix.example }}
       - run: npm test --prefix examples/${{ matrix.example }}
+      - name: Build and inspect the AgentCore ARM64 image
+        if: matrix.example == 'agentcore'
+        run: |
+          docker build --platform linux/arm64 -t kb-agentcore:ci examples/agentcore
+          test "$(docker image inspect kb-agentcore:ci --format '{{.Architecture}}')" = arm64

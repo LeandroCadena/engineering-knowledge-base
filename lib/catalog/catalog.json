@@ -1050,7 +1050,8 @@
         "langgraph",
         "application-security",
         "distributed-systems",
-        "event-driven-architecture"
+        "event-driven-architecture",
+        "agentcore"
       ],
       "order": 65,
       "readingFile": "reading"
@@ -1065,8 +1066,28 @@
       "icon": "langgraph.svg",
       "tags": ["ai", "agents", "orchestration"],
       "prerequisites": ["typescript", "ai-agents"],
-      "related": ["llm-integration", "postgresql", "distributed-systems", "opentelemetry"],
+      "related": [
+        "llm-integration",
+        "postgresql",
+        "distributed-systems",
+        "opentelemetry",
+        "agentcore"
+      ],
       "order": 66,
+      "readingFile": "reading"
+    },
+    {
+      "id": "agentcore",
+      "title": "Amazon Bedrock AgentCore",
+      "category": "aws",
+      "description": "Runtime HTTP hosting, session ownership, IAM/inbound/outbound boundaries, Gateway, Memory, deployment, observability, and local TypeScript contract tests.",
+      "contentPath": "cloud/aws/agentcore",
+      "status": "review",
+      "icon": "agentcore.svg",
+      "tags": ["aws", "ai", "runtime"],
+      "prerequisites": ["aws-iam", "ai-agents"],
+      "related": ["langgraph", "llm-integration", "docker", "opentelemetry", "cloudwatch"],
+      "order": 67,
       "readingFile": "reading"
     }
   ],

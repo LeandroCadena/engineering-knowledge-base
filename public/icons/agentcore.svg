@@ -1,0 +1,15 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 64 64"
+  role="img"
+  aria-label="Amazon Bedrock AgentCore"
+>
+  <path d="M32 4 57 18V46L32 60 7 46V18Z" fill="#202b50" stroke="#a4baff" stroke-width="3" />
+  <path
+    d="M32 16 46 24V40L32 48 18 40V24Z M18 24 32 32 46 24M32 32V48"
+    fill="none"
+    stroke="#cbd5ff"
+    stroke-width="3"
+  />
+  <circle cx="32" cy="32" r="5" fill="#a4baff" />
+</svg>
