@@ -1,0 +1,120 @@
+name: Delivery and GraphQL examples
+on:
+  pull_request:
+    paths:
+      - 'examples/github-actions/**'
+      - 'examples/kubernetes/**'
+      - 'examples/graphql/**'
+      - '.github/workflows/delivery-graphql-examples.yml'
+permissions:
+  contents: read
+concurrency:
+  group: delivery-examples-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  BUILD_COMMIT: ${{ github.sha }}
+jobs:
+  checks:
+    name: example-${{ matrix.example }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [github-actions, kubernetes, graphql]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: examples/${{ matrix.example }}/package-lock.json
+      - run: npm ci --prefix examples/${{ matrix.example }}
+      - run: npm test --prefix examples/${{ matrix.example }}
+  package:
+    name: package-artifact
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: examples/github-actions
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: npm run package
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: demo-${{ github.run_id }}-${{ github.run_attempt }}
+          path: examples/github-actions/dist/
+          if-no-files-found: error
+          retention-days: 3
+  verify:
+    name: verify-artifact
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: demo-${{ github.run_id }}-${{ github.run_attempt }}
+          path: examples/github-actions/dist
+      - run: npm run verify --prefix examples/github-actions
+  cluster:
+    name: kubernetes-kind
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install versioned kind and kubectl
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          cd "$RUNNER_TEMP"
+          curl -fsSLO https://github.com/kubernetes-sigs/kind/releases/download/v0.30.0/kind-linux-amd64
+          curl -fsSLO https://github.com/kubernetes-sigs/kind/releases/download/v0.30.0/kind-linux-amd64.sha256sum
+          sha256sum -c kind-linux-amd64.sha256sum
+          install -m 755 kind-linux-amd64 "$RUNNER_TEMP/bin/kind"
+          curl -fsSLo kubectl https://dl.k8s.io/release/v1.34.0/bin/linux/amd64/kubectl
+          curl -fsSLo kubectl.sha256 https://dl.k8s.io/release/v1.34.0/bin/linux/amd64/kubectl.sha256
+          echo "$(cat kubectl.sha256)  kubectl" | sha256sum -c -
+          install -m 755 kubectl "$RUNNER_TEMP/bin/kubectl"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Start disposable cluster
+        run: kind create cluster --name kb-example --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a --wait 120s
+      - name: Build and load local image
+        run: |
+          docker build -t kb-demo:v1 examples/kubernetes
+          kind load docker-image kb-demo:v1 --name kb-example
+      - name: Verify probes, rollout and rollback
+        run: bash examples/kubernetes/verify-cluster.sh
+      - name: Failure diagnostics
+        if: failure()
+        run: |
+          kubectl --context kind-kb-example get pods -o wide || true
+          kubectl --context kind-kb-example describe deployment demo-api || true
+          kubectl --context kind-kb-example describe pods || true
+      - name: Remove disposable cluster
+        if: always()
+        run: |
+          if command -v kind >/dev/null 2>&1; then
+            kind delete cluster --name kb-example
+          fi

@@ -720,16 +720,17 @@
     },
     {
       "id": "github-actions",
-      "title": "GitHub Actions",
+      "title": "GitHub Actions / CI-CD",
       "category": "delivery",
-      "description": "Validation pipelines, builds, deployments, and rollback.",
-      "contentPath": null,
-      "status": "planned",
-      "icon": null,
-      "tags": [],
-      "prerequisites": [],
-      "related": [],
-      "order": 43
+      "description": "Workflow execution, event revisions, reproducible checks, artifacts, credentials, deployment coordination, and recovery.",
+      "contentPath": "delivery/github-actions",
+      "status": "review",
+      "icon": "github-actions.svg",
+      "tags": ["ci-cd", "delivery"],
+      "prerequisites": ["git", "package-managers"],
+      "related": ["docker", "testcontainers", "kubernetes", "application-security"],
+      "order": 43,
+      "readingFile": "reading"
     },
     {
       "id": "cloudwatch",
@@ -933,6 +934,34 @@
       "prerequisites": ["distributed-systems"],
       "related": ["microservices", "ddd", "kafka", "rabbitmq"],
       "order": 58,
+      "readingFile": "reading"
+    },
+    {
+      "id": "kubernetes",
+      "order": 59,
+      "title": "Kubernetes",
+      "category": "delivery",
+      "description": "Reconciliation, workloads, services, resource limits, probes, rolling updates, storage, security, and cluster diagnostics.",
+      "contentPath": "delivery/kubernetes",
+      "status": "review",
+      "icon": "kubernetes.svg",
+      "tags": ["containers", "delivery"],
+      "prerequisites": ["docker"],
+      "related": ["github-actions", "microservices", "system-design", "opentelemetry"],
+      "readingFile": "reading"
+    },
+    {
+      "id": "graphql",
+      "order": 60,
+      "title": "GraphQL",
+      "category": "web",
+      "description": "Schema contracts, resolver execution, nullability, authorization, request-scoped batching, pagination, and demand control.",
+      "contentPath": "web/graphql",
+      "status": "review",
+      "icon": "graphql.svg",
+      "tags": ["api", "graphql"],
+      "prerequisites": ["http", "typescript"],
+      "related": ["rest", "nestjs", "application-security", "postgresql"],
       "readingFile": "reading"
     }
   ],
