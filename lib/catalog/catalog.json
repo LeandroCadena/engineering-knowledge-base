@@ -812,14 +812,15 @@
       "id": "backend-architecture",
       "title": "Backend Application Architecture",
       "category": "foundations",
-      "description": "Layers, hexagonal architecture, Clean Architecture, and modular monoliths.",
-      "contentPath": null,
-      "status": "planned",
-      "icon": null,
+      "description": "Layers, ports and adapters, Clean Architecture, use-case boundaries, modular monoliths, transaction ownership, persistence mapping, and incremental architectural change in TypeScript.",
+      "contentPath": "foundations/backend-architecture",
+      "status": "review",
+      "icon": "backend-architecture.svg",
       "tags": [],
       "prerequisites": ["solid"],
       "related": ["nestjs", "ddd", "design-patterns"],
-      "order": 50
+      "order": 50,
+      "readingFile": "reading"
     },
     {
       "id": "system-design",
