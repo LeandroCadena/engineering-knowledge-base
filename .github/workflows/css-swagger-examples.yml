@@ -1,0 +1,36 @@
+name: Tailwind and Nest Swagger examples
+on:
+  pull_request:
+    paths:
+      - 'examples/tailwind-css/**'
+      - 'examples/nestjs-swagger/**'
+      - '.github/workflows/css-swagger-examples.yml'
+permissions:
+  contents: read
+concurrency:
+  group: css-swagger-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  examples:
+    name: verify-${{ matrix.example }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [tailwind-css, nestjs-swagger]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: examples/${{ matrix.example }}/package-lock.json
+      - run: npm ci --prefix examples/${{ matrix.example }}
+      - name: Install browser and system dependencies
+        if: matrix.example == 'tailwind-css'
+        working-directory: examples/tailwind-css
+        run: npx playwright install --with-deps chromium
+      - run: npm test --prefix examples/${{ matrix.example }}

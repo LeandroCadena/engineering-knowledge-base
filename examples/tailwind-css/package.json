@@ -1,0 +1,19 @@
+{
+  "name": "tailwind-css-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tailwindcss -i ./input.css -o ./dist/style.css --minify",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "preview": "node serve.mjs"
+  },
+  "devDependencies": {
+    "tailwindcss": "4.3.5",
+    "@tailwindcss/cli": "4.3.5",
+    "playwright": "1.65.0"
+  }
+}
