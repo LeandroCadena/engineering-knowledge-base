@@ -1,0 +1,54 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1000 480"
+  role="img"
+  aria-label="Visible documents and ticket data build bounded context; generated decisions require local validation"
+>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#c6a6ff" />
+    </marker>
+  </defs>
+  <rect width="1000" height="480" rx="16" fill="#0f172a" />
+  <g font-family="system-ui,sans-serif">
+    <path d="M160 130 365 220" fill="none" stroke="#c6a6ff" stroke-width="3" marker-end="url(#a)" />
+    <path d="M840 130 635 220" fill="none" stroke="#c6a6ff" stroke-width="3" marker-end="url(#a)" />
+    <path d="M365 270 295 380" fill="none" stroke="#c6a6ff" stroke-width="3" marker-end="url(#a)" />
+    <path d="M295 400H705" fill="none" stroke="#c6a6ff" stroke-width="3" marker-end="url(#a)" />
+    <rect x="25" y="30" width="270" height="100" rx="12" fill="#172033" stroke="#c6a6ff" />
+    <text x="160.0" y="68" text-anchor="middle" fill="#c6a6ff" font-size="23" font-weight="600">
+      Actor scope
+    </text>
+    <text x="160.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Filter visible evidence
+    </text>
+    <rect x="705" y="30" width="270" height="100" rx="12" fill="#172033" stroke="#c6a6ff" />
+    <text x="840.0" y="68" text-anchor="middle" fill="#c6a6ff" font-size="23" font-weight="600">
+      Input
+    </text>
+    <text x="840.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Ticket + task instructions
+    </text>
+    <rect x="365" y="190" width="270" height="100" rx="12" fill="#172033" stroke="#c6a6ff" />
+    <text x="500.0" y="228" text-anchor="middle" fill="#c6a6ff" font-size="23" font-weight="600">
+      Bounded context
+    </text>
+    <text x="500.0" y="264" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Authorized evidence only
+    </text>
+    <rect x="25" y="350" width="270" height="100" rx="12" fill="#172033" stroke="#c6a6ff" />
+    <text x="160.0" y="388" text-anchor="middle" fill="#c6a6ff" font-size="23" font-weight="600">
+      Provider response
+    </text>
+    <text x="160.0" y="424" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      May refuse or truncate
+    </text>
+    <rect x="705" y="350" width="270" height="100" rx="12" fill="#172033" stroke="#c6a6ff" />
+    <text x="840.0" y="388" text-anchor="middle" fill="#c6a6ff" font-size="23" font-weight="600">
+      Validated decision
+    </text>
+    <text x="840.0" y="424" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Shape + local rules
+    </text>
+  </g>
+</svg>

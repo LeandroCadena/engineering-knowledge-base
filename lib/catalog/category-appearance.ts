@@ -10,6 +10,7 @@ export const areaColors: Record<string, string> = {
   delivery: '#d9b18b',
   quality: '#83d9b4',
   security: '#f19db3',
+  ai: '#c6a6ff',
 };
 export type CategoryMotif =
   | 'layers'
@@ -33,6 +34,7 @@ export const categoryMotifs: Record<string, CategoryMotif> = {
   delivery: 'blocks',
   quality: 'check',
   security: 'shield',
+  ai: 'events',
   'js-languages': 'code',
   'js-backend': 'layers',
   'js-frontend': 'window',
