@@ -826,14 +826,15 @@
       "id": "system-design",
       "title": "System Architecture & System Design",
       "category": "foundations",
-      "description": "Requirements, capacity, scaling, availability, costs, and trade-offs.",
-      "contentPath": null,
-      "status": "planned",
-      "icon": null,
+      "description": "Requirements, capacity estimates, system boundaries, data and traffic flows, scaling, reliability, recovery, security, observability, costs, and evidence-driven architectural trade-offs.",
+      "contentPath": "foundations/system-design",
+      "status": "review",
+      "icon": "system-design.svg",
       "tags": [],
-      "prerequisites": [],
+      "prerequisites": ["backend-architecture"],
       "related": ["distributed-systems", "backend-architecture", "postgresql"],
-      "order": 51
+      "order": 51,
+      "readingFile": "reading"
     },
     {
       "id": "distributed-systems",
