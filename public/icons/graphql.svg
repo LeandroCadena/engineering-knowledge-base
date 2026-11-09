@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="graphql">
+  <path
+    d="M32 6 55 19V45L32 58 9 45V19Z M32 6 9 45H55Z M9 19 55 45M55 19 9 45"
+    fill="none"
+    stroke="#e879f9"
+    stroke-width="2.5"
+  />
+  <circle cx="32" cy="6" r="4" fill="#e879f9" />
+  <circle cx="55" cy="19" r="4" fill="#e879f9" />
+  <circle cx="55" cy="45" r="4" fill="#e879f9" />
+  <circle cx="32" cy="58" r="4" fill="#e879f9" />
+  <circle cx="9" cy="45" r="4" fill="#e879f9" />
+  <circle cx="9" cy="19" r="4" fill="#e879f9" />
+</svg>

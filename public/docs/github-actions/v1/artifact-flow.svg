@@ -1,0 +1,30 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 870 310"
+  role="img"
+  aria-label="Artifact handoff"
+>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#93c5fd" />
+    </marker>
+  </defs>
+  <rect width="870" height="310" rx="16" fill="#0f172a" />
+  <g font-family="system-ui,sans-serif">
+    <path d="M405 80H465" stroke="#93c5fd" stroke-width="3" fill="none" marker-end="url(#arrow)" />
+    <path d="M652 130V180" stroke="#93c5fd" stroke-width="3" fill="none" marker-end="url(#arrow)" />
+    <path d="M465 230H405" stroke="#93c5fd" stroke-width="3" fill="none" marker-end="url(#arrow)" />
+    <rect x="30" y="30" width="375" height="100" rx="12" fill="#172033" stroke="#93c5fd" />
+    <text x="52" y="68" fill="#93c5fd" font-size="24" font-weight="600">Checks</text>
+    <text x="52" y="103" fill="#e2e8f0" font-size="20">Selected revision</text>
+    <rect x="465" y="30" width="375" height="100" rx="12" fill="#172033" stroke="#93c5fd" />
+    <text x="487" y="68" fill="#93c5fd" font-size="24" font-weight="600">Package once</text>
+    <text x="487" y="103" fill="#e2e8f0" font-size="20">Commit + digest</text>
+    <rect x="30" y="180" width="375" height="100" rx="12" fill="#172033" stroke="#93c5fd" />
+    <text x="52" y="218" fill="#93c5fd" font-size="24" font-weight="600">Verify</text>
+    <text x="52" y="253" fill="#e2e8f0" font-size="20">Expected SHA + bytes</text>
+    <rect x="465" y="180" width="375" height="100" rx="12" fill="#172033" stroke="#93c5fd" />
+    <text x="487" y="218" fill="#93c5fd" font-size="24" font-weight="600">Upload / download</text>
+    <text x="487" y="253" fill="#e2e8f0" font-size="20">Same run + attempt</text>
+  </g>
+</svg>

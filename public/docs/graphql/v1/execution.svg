@@ -1,0 +1,36 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 870 310"
+  role="img"
+  aria-label="GraphQL execution"
+>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#f0abfc" />
+    </marker>
+  </defs>
+  <rect width="870" height="310" rx="16" fill="#0f172a" />
+  <g font-family="system-ui,sans-serif">
+    <path d="M217 130V180" stroke="#f0abfc" stroke-width="3" fill="none" marker-end="url(#arrow)" />
+    <path
+      d="M465 80 405 200"
+      stroke="#f0abfc"
+      stroke-width="3"
+      fill="none"
+      marker-end="url(#arrow)"
+    />
+    <path d="M405 230H465" stroke="#f0abfc" stroke-width="3" fill="none" marker-end="url(#arrow)" />
+    <rect x="30" y="30" width="375" height="100" rx="12" fill="#172033" stroke="#f0abfc" />
+    <text x="52" y="68" fill="#f0abfc" font-size="24" font-weight="600">Document + variables</text>
+    <text x="52" y="103" fill="#e2e8f0" font-size="20">Parse and validate</text>
+    <rect x="465" y="30" width="375" height="100" rx="12" fill="#172033" stroke="#f0abfc" />
+    <text x="487" y="68" fill="#f0abfc" font-size="24" font-weight="600">Trusted context</text>
+    <text x="487" y="103" fill="#e2e8f0" font-size="20">Actor + tenant</text>
+    <rect x="30" y="180" width="375" height="100" rx="12" fill="#172033" stroke="#f0abfc" />
+    <text x="52" y="218" fill="#f0abfc" font-size="24" font-weight="600">Resolvers</text>
+    <text x="52" y="253" fill="#e2e8f0" font-size="20">Scoped business access</text>
+    <rect x="465" y="180" width="375" height="100" rx="12" fill="#172033" stroke="#f0abfc" />
+    <text x="487" y="218" fill="#f0abfc" font-size="24" font-weight="600">Request loader</text>
+    <text x="487" y="253" fill="#e2e8f0" font-size="20">Batch + ordered results</text>
+  </g>
+</svg>
