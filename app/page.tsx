@@ -31,10 +31,7 @@ export default function HomePage() {
             unified: !!t.readingFile,
           }))}
       />
-      <section
-        aria-label="Knowledge areas"
-        className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-      >
+      <section aria-label="Knowledge areas" className="mt-10 grid grid-cols-1 gap-4">
         {categories
           .filter((category) => !category.parent)
           .map((category) => (

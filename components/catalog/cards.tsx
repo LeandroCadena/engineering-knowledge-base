@@ -1,8 +1,15 @@
+import type { CSSProperties } from 'react';
+import { areaColor, categoryMotifs } from '@/lib/catalog/category-appearance';
+import { CategoryMark } from './category-mark';
+import { CategoryPreview } from './category-preview';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
   categoryHref,
   categoryTopics,
+  categoryTrail,
+  categories,
+  getCategory,
   statusLabels,
   topicHref,
   type Category,
@@ -12,19 +19,57 @@ import { topicMinutes } from '@/lib/catalog/server';
 export function CategoryCard({ category }: { category: Category }) {
   const readings = categoryTopics(category.id);
   const available = readings.filter((topic) => topic.contentPath).length;
+  const sections = categories.filter((item) => item.parent === category.id).length;
+  const root = categoryTrail(category.id)[0] ?? category;
+  const motif = categoryMotifs[category.id] ?? 'layers';
+  // Group by the owning category; preserve the catalog order inside each group.
+  const groups = [...new Set(readings.map((topic) => topic.category))];
+  const items = groups.flatMap((group) =>
+    readings
+      .filter((topic) => topic.category === group)
+      .map((topic) => ({
+        id: topic.id,
+        title: topic.title,
+        icon: topic.icon,
+        group,
+        groupTitle: getCategory(group)?.title ?? category.title,
+        available: !!topic.contentPath,
+      })),
+  );
   return (
     <Link
       href={categoryHref(category)}
-      className="group flex h-full flex-col rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 transition hover:border-emerald-600 hover:bg-zinc-900"
+      className="category-card"
+      data-category={category.id}
+      data-area={root.id}
+      data-motif={motif}
+      style={{ '--area-accent': areaColor(root.id) } as CSSProperties}
+      aria-labelledby={`category-${category.id}-title`}
+      aria-describedby={`category-${category.id}-description category-${category.id}-counts`}
     >
-      <span className="text-xs font-semibold tracking-widest text-emerald-400 uppercase">
-        Explore area <span aria-hidden="true">↗</span>
-      </span>
-      <h2 className="mt-4 text-xl font-semibold text-zinc-100">{category.title}</h2>
-      <p className="mt-3 flex-1 text-sm leading-6 text-zinc-400">{category.description}</p>
-      <p className="mt-6 text-xs text-zinc-500">
-        {available} available · {readings.length - available} planned
-      </p>
+      <CategoryMark motif={motif} javascript={category.id === 'javascript'} />
+      <div className="category-card-content">
+        <div className="category-card-heading">
+          <span className="category-card-label">
+            {category.parent ? 'Explore section' : 'Explore area'}
+          </span>
+          <span className="category-card-arrow" aria-hidden="true">
+            ↗
+          </span>
+        </div>
+        <h2 id={`category-${category.id}-title`}>{category.title}</h2>
+        <p id={`category-${category.id}-description`} className="category-card-description">
+          {category.description}
+        </p>
+        <div className="category-card-footer">
+          <CategoryPreview items={items} />
+          <p id={`category-${category.id}-counts`} className="category-card-counts">
+            {sections > 0 && <span>{sections} sections · </span>}
+            {available} available · {readings.length - available} planned
+          </p>
+        </div>
+      </div>
+      <span className="category-card-motif" aria-hidden="true" />
     </Link>
   );
 }
