@@ -840,14 +840,15 @@
       "id": "distributed-systems",
       "title": "Distributed Systems",
       "category": "foundations",
-      "description": "Partial failures, consistency, replication, idempotency, and delivery guarantees.",
-      "contentPath": null,
-      "status": "planned",
-      "icon": null,
+      "description": "Partial failures, clocks and ordering, consistency models, replication, quorums, consensus, leases, idempotent effects, delivery semantics, recovery, and fault-oriented verification.",
+      "contentPath": "foundations/distributed-systems",
+      "status": "review",
+      "icon": "distributed-systems.svg",
       "tags": ["distributed"],
-      "prerequisites": [],
-      "related": [],
-      "order": 52
+      "prerequisites": ["system-design"],
+      "related": ["system-design", "postgresql", "redis", "kafka", "rabbitmq"],
+      "order": 52,
+      "readingFile": "reading"
     },
     {
       "id": "data-structures",
