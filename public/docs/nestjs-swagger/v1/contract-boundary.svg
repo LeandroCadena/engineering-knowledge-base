@@ -1,0 +1,47 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 900 480"
+  role="img"
+  aria-label="Source metadata generates a description while runtime controls enforce behavior; tests compare both"
+>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#fb7185" />
+    </marker>
+  </defs>
+  <rect width="900" height="480" rx="16" fill="#0f172a" />
+  <g font-family="system-ui,sans-serif">
+    <path d="M355 130 215 190" fill="none" stroke="#fb7185" stroke-width="3" marker-end="url(#a)" />
+    <path d="M545 130 685 190" fill="none" stroke="#fb7185" stroke-width="3" marker-end="url(#a)" />
+    <path d="M215 290 355 350" fill="none" stroke="#fb7185" stroke-width="3" marker-end="url(#a)" />
+    <path d="M685 290 545 350" fill="none" stroke="#fb7185" stroke-width="3" marker-end="url(#a)" />
+    <rect x="265" y="30" width="370" height="100" rx="12" fill="#172033" stroke="#fb7185" />
+    <text x="450.0" y="68" text-anchor="middle" fill="#fb7185" font-size="23" font-weight="600">
+      Nest source
+    </text>
+    <text x="450.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Route + DTO definitions
+    </text>
+    <rect x="30" y="190" width="370" height="100" rx="12" fill="#172033" stroke="#fb7185" />
+    <text x="215.0" y="228" text-anchor="middle" fill="#fb7185" font-size="23" font-weight="600">
+      OpenAPI description
+    </text>
+    <text x="215.0" y="264" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Schema + operation metadata
+    </text>
+    <rect x="500" y="190" width="370" height="100" rx="12" fill="#172033" stroke="#fb7185" />
+    <text x="685.0" y="228" text-anchor="middle" fill="#fb7185" font-size="23" font-weight="600">
+      Runtime controls
+    </text>
+    <text x="685.0" y="264" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Pipes + guards + projection
+    </text>
+    <rect x="265" y="350" width="370" height="100" rx="12" fill="#172033" stroke="#fb7185" />
+    <text x="450.0" y="388" text-anchor="middle" fill="#fb7185" font-size="23" font-weight="600">
+      Contract tests
+    </text>
+    <text x="450.0" y="424" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Document vs HTTP behavior
+    </text>
+  </g>
+</svg>

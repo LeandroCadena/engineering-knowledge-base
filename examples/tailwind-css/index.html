@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tailwind CSS compiled contract</title>
+    <link rel="stylesheet" href="./dist/style.css" />
+  </head>
+  <body class="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
+    <main class="mx-auto max-w-5xl p-6">
+      <h1 class="text-2xl font-bold">Compiled utility behavior</h1>
+      <button
+        id="theme"
+        type="button"
+        class="focus-visible:outline-brand-500 mt-4 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        Toggle theme
+      </button>
+      <section
+        id="grid"
+        aria-label="Example cards"
+        class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2"
+      >
+        <article id="container" class="@container rounded-lg border p-4">
+          <div id="layout" class="flex flex-col gap-3 @sm:flex-row">
+            <h2 class="font-semibold">Order summary</h2>
+            <p class="min-w-0 break-words">A card adapts to its container's available width.</p>
+          </div>
+        </article>
+        <article class="rounded-lg border p-4">
+          <h2 class="font-semibold">Explicit variant mapping</h2>
+          <button
+            id="action"
+            type="button"
+            class="focus-visible:outline-brand-500 mt-3 rounded-lg px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Save order
+          </button>
+          <button
+            id="disabled"
+            type="button"
+            disabled
+            class="bg-brand-500 mt-3 rounded-lg px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Saving
+          </button>
+        </article>
+      </section>
+      <p id="missing" class="mt-6 p-3">
+        Runtime class concatenation has no generated background rule.
+      </p>
+    </main>
+    <script type="module">
+      import { tones } from './variants.mjs';
+      document.querySelector('#action').classList.add(...tones.info.split(' '));
+      const color = 'rose';
+      document.querySelector('#missing').classList.add('bg-' + color + '-500');
+      document
+        .querySelector('#theme')
+        .addEventListener('click', () => document.documentElement.classList.toggle('dark'));
+    </script>
+  </body>
+</html>

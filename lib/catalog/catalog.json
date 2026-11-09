@@ -248,14 +248,15 @@
       "id": "tailwind-css",
       "title": "Tailwind CSS",
       "category": "js-frontend",
-      "description": "Understand what Tailwind CSS is, why it exists, and how its utility-first approach enables developers to build consistent, responsive, and highly customizable user interfaces without writing traditional CSS for every component.",
+      "description": "Utility compilation and source detection, v4 theme tokens, cascade layers, layout, responsive/container queries, state variants, dark mode, and browser verification.",
       "contentPath": "javascript-ecosystem/libraries/frontend/tailwind-css",
-      "status": "complete",
+      "status": "review",
       "icon": "tailwind-css.png",
-      "tags": [],
+      "tags": ["css", "frontend"],
       "prerequisites": [],
-      "related": [],
-      "order": 7
+      "related": ["react", "nextjs", "chrome-devtools"],
+      "order": 7,
+      "readingFile": "reading"
     },
     {
       "id": "jest",
@@ -275,14 +276,15 @@
       "id": "nestjs-swagger",
       "title": "@nestjs/swagger",
       "category": "js-libraries",
-      "description": "Understand how @nestjs/swagger integrates OpenAPI with NestJS, generates API descriptions from application metadata, and exposes them to documentation and API tooling.",
+      "description": "Nest OpenAPI generation, DTO metadata, parameters and responses, generic models, mapped-type semantics, security declarations, compiler integration, and HTTP contract tests.",
       "contentPath": "javascript-ecosystem/libraries/API-documentation/nestjs-swagger",
-      "status": "complete",
+      "status": "review",
       "icon": "nestjs-swagger.png",
-      "tags": ["api"],
-      "prerequisites": [],
-      "related": [],
-      "order": 9
+      "tags": ["api", "openapi"],
+      "prerequisites": ["nestjs", "openapi"],
+      "related": ["rest", "supertest", "application-security", "typescript"],
+      "order": 9,
+      "readingFile": "reading"
     },
     {
       "id": "http",

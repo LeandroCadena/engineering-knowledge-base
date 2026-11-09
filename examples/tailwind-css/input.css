@@ -1,0 +1,8 @@
+@import 'tailwindcss' source(none);
+@source './index.html';
+@source './variants.mjs';
+@theme {
+  --color-brand-500: #0369a1;
+  --color-brand-600: #075985;
+}
+@custom-variant dark (&:where(.dark, .dark *));

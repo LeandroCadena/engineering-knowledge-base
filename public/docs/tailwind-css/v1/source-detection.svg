@@ -1,0 +1,54 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 900 480"
+  role="img"
+  aria-label="Detected complete tokens generate rules; runtime class names need matching compiled CSS"
+>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#67d5e5" />
+    </marker>
+  </defs>
+  <rect width="900" height="480" rx="16" fill="#0f172a" />
+  <g font-family="system-ui,sans-serif">
+    <path d="M215 130V190" fill="none" stroke="#67d5e5" stroke-width="3" marker-end="url(#a)" />
+    <path d="M685 130V190" fill="none" stroke="#67d5e5" stroke-width="3" marker-end="url(#a)" />
+    <path d="M215 290 355 350" fill="none" stroke="#67d5e5" stroke-width="3" marker-end="url(#a)" />
+    <path d="M685 290 545 350" fill="none" stroke="#67d5e5" stroke-width="3" marker-end="url(#a)" />
+    <rect x="30" y="30" width="370" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="215.0" y="68" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      Detected sources
+    </text>
+    <text x="215.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Complete class tokens
+    </text>
+    <rect x="500" y="30" width="370" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="685.0" y="68" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      Runtime selection
+    </text>
+    <text x="685.0" y="104" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Names can lack rules
+    </text>
+    <rect x="30" y="190" width="370" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="215.0" y="228" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      Compiled CSS
+    </text>
+    <text x="215.0" y="264" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Generated utility rules
+    </text>
+    <rect x="500" y="190" width="370" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="685.0" y="228" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      DOM class names
+    </text>
+    <text x="685.0" y="264" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Requested styles
+    </text>
+    <rect x="265" y="350" width="370" height="100" rx="12" fill="#172033" stroke="#67d5e5" />
+    <text x="450.0" y="388" text-anchor="middle" fill="#67d5e5" font-size="23" font-weight="600">
+      Computed styles
+    </text>
+    <text x="450.0" y="424" text-anchor="middle" fill="#e2e8f0" font-size="19">
+      Matching rules + cascade
+    </text>
+  </g>
+</svg>
