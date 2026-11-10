@@ -13,6 +13,8 @@ Run `npm run setup:debugger` once before testing. It downloads the official Micr
 
 Open this directory itself in VS Code, run the build task, and use the launch or attach configuration. For manual attach, start `node --inspect-brk=127.0.0.1:9229 dist/main.js`. Place a conditional breakpoint on the marked assignment with `quantity === 2`. Inspect subtotal=2000 and fee=199, then step once to inspect total=2199.
 
+The test enables `KB_DEBUG_GATE=1`, making the fixture wait for a stdin signal until the adapter is attached and the breakpoint is verified. Normal manual execution has no gate.
+
 The automated test drives the real debug adapter against a loopback Node inspector, rather than automating the VS Code window. It checks a TypeScript source-map breakpoint, locals, evaluation and stepping. Remote tunnels, containers, test-runner workers and VS Code UI behavior are outside its assertions.
 
 ## Primary references

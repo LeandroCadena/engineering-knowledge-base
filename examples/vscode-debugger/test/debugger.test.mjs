@@ -126,21 +126,7 @@ test(
         source: { path: source },
         breakpoints: [{ line, condition: 'quantity === 2' }],
       });
-      console.log('Bound breakpoint', JSON.stringify(bound));
-      console.log(
-        'Sources',
-        JSON.stringify(
-          (await target.request('loadedSources')).sources.filter((s) =>
-            /checkout|main/.test(s.path ?? ''),
-          ),
-        ),
-      );
-      console.log(
-        'Breakpoint events',
-        JSON.stringify(target.events.filter((e) => e.event === 'breakpoint').map((e) => e.body)),
-      );
       assert.equal(bound.breakpoints[0]?.verified, true, JSON.stringify(bound));
-      debuggee.stdout.on('data', (chunk) => console.log('Fixture output', String(chunk)));
       debuggee.stdin.end('go\n');
       const stopped = await target.event('stopped');
       assert.equal(stopped.reason, 'breakpoint');
@@ -149,12 +135,19 @@ test(
       assert(frame.source.path.endsWith('checkout.ts'));
       assert.equal(frame.line, line);
       const scopes = await target.request('scopes', { frameId: frame.id });
-      const local = scopes.scopes.find((s) => s.name === 'Local');
-      const vars = await target.request('variables', {
-        variablesReference: local.variablesReference,
-      });
-      assert.equal(vars.variables.find((v) => v.name === 'subtotal').value, '2000');
-      assert.equal(vars.variables.find((v) => v.name === 'fee').value, '199');
+      const lexicalScopes = scopes.scopes.filter((scope) => !scope.expensive);
+      assert(lexicalScopes.length > 0);
+      const variables = (
+        await Promise.all(
+          lexicalScopes.map(
+            async (scope) =>
+              (await target.request('variables', { variablesReference: scope.variablesReference }))
+                .variables,
+          ),
+        )
+      ).flat();
+      assert.equal(variables.find((v) => v.name === 'subtotal')?.value, '2000');
+      assert.equal(variables.find((v) => v.name === 'fee')?.value, '199');
       const result = await target.request('evaluate', {
         frameId: frame.id,
         expression: 'subtotal + fee',
