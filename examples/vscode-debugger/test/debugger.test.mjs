@@ -8,6 +8,7 @@ test(
   'real js-debug conditional TypeScript breakpoint, locals and stepping',
   { timeout: 40000 },
   async () => {
+    process.env.KB_DAP_TRACE = '1';
     const adapterEnv = { ...process.env, NODE_USE_ENV_PROXY: '0' };
     for (const key of Object.keys(adapterEnv))
       if (/^(https?|all)_proxy$/i.test(key)) delete adapterEnv[key];
@@ -109,7 +110,12 @@ test(
       });
       await configure(root);
       await attach;
-      const target = sessions.length > 1 ? await targetReady : root;
+      const target = await Promise.race([
+        targetReady,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Child debug session did not attach')), 10000).unref(),
+        ),
+      ]);
       const stopped = await target.event('stopped');
       assert.equal(stopped.reason, 'breakpoint');
       const stack = await target.request('stackTrace', { threadId: stopped.threadId });
