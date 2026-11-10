@@ -34,4 +34,4 @@ No remote effect occurs inside the transaction. The example does not make an ext
 - [PostgreSQL: transaction isolation](https://www.postgresql.org/docs/current/transaction-iso.html)
 - [SQLite: transaction control](https://www.sqlite.org/lang_transaction.html)
 
-The two SVG diagrams are editable sources in `public/docs/distributed-systems/v1`. The icon is an original conceptual illustration.
+The six scenario diagrams used by the reading are editable sources in `public/docs/distributed-systems/v2`; the earlier diagrams remain in `v1` for existing links. The icon is an original conceptual illustration.

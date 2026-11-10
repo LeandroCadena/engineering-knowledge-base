@@ -1,180 +1,178 @@
 ---
 title: Distributed Systems
-description: Partial failures, clocks and ordering, consistency models, replication, quorums, consensus, leases, idempotent effects, delivery semantics, recovery, and fault-oriented verification.
+description: Follow one inventory reservation through lost responses, retries, stale replicas, network partitions, expired ownership, and duplicate messages.
 icon: distributed-systems.svg
-updatedAt: 2026-11-09
+updatedAt: 2026-11-10
 ---
 
 # Distributed Systems
 
-A distributed system coordinates components that communicate through messages and can fail independently. An API with a remote database already has distributed failure modes; microservices are not a prerequisite. A caller can lose a response while the server commits, a replica can return older data, and a paused process can resume after another process has taken ownership of its work.
+A distributed system has components that communicate over a network and can fail independently. An API using a remote database already qualifies: the database can save a change while the API loses its connection.
 
-Correctness requires defining the invariant, the authority that enforces it, and the failures under which the guarantee holds. “Reliable delivery,” “strong consistency” and “exactly once” need an operation boundary and explicit assumptions. A component's guarantee does not automatically extend across every database, queue and external provider it touches.
+Follow one operation: **reserve the last unit of a product**. The rule we must preserve is **stock never becomes negative**. This rule is an **invariant**: it must remain true despite retries, concurrent requests and component failures.
 
-The running example reserves inventory. A tenant-scoped idempotency key identifies one request intent; stock mutation and its successful receipt commit together in SQLite. A local HTTP fixture deliberately drops a response after commit, then verifies that retrying the same intent replays the receipt without another reservation. It demonstrates one local transactional boundary, not distributed consensus or an atomic transaction with a remote provider.
+## What Does a Timeout Actually Mean?
 
-## Partial Failure & Ambiguous Outcomes
+The client asks for a reservation. The server saves it, but the response disappears on the way back. The client cannot tell whether the reservation happened.
 
-A local function returning an error often tells its caller where execution stopped. A remote call can fail before transmission, during execution or after the effect has committed. A timeout or closed connection says the caller did not obtain a usable result; it does not establish which of those events occurred.
+![A reservation commits before its response is lost; the client sees an unknown result.](/docs/distributed-systems/v2/ambiguous-result.svg)
 
-| Observation                                          | What it establishes                          | What remains unknown                                 |
-| ---------------------------------------------------- | -------------------------------------------- | ---------------------------------------------------- |
-| Request rejected by local validation                 | This call did not reach the effect path      | Whether another request created an equivalent effect |
-| Response explicitly confirms a committed reservation | Server reports acceptance under its contract | Later business completion outside that boundary      |
-| Connection closes without a response                 | Caller has no confirmed result               | Whether the server committed                         |
-| Acknowledgment is lost after a consumer commits      | Broker may deliver again                     | Whether the effect already happened, unless recorded |
-| Heartbeat stops arriving                             | No recent communication was observed         | Crash, delay, partition or scheduling pause          |
+**A timeout means “I have no confirmed result,” not “nothing happened.”** Cancelling a request also does not undo a remote commit.
 
-In a fully asynchronous model, there is no known fixed upper bound on processing or message delay. Failure detection is suspicion based on time and communication. A timeout can make progress possible, but it cannot distinguish a slow process from an unreachable one with certainty in a fully asynchronous model. Reassigning work therefore needs protection against the earlier owner resuming.
+This is a **partial failure**: one component's work succeeds while another component cannot observe that success. A missing heartbeat creates the same uncertainty about a worker: it might have crashed, lost connectivity or simply paused.
 
-Distinguish **safety**, which prevents an invalid outcome, from **liveness**, which ensures useful progress under stated conditions. Never reserving any stock trivially prevents overselling but fails the business objective. Accepting every request may make progress while breaking the inventory invariant. A useful design specifies both.
+The recovery contract must offer a safe retry, a lookup by stable operation ID, or reconciliation against authoritative state. Retrying blindly can reserve the product twice.
 
-![The server commits a reservation and receipt, the response is lost, and a retry replays the same receipt.](/docs/distributed-systems/v1/lost-response.svg)
+Two properties guide the design:
 
-A caller facing an ambiguous outcome needs a recovery contract: retry the same intent safely, query a stable operation identifier, or reconcile against authoritative state. Generating a new key for each retry changes the intent and defeats duplicate suppression. Blind retries of a non-idempotent external operation can repeat its effect.
+| Property     | Inventory meaning                                                                |
+| ------------ | -------------------------------------------------------------------------------- |
+| **Safety**   | Never sell more stock than exists                                                |
+| **Liveness** | Valid reservations can eventually complete under the stated operating conditions |
 
-## Time, Causality & Ordering
+Rejecting every reservation preserves safety but makes the service useless. Accepting every request makes progress but can break the invariant.
 
-Wall clocks can differ between machines and can be adjusted. A timestamp alone does not prove that one remote event caused another or that a process still owns a lease. Use a monotonic clock to measure local elapsed time, while recognizing that local duration measurement does not synchronize separate machines.
+## How Can We Retry Without Reserving Twice?
 
-The **happened-before** relation orders events within one process and the sending of a message before its receipt, with transitive implications. Events without such a relationship are concurrent in this model, even when their wall-clock timestamps differ. Concurrent updates need an explicit conflict policy.
+The client assigns one **idempotency key** to one reservation intent and reuses it on retries. The server stores both the stock change and its successful receipt in the same transaction.
 
-Lamport clocks assign logical counters so that causally earlier events receive smaller values. The converse does not hold: a smaller counter does not prove causality. Adding a node identifier can break ties into a total order for an application, but that chosen order is not a measurement of physical time. Vector clocks can distinguish some causal relationships and concurrency at the cost of additional metadata.
+![A transaction either creates the reservation and receipt together or replays the existing receipt.](/docs/distributed-systems/v2/safe-retry.svg)
 
-A sequence number is meaningful inside its scope. A broker partition can have a definite order while two partitions have no shared total order. Processing can finish in a different order from delivery when workers run concurrently or retries are delayed. If an entity requires ordered transitions, keep a version and validate the expected predecessor or choose an appropriately scoped ordered stream.
+**Idempotency protects an effect, not packet delivery.** Two HTTP requests can reach the server while producing one reservation and the same successful result.
 
-Last-write-wins chooses a winner according to a timestamp or ordering rule; it does not merge business intent. Two concurrent increments replaced by one winning value can lose an increment. Commutative operations or a suitable CRDT can allow convergence for some data types, but an arbitrary stock or credit invariant does not become safe merely because replicas eventually agree.
+The contract needs four explicit rules:
 
-## Consistency Models & Transaction Isolation
+| Request                         | Server behavior                                  |
+| ------------------------------- | ------------------------------------------------ |
+| New scoped key                  | Apply the effect and save its receipt atomically |
+| Same key, same normalized input | Replay the saved result                          |
+| Same key, changed input         | Reject the conflict without another effect       |
+| Another intended reservation    | Use another key, even if the input is identical  |
 
-A consistency model describes which histories of observations a system permits. Select it for a particular operation rather than applying one vague adjective to the entire product.
-
-| Guarantee              | Meaning                                                                                                     | Boundary to inspect                                                    |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Linearizability        | Each operation appears to take effect once between invocation and response, preserving real-time precedence | Which object or operation is covered?                                  |
-| Sequential consistency | Operations fit a shared order preserving each process's program order                                       | That order need not preserve real-time precedence across processes     |
-| Causal consistency     | Causally related operations remain ordered                                                                  | Concurrent updates still require handling                              |
-| Eventual convergence   | Replicas converge if updates cease and communication/repair succeeds                                        | No inherent bound on staleness or immediate read-after-write guarantee |
-| Read-your-writes       | A session observes its own acknowledged writes                                                              | Session routing, failover and token propagation                        |
-
-A successful write followed by a stale replica read violates a read-your-writes expectation unless the API explicitly allows that behavior. Possible policies include reading the primary, waiting for a replication position or carrying a version token. “Retry the read after a delay” gives no strict guarantee unless the delay is backed by a bounded replication contract.
-
-Transaction isolation concerns interactions among transactions. **Serializability** means committed transactions have an outcome equivalent to some serial execution. It does not by itself impose real-time order; strict serializability adds that requirement. Linearizability commonly describes individual object operations, while serializability concerns multi-operation transactions. They are related guarantees with different scopes.
-
-An ACID database can still be used incorrectly by an application. Reading stock in one transaction and writing a derived value in another can lose an update. A conditional update, locking strategy or serializable transaction must protect the whole invariant. Serialization failures require retrying the complete transaction with fresh reads, not just its last statement.
-
-:::check{question="A write returns success, then a read from another replica returns the older value. Does eventual consistency make this a correct read-your-writes implementation?"}
-No. Eventual convergence does not provide a session's immediate read-your-writes guarantee. State whether that guarantee is required and enforce it through routing, a replication/version token, or another explicit protocol. A stale read may be permitted by one contract and violate another.
-:::
-
-## Replication, Quorums & Partitions
-
-A single-leader design routes writes through one authority and replicates its log or state. Asynchronous followers can lag; promoting a follower that lacks an acknowledged write can lose that write unless the durability and failover protocol prevents it. Synchronous acknowledgment policies reduce some risks but increase dependency on the replicas required to acknowledge.
-
-A multi-leader or leaderless design permits more than one location to receive writes. Conflicts can arise when those locations cannot communicate. Reconciliation must define whether updates are merged, rejected or resolved according to a chosen order. A hidden last-write-wins policy is still a business decision when one update overwrites another.
-
-For a fixed set of `N` replicas, `W` write acknowledgments and `R` read responses, `R + W > N` gives an overlap between those read and write sets. Overlap alone does not prove linearizability: concurrent writers, version selection, membership changes, incomplete writes and the actual quorum protocol matter. Sloppy quorums or reads from other replica sets can invalidate the simple intersection argument.
-
-**CAP** addresses the inability to guarantee both linearizable behavior and availability for every request at non-failing nodes during arbitrary network partitions. Its availability is a formal completion guarantee, not a percentage uptime SLO. Rejecting or indefinitely waiting for an operation can preserve consistency while sacrificing that availability. “Choose any two” hides the partition condition and operation scope.
-
-A partitioned inventory service can refuse reservations where it cannot establish authority, or accept local changes under a weaker contract and reconcile later. The latter may oversell unless the invariant is redesigned, for example by preallocating independent inventory rights. The network partition does not disappear because the product prefers both properties.
-
-Replication repair can use log catch-up, snapshots, read repair or anti-entropy mechanisms. Repair must handle deleted data as well as live values; removing deletion markers too early can allow an old copy to resurrect data. The exact retention and repair contract belongs to the selected storage system.
-
-## Consensus, Leadership & Coordination
-
-Consensus lets participants agree on decisions despite a defined failure model. Raft and Paxos are protocols used to build replicated state machines; they are not interchangeable with “take a vote” in application code. A protocol must relate leader election, committed history and future ownership so that a new leader cannot discard established decisions.
-
-Raft's usual failure model covers crashes and communication faults, not participants fabricating arbitrary protocol messages; Byzantine fault tolerance requires a different protocol and fault budget. Raft uses terms, leader election and a replicated log. A stable five-voter configuration needs a majority of three to commit new log entries and can therefore continue through two unavailable voters if communication and other protocol conditions permit. Quorum loss stops new commits rather than authorizing disconnected groups to create conflicting committed histories. Correct reads also need the protocol's read guarantees; an arbitrary follower read is not made linearizable by the existence of a leader.
-
-Safety and progress have different assumptions. A protocol can protect committed history while being unable to elect a stable leader during prolonged communication problems. The Fischer–Lynch–Paterson (FLP) result shows that deterministic consensus cannot guarantee termination in a fully asynchronous system with even one possible crash failure; it does not say consensus is unusable in practice. Practical protocols rely on timing conditions for progress or use other assumptions.
-
-Consensus does not make a replicated operation idempotent for a retrying client by itself. If an application appends two distinct commands for the same intent, both can be committed correctly by the consensus protocol. Request identity and result replay are still application contracts.
-
-## Leases, Fencing & Conditional Writes
-
-A lease grants temporary ownership according to a time and renewal protocol. Expiration permits recovery from an absent owner, but the earlier process may resume after a pause without knowing that its authority expired. Checking a local “lock held” flag is insufficient.
-
-A **fencing token** is an increasing ownership generation carried to the protected resource. After accepting a newer generation, the resource rejects operations from older generations. This prevents a delayed old owner from overwriting a newer owner's accepted work. The resource must persist and enforce the comparison; attaching a token to logs does not fence anything.
-
-![After generation 42 is accepted, a delayed write from generation 41 is rejected at the resource.](/docs/distributed-systems/v1/fencing.svg)
-
-Fencing is not a universal business invariant. It does not reject an older operation that reaches the resource before any newer token has been observed, and it does not make repeated operations from the current owner idempotent. Add version checks, transactional conditions or operation deduplication where those properties are required.
-
-An optimistic concurrency operation updates only if the stored version equals the caller's expected version, then increments it. This prevents overwriting an intervening change. A failed condition means the application must reread, reject or recompute; blindly applying the old result under a new version discards the protection.
-
-Prefer a database constraint or atomic condition when the invariant fits one storage boundary. A distributed lock can coordinate expensive work, but using it for correctness requires analyzing lease expiry, pauses, failover and resource enforcement. Two processes believing they own the same lock is precisely the case the design must survive.
-
-## Request Identity & Idempotent Effects
-
-An idempotent operation allows repeated application without additional intended effects after the first successful application. This is a property of a defined operation, not a guarantee that packets are delivered once. Returning a conflict for an existing identifier suppresses a duplicate but is different from replaying the original successful result.
-
-An idempotency contract needs the following decisions:
-
-| Decision                           | Example policy                                            |
-| ---------------------------------- | --------------------------------------------------------- |
-| Scope                              | Authenticated tenant plus one reservation operation       |
-| Request identity                   | Caller-generated key reused for retries of one intent     |
-| Payload comparison                 | Canonical validated SKU and quantity                      |
-| Successful replay                  | Same reservation identifier and application result        |
-| Changed payload under the same key | Conflict, with no new effect                              |
-| Atomic boundary                    | Inventory mutation and receipt saved in one transaction   |
-| Retention                          | Explicit retry horizon; late reuse needs a defined policy |
-| Unsuccessful attempt               | Define whether and which errors become stored outcomes    |
-
-Two intentionally identical reservations can be separate operations. Deduplicating only by payload would wrongly merge them; their keys should differ. Two differently serialized JSON objects can express the same command, so raw JSON text is often the wrong fingerprint. Normalize and validate the fields whose semantics define the operation before comparing them.
-
-The example stores the canonical tuple `[sku, quantity]`, not a general-purpose hash of arbitrary JSON. Its receipt key is `(tenant, request_key)` because the store exposes exactly one operation. A shared receipt table covering multiple operations would also need operation scope. The trusted tenant comes from the harness, not a caller-provided body field.
+Scope the key to a trusted tenant and operation. Compare validated business fields such as SKU and quantity; different JSON formatting should not create a different intent.
 
 ```sql
 BEGIN IMMEDIATE;
--- Read the receipt using the scoped key.
--- If it exists: compare payload, then replay or reject.
+-- Existing scoped receipt: compare input, then replay or reject.
 UPDATE inventory
 SET stock = stock - ?
 WHERE tenant = ? AND sku = ? AND stock >= ?;
--- Require one updated row, then insert the successful receipt.
+-- Require one changed row; insert the successful receipt.
 COMMIT;
 ```
 
-A cache-only “seen key” flag and a later database mutation are not atomic. Marking the key first can suppress work that never happened; marking it afterward can repeat work after a crash. The example commits the effect and replay record together. In a multi-instance deployment, all instances need the same authoritative transaction and uniqueness semantics; a per-process map cannot provide that property.
+The conditional update protects stock; the receipt protects replay. A cache flag written separately from the database cannot make those two actions atomic. Concurrent service instances must share the authoritative transaction and uniqueness constraints.
 
-The local store retains successful receipts indefinitely for the demonstration. Invalid commands and insufficient stock roll back without a successful receipt. Production retention must cover the retry and replay horizon, privacy obligations and storage growth. Deleting a receipt can permit a very late retry to execute again unless a longer-lived business identifier or another policy prevents it.
+Receipt retention defines the safe retry horizon. Deleting the receipt may let a late retry execute again. A local receipt also cannot atomically cover an unrelated payment provider: use its idempotency contract and operation ID, then reconcile uncertain results.
 
-:::check{question="A reservation committed but its HTTP response was lost. Should the client generate a fresh idempotency key before retrying?"}
-No. Reuse the same scoped key and normalized intent. A fresh key describes another operation and may reserve stock again. The server must atomically preserve the first effect and its successful receipt, then replay that receipt; changed input under the existing key must follow the conflict policy.
+:::check{question="A reservation committed, but the response disappeared. Should the retry use a new key?"}
+No. Reuse the original scoped key and input so the server can replay the receipt. A new key describes another intent and can create another reservation.
 :::
 
-## Delivery Guarantees & Cross-System Effects
+## Why Can Two Reads Show Different Stock?
 
-At-most-once delivery can lose work; at-least-once delivery can repeat it. Neither label alone establishes the number of business effects. A consumer can commit an effect and crash before acknowledging, causing a duplicate delivery. Acknowledging before the effect can lose work when the process crashes immediately afterward.
+Replication keeps copies of data on different nodes. In a **single-leader** design, one node accepts writes and followers copy them. With asynchronous replication, a follower can be behind even after the leader acknowledged a reservation.
 
-A transactional inbox records the event identity and its local effect atomically, so a repeated event does not apply that local effect twice. A transactional outbox records a state change and intent to publish atomically; a dispatcher may publish that intent more than once if confirmation is ambiguous. Consumers still need an appropriate deduplication contract.
+![The leader has stock zero while a lagging follower still shows one; a session read can return stale data.](/docs/distributed-systems/v2/stale-replica.svg)
 
-A message broker's exactly-once processing feature has a specific boundary. It may cover input offsets and output records inside its transaction model without covering a third-party email, payment or database write. Trace the entire effect path before claiming end-to-end behavior.
+**More copies do not automatically mean fresher reads.** Decide what a particular read must observe before choosing its route.
 
-Two-phase commit coordinates a transaction across participants that support its protocol. A prepared participant can retain locks while awaiting the decision, so coordinator failure and recovery affect availability. A consensus-backed database can improve some coordination properties but does not automatically include an unrelated external API.
+| Read contract            | What the application can rely on                                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------------------------- |
+| **Read-your-writes**     | This session sees its own acknowledged changes                                                            |
+| **Linearizability**      | Operations on the covered object behave like one atomic sequence respecting real-time precedence          |
+| **Eventual consistency** | Copies converge if updates stop and communication and repair succeed; immediate freshness is not promised |
+| **Causal consistency**   | Related observations preserve cause-before-effect; concurrent updates still need a policy                 |
 
-A saga coordinates separately committed steps with compensating actions. Compensation is another business operation, not time travel: a sent email cannot be unsent, a refund can fail, and a reservation release may race with later work. Event-Driven Architecture develops outbox dispatch, event contracts and saga workflows in more detail.
+For the reservation confirmation screen, read from an authority that meets the required guarantee, or wait for a known replication position/version. Sleeping for an arbitrary interval does not guarantee that a follower caught up.
 
-For an external provider, forward a stable provider-supported idempotency key when its contract permits it, retain the provider operation ID, and reconcile uncertain results. If no such capability exists, state the limitation and design a recovery process rather than claiming a local receipt makes the remote effect atomic.
+A fresh read alone does not prevent overselling. Two clients can both read stock `1` before either writes. **The stock check and decrement must be protected together** by an atomic condition or appropriate transaction.
 
-## Retry, Recovery & Verification
+**Serializability** makes committed transactions equivalent to some serial execution. **Strict serializability** also respects real-time precedence. These transaction guarantees differ from a promise about one key's reads. Retry an entire transaction after a serialization failure so its decisions use fresh reads.
 
-Retry only failures for which another attempt is both useful and safe. Preserve the intent identifier, use bounded attempts and elapsed time, and apply backoff with jitter to avoid synchronized bursts. Retrying independently at three layers can multiply attempts; choose an owner and propagate deadlines and attempt metadata.
-
-Cancellation bounds how long a caller waits or permits local work. It does not undo a remote commit, and an aborted JavaScript fetch is not a rollback command. Durable workflow state must distinguish confirmed success, confirmed rejection and an outcome still requiring reconciliation.
-
-Operational records should connect request keys, business operation IDs, provider IDs, event IDs and retry attempts. These identifiers serve different purposes: a correlation ID connects observations; it does not inherently deduplicate an effect. Track receipt conflicts, replication lag, old work age, rejected fencing tokens and recovery failures where those signals match the protocol.
-
-The example tests a real socket closure after a SQLite commit, then retries and compares the stored receipt. It also checks changed-payload conflicts, independent intent keys, tenant scope, rollback when receipt insertion fails, and receipt replay after closing and reopening a file-backed database. Overlapping HTTP requests share one synchronous SQLite connection: their transaction bodies run serially, so this is not a multi-process race test.
-
-A production verification plan must exercise the actual storage and coordination boundaries. Include simultaneous requests from independent instances, process termination around commit, failover, network partitions, delayed old owners, duplicate and reordered deliveries, and requests arriving after retention expiry. Verify business invariants after recovery rather than considering a successful restart sufficient.
-
-A deterministic local test demonstrates a particular failure schedule. It does not prove correctness for every distributed execution. Model the protocol where appropriate, test its implementation under faults, and document the timing, storage and membership assumptions on which its guarantees depend.
-
-:::check{question="A lease expired, another worker obtained a newer generation, and the first worker resumed. Is checking the first worker's local lease flag enough?"}
-No. The earlier process can resume with stale local state. The protected resource must enforce ownership/version conditions, such as rejecting an older fencing token after accepting a newer one. Deduplication and business invariants remain separate requirements.
+:::check{question="The user saves a reservation, then sees the old stock on a follower. Is eventual consistency enough to promise read-your-writes?"}
+No. Eventual convergence permits that stale observation. A read-your-writes contract needs routing, replication-position tracking or another mechanism that actually enforces it.
 :::
 
-The [runnable TypeScript example](https://github.com/LeandroCadena/engineering-knowledge-base/tree/codex/distributed-systems-reading/examples/distributed-systems) includes real SQLite transactions and loopback HTTP failure injection. It has no replicated database, consensus implementation or external-provider atomicity guarantee.
+## What Happens When Replicas Cannot Communicate?
+
+A **network partition** separates nodes that may still be running. If two disconnected nodes independently accept a reservation for the last unit, merging their data later cannot make both sales valid.
+
+![In a three-voter replicated log, the connected majority can commit after election; the isolated voter cannot commit alone.](/docs/distributed-systems/v2/partition.svg)
+
+### Consensus: agree on one committed history
+
+Protocols such as **Raft** elect a leader and replicate an ordered log. In a stable three-voter Raft group, two votes form a majority. A connected majority can commit through one unavailable voter when the protocol's other progress conditions hold. A lone voter cannot authorize a conflicting committed history.
+
+Election must preserve already committed decisions. Simply promoting any available replica is unsafe if it can discard acknowledged writes. Leader election also does not make arbitrary follower reads current or deduplicate repeated client commands.
+
+### CAP: choose behavior during the partition
+
+CAP says a system cannot guarantee both **linearizable behavior** and **completion of every request at non-failing nodes** during arbitrary network partitions. That formal availability is different from an uptime percentage.
+
+For inventory, a node without sufficient authority can refuse a reservation. Accepting changes on both sides instead needs a weaker contract or a redesigned invariant, such as allocating independent stock rights to each region in advance.
+
+**A quorum is a set required to acknowledge an operation.** For a fixed replica set, `R + W > N` makes read and write sets overlap. Overlap alone does not prove linearizability: version selection, concurrent writes, membership and the actual protocol still matter.
+
+Consensus has separate assumptions for safety and progress. Raft handles crash and communication faults, not arbitrary malicious participants. The **FLP result** explains why deterministic consensus cannot guarantee termination in a fully asynchronous model with one possible crash; practical progress relies on additional assumptions such as sufficiently stable communication.
+
+## Can an Expired Worker Still Change Data?
+
+Worker A holds a temporary lease and pauses. The lease expires; worker B becomes owner. A then resumes with stale local state. Its belief that it still owns the job is not authority.
+
+![The resource accepts ownership generation 42, then rejects a delayed write carrying generation 41.](/docs/distributed-systems/v2/fencing.svg)
+
+A **fencing token** is an increasing ownership generation checked by the protected resource. After accepting generation `42`, that resource rejects generation `41`. Merely including the token in logs provides no protection.
+
+Fencing rejects stale owners after a newer generation has been accepted. It does not deduplicate repeated writes from the current owner or reject every old operation that arrives before the newer generation. Those require their own operation or version checks.
+
+Use **optimistic concurrency** when a write should apply only to the version the caller read:
+
+```sql
+UPDATE reservations
+SET state = ?, version = version + 1
+WHERE id = ? AND version = ?;
+```
+
+Zero changed rows means the expected version no longer matches, or the row is absent. Reread and recompute, or report a conflict. Replacing the version and blindly retrying the old decision defeats the check.
+
+Wall-clock timestamps can differ or jump. Use monotonic time for local durations, and the actual lease/renewal protocol for ownership. A timeout is a reason to suspect an owner, not proof that it can never resume.
+
+:::check{question="Worker A resumes after worker B obtained a newer lease. Is A's local lock flag enough to authorize a write?"}
+No. The resource must enforce an ownership or version condition. A stale process can retain an old local flag; fencing rejects its older generation after a newer one has been accepted.
+:::
+
+## What If Messages Repeat or Arrive Out of Order?
+
+After reserving stock, the service publishes an event. A consumer saves its effect, then crashes before acknowledging the message. The broker can deliver it again.
+
+![The consumer commits the event ID and its local effect together, so redelivery does not apply that effect twice.](/docs/distributed-systems/v2/redelivery.svg)
+
+**At-least-once delivery permits duplicates; at-most-once delivery permits loss.** Neither label alone specifies how many business effects occur.
+
+A transactional **inbox** stores the event ID and consumer effect together. A transactional **outbox** stores a business change and publication intent together; its dispatcher can still publish twice after an uncertain confirmation. Each mechanism protects one boundary. Neither makes a third-party email or charge atomic with a local database.
+
+A **saga** coordinates separately committed steps using compensating operations, such as releasing inventory after a failed payment. Compensation can fail and cannot erase every external effect. **Two-phase commit** instead coordinates participants supporting its transaction protocol, but prepared participants may wait and hold resources during recovery. Event-Driven Architecture develops these mechanisms further.
+
+### Delivery order is not completion order
+
+Two workers can finish events in a different order from receipt. A broker's partition order also does not establish a global order across partitions. Keep an entity version and validate the expected predecessor when transitions must occur in sequence.
+
+A message send happens before its receipt; unrelated events can be concurrent. Wall-clock timestamps alone cannot prove causality. The following mechanisms answer different questions:
+
+| Mechanism           | Useful meaning and limit                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Lamport clock**   | Causally earlier events get smaller counters; a smaller counter alone does not prove causality          |
+| **Vector clock**    | Tracks causal relationships and concurrency using additional metadata                                   |
+| **Last-write-wins** | Selects one update by an ordering rule; concurrent increments can be lost                               |
+| **CRDT**            | Uses compatible data types and merge rules for convergence; does not enforce arbitrary stock invariants |
+
+### Recover the operation, then verify the invariant
+
+Retry safe, transient failures with bounded attempts, deadlines and backoff with jitter. Pick a retry owner so retries at several layers do not multiply. Preserve the operation key; a correlation ID used only for tracing does not deduplicate anything.
+
+The runnable example injects a real socket closure after a SQLite commit, retries the same reservation and checks its receipt and stock. It also checks input conflicts, tenant scope, rollback and file-backed replay after reopening. Transactions share one synchronous connection: this demonstrates lost-response recovery, not multi-process races, replicated consensus or partition safety.
+
+For production, test independent instances, failover, delayed owners, duplicate/reordered messages and retries after receipt expiry against the actual storage protocol. Check the business invariant after recovery, not just whether processes restarted.
+
+[Runnable TypeScript inventory example](https://github.com/LeandroCadena/engineering-knowledge-base/tree/main/examples/distributed-systems)
