@@ -117,6 +117,13 @@ test(
           setTimeout(() => reject(new Error('Child debug session did not attach')), 10000).unref(),
         ),
       ]);
+      const bound = await target.request('setBreakpoints', {
+        source: { path: source },
+        breakpoints: [{ line, condition: 'quantity === 2' }],
+      });
+      console.log('Bound breakpoint', JSON.stringify(bound));
+      console.log('Threads', JSON.stringify(await target.request('threads')));
+      debuggee.stdout.on('data', (chunk) => console.log('Fixture output', String(chunk)));
       debuggee.stdin.end('go\n');
       const stopped = await target.event('stopped');
       assert.equal(stopped.reason, 'breakpoint');
