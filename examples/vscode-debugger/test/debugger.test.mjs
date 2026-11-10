@@ -83,8 +83,9 @@ test(
       });
       sessions.push(root);
       await init(root);
-      debuggee = spawn(process.execPath, ['--inspect-brk=127.0.0.1:0', 'dist/main.js'], {
-        stdio: ['ignore', 'pipe', 'pipe'],
+      debuggee = spawn(process.execPath, ['--inspect=127.0.0.1:0', 'dist/main.js'], {
+        env: { ...process.env, KB_DEBUG_GATE: '1' },
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       const inspectPort = await new Promise((resolve, reject) => {
         let text = '';
@@ -116,6 +117,7 @@ test(
           setTimeout(() => reject(new Error('Child debug session did not attach')), 10000).unref(),
         ),
       ]);
+      debuggee.stdin.end('go\n');
       const stopped = await target.event('stopped');
       assert.equal(stopped.reason, 'breakpoint');
       const stack = await target.request('stackTrace', { threadId: stopped.threadId });
