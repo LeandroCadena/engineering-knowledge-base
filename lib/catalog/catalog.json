@@ -864,7 +864,7 @@
       "id": "distributed-systems",
       "title": "Distributed Systems",
       "category": "foundations",
-      "description": "Partial failures, clocks and ordering, consistency models, replication, quorums, consensus, leases, idempotent effects, delivery semantics, recovery, and fault-oriented verification.",
+      "description": "Follow one inventory reservation through lost responses, retries, stale replicas, network partitions, expired ownership, and duplicate messages.",
       "contentPath": "foundations/distributed-systems",
       "status": "review",
       "icon": "distributed-systems.svg",
