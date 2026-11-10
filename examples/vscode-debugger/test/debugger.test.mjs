@@ -75,7 +75,10 @@ test(
           const child = await Dap.connect(port);
           sessions.push(child);
           await init(child);
-          const attach = child.request(msg.arguments.request, msg.arguments.configuration);
+          const attach = child.request(msg.arguments.request, {
+            ...msg.arguments.configuration,
+            request: msg.arguments.request,
+          });
           await configure(child);
           await attach;
           targetResolve(child);
@@ -101,6 +104,7 @@ test(
       });
       const attach = root.request('attach', {
         type: 'pwa-node',
+        request: 'attach',
         address: '127.0.0.1',
         port: inspectPort,
         cwd: process.cwd(),
