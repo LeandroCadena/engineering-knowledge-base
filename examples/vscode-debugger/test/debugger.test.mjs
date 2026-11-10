@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { once } from 'node:events';
 import { Dap } from './dap.mjs';
 test(
   'real js-debug conditional TypeScript breakpoint, locals and stepping',
@@ -127,6 +128,7 @@ test(
         breakpoints: [{ line, condition: 'quantity === 2' }],
       });
       assert.equal(bound.breakpoints[0]?.verified, true, JSON.stringify(bound));
+      const output = once(debuggee.stdout, 'data');
       debuggee.stdin.end('go\n');
       const stopped = await target.event('stopped');
       assert.equal(stopped.reason, 'breakpoint');
@@ -165,7 +167,8 @@ test(
       });
       assert.equal(total.result, '2199');
       await target.request('continue', { threadId: stopped.threadId });
-      await target.event('terminated');
+      const [resultOutput] = await output;
+      assert.deepEqual(JSON.parse(String(resultOutput)), { total: 2199 });
     } finally {
       for (const client of sessions) client.close();
       adapter.kill();
