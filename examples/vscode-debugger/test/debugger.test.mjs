@@ -75,11 +75,11 @@ test(
           const child = await Dap.connect(port);
           sessions.push(child);
           await init(child);
-          // The server's bootstrap adapter initializes before it binds the pending target.
-          await child.event('initialized');
           const attach = child.request(msg.arguments.request, msg.arguments.configuration);
           await configure(child);
           await attach;
+          // Reapply configuration after the bootstrap session binds the real target.
+          await configure(child);
           targetResolve(child);
         })().catch(targetReject);
       });
