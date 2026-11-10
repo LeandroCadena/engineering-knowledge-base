@@ -117,12 +117,25 @@ test(
           setTimeout(() => reject(new Error('Child debug session did not attach')), 10000).unref(),
         ),
       ]);
+      await target.request('setBreakpoints', { source: { path: source }, breakpoints: [] });
       const bound = await target.request('setBreakpoints', {
         source: { path: source },
         breakpoints: [{ line, condition: 'quantity === 2' }],
       });
       console.log('Bound breakpoint', JSON.stringify(bound));
-      console.log('Threads', JSON.stringify(await target.request('threads')));
+      console.log(
+        'Sources',
+        JSON.stringify(
+          (await target.request('loadedSources')).sources.filter((s) =>
+            /checkout|main/.test(s.path ?? ''),
+          ),
+        ),
+      );
+      console.log(
+        'Breakpoint events',
+        JSON.stringify(target.events.filter((e) => e.event === 'breakpoint').map((e) => e.body)),
+      );
+      assert.equal(bound.breakpoints[0]?.verified, true, JSON.stringify(bound));
       debuggee.stdout.on('data', (chunk) => console.log('Fixture output', String(chunk)));
       debuggee.stdin.end('go\n');
       const stopped = await target.event('stopped');
