@@ -1,0 +1,36 @@
+name: Debugging and logging examples
+on:
+  pull_request:
+    paths:
+      - 'examples/vscode-debugger/**'
+      - 'examples/chrome-devtools/**'
+      - 'examples/pino/**'
+      - '.github/workflows/debugging-logging-examples.yml'
+permissions:
+  contents: read
+concurrency:
+  group: debugging-logging-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  examples:
+    name: verify-${{ matrix.example }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [vscode-debugger, chrome-devtools, pino]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: examples/${{ matrix.example }}/package-lock.json
+      - run: npm ci --prefix examples/${{ matrix.example }}
+      - name: Install verified standalone debug adapter
+        if: matrix.example == 'vscode-debugger'
+        run: npm run setup:debugger --prefix examples/vscode-debugger
+      - run: npm test --prefix examples/${{ matrix.example }}
