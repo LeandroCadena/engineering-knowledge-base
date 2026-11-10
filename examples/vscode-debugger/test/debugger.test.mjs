@@ -8,7 +8,6 @@ test(
   'real js-debug conditional TypeScript breakpoint, locals and stepping',
   { timeout: 40000 },
   async () => {
-    process.env.KB_DAP_TRACE = '1';
     const adapterEnv = { ...process.env, NODE_USE_ENV_PROXY: '0' };
     for (const key of Object.keys(adapterEnv))
       if (/^(https?|all)_proxy$/i.test(key)) delete adapterEnv[key];
@@ -56,6 +55,7 @@ test(
           source: { path: source },
           breakpoints: [{ line, condition: 'quantity === 2' }],
         });
+        await client.request('setExceptionBreakpoints', { filters: [] });
         await client.request('configurationDone');
       }
       const init = (client) =>
@@ -78,8 +78,6 @@ test(
           const attach = child.request(msg.arguments.request, msg.arguments.configuration);
           await configure(child);
           await attach;
-          // Reapply configuration after the bootstrap session binds the real target.
-          await configure(child);
           targetResolve(child);
         })().catch(targetReject);
       });
