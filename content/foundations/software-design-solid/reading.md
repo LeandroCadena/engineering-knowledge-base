@@ -1,215 +1,165 @@
 ---
 title: Software Design & SOLID
-description: Cohesion and coupling, information hiding, behavioral contracts, the five SOLID principles, composition, Clean Code, error boundaries, and incremental refactoring in TypeScript.
+description: The five SOLID principles explained through a TypeScript checkout, with short definitions, practical examples, and clear dependency boundaries.
 icon: solid.svg
-updatedAt: 2026-11-08
+updatedAt: 2026-11-17
 ---
 
 # Software Design & SOLID
 
-Software design assigns responsibilities, state and dependencies so that a change can be understood and implemented without breaking unrelated behavior. A design is useful when it protects the invariants the application needs and makes likely changes local. The number of classes, interfaces or folders does not establish those properties.
+Software design decides which part of an application owns each responsibility and how those parts collaborate. It helps you locate a rule, change it safely and understand the effects of that change.
 
-SOLID describes five related design principles: Single Responsibility, Open–Closed, Liskov Substitution, Interface Segregation and Dependency Inversion. They originated around object-oriented design, but their concerns also apply to TypeScript modules, functions and object-shaped contracts. Applying them does not require inheritance, a dependency-injection container or a framework.
+**SOLID** groups five principles for organizing responsibilities and dependencies. They apply to classes, TypeScript modules and functions.
 
-The running example accepts an order for a single book SKU. A shipping policy quotes a price, and one persistence operation deducts stock and inserts the order atomically. The policies and storage adapters can vary without exposing SQL or infrastructure details to checkout orchestration. The example has no web authentication, payment or distributed delivery guarantee; those concerns have their own contracts and readings.
+The example throughout this reading is a **checkout**. It validates an order, obtains a shipping quote and saves the order together with its stock deduction. The code examples illustrate the repository's teaching project.
 
-## Cohesion, Coupling & Information Hiding
+## S — Single Responsibility Principle
 
-**Cohesion** describes whether a module's elements support a coherent responsibility. A module that calculates shipping, formats invoices and administers database migrations groups tasks by convenience rather than a common policy. Splitting every operation into a separate class can create the opposite problem: understanding one rule requires following many tiny delegates with no meaningful boundary.
+**A module should have one coherent responsibility and one main reason to change.**
 
-**Coupling** describes how one part depends on another. Imports are one form, but shared mutable objects, database schemas, error classes, ordering assumptions, timing and undocumented field meanings can couple modules even when they share no source import. Replacing a direct call with an event does not remove coupling if both sides must still agree on payload meaning and failure handling.
+Look at who or what drives its changes. Shipping prices change with commercial policy. SQL changes with storage requirements. HTTP responses change with the API contract.
 
-Information hiding places a likely-to-change decision behind a stable boundary. A storage adapter can hide table layout and database-specific failures while exposing the operation the application needs. A wrapper that returns the raw database client or requires an ORM-specific query object has not hidden that decision.
+A checkout that contains all three forces unrelated changes into the same module. Give those decisions explicit owners.
 
-Group logic by the rules that need to change together. Separate decisions that evolve for different reasons, but keep cooperating state transitions together when correctness requires them. A transaction spanning stock and an order is a stronger boundary requirement than a stylistic preference for one repository per table.
+| Part | Responsibility |
+| --- | --- |
+| Input parser | Turn unknown input into a valid checkout request |
+| Shipping policy | Calculate the shipping quote |
+| Checkout | Coordinate the order's application flow |
+| Storage adapter | Save the accepted order and deduct stock atomically |
 
-## Contracts & Invariants
+Checkout can call several collaborators while still owning one responsibility. **SRP concerns reasons for change, rather than the number of methods or steps.**
 
-A useful contract describes accepted input, returned outcomes, permitted side effects and behavior on failure. A TypeScript signature expresses only part of that contract. `Promise<number>` does not say whether the number is cents or dollars, whether it can be negative, whether the input is mutated or whether a rejected promise can follow a committed write.
+Keep operations together when their correctness requires it. Stock deduction and order insertion belong to one atomic commit, even though they affect different tables.
 
-| Contract dimension | Example requirement                                                            |
-| ------------------ | ------------------------------------------------------------------------------ |
-| Preconditions      | Quantity is an integer from 1 to 100; destination is a supported domain value. |
-| Postconditions     | A quoted shipping amount is a nonnegative safe integer in USD cents.           |
-| Invariants         | Stock never becomes negative.                                                  |
-| Failure semantics  | Out-of-stock creates no order and changes no stock.                            |
-| Ownership          | Returned records do not expose mutable aliases to stored state.                |
-| Atomicity          | Stock deduction and insertion succeed together or neither is committed.        |
+![Stock deduction and order insertion share one atomic commit and roll back together on failure.](/docs/solid/v1/atomic-commit.svg)
 
-`readonly` helps prevent mutation through a particular TypeScript reference; it does not deeply freeze every nested value or stop an alias from changing the same object. Type assertions also do not validate network input. Parse unknown input at the boundary and use runtime checks for invariants that types cannot establish.
-
-A contract should not promise more than the implementation can support. A memory fixture with one owner and no suspension inside its update is not a distributed transaction. A real database adapter still needs concurrency and failure tests under the database model it uses.
-
-## Single Responsibility Principle
-
-SRP separates responsibilities driven by different reasons for change. Those reasons often correspond to different actors or policies: shipping pricing changes for commercial rules; persistence mapping changes for database evolution; HTTP formatting changes for an API contract. “One reason” refers to that source of change, not exactly one method, one statement or one verb.
-
-Checkout can validate a request, ask for a quote and commit an order while still expressing one application responsibility. It becomes less cohesive when the same module also embeds SQL schema, carrier-specific authentication and HTTP status mapping. Those decisions can change independently from the checkout rule.
-
-In the example, `parseCheckout` turns unknown input into a valid request, shipping policies own rate calculations, checkout owns sequencing, and adapters own persistence details. The parsing function is separate because it defines a boundary contract, not because every conditional deserves a new file.
-
-Keep a responsibility understandable at its actual scale. A five-line pure calculation does not need a service, factory, interface and manager merely to satisfy a principle. When a future requirement reveals a genuinely different change driver, extract that decision with tests around the existing behavior.
-
-:::check{question="A checkout function validates input, obtains a quote and commits an order. Does having three steps automatically violate SRP?"}
-No. Several steps can implement one coherent application responsibility. Examine whether unrelated policies or representations are embedded there and force it to change for unrelated actors. Counting statements or verbs does not identify that boundary.
+:::check{question="Checkout validates input, obtains a quote and saves an order. Do those three steps automatically violate SRP?"}
+Several steps can implement one application responsibility. Inspect the decisions embedded in checkout. Shipping formulas, SQL mapping and HTTP formatting have different reasons to change and can have their own owners.
 :::
 
-## Open–Closed Principle
+## O — Open–Closed Principle
 
-OCP protects stable behavior from repeated edits when a **known variation** changes. A checkout that asks a shipping contract for a quote need not branch on every provider. Adding a conforming policy changes composition/configuration while preserving the checkout's orchestration.
+**Allow an established variation to be extended while keeping the code that uses it stable.**
+
+Suppose checkout needs to support fixed-price and weight-based shipping. Give it a shipping capability so its orchestration can use either policy.
 
 ```ts
-export type ShippingQuotes = {
-  quote: (
-    shipment: Readonly<{
-      destination: 'AR' | 'US';
-      massGrams: number;
-    }>,
-  ) => Promise<{ kind: 'quoted'; shippingCents: number } | { kind: 'unavailable' }>;
+type ShippingQuotes = {
+  quote: (shipment: Readonly<{
+    destination: 'AR' | 'US';
+    massGrams: number;
+  }>) => Promise<
+    | { kind: 'quoted'; shippingCents: number }
+    | { kind: 'unavailable' }
+  >;
 };
 ```
 
-A fixed-price policy and a weight-based policy can implement this contract. A provider's own authentication headers and response format belong inside its adapter, rather than become parameters every checkout caller must understand. The application can treat unavailability as a documented outcome without identifying the concrete provider.
+Checkout asks `shipping.quote(shipment)` for the result. Each policy owns its calculation. Adding another conforming policy requires implementing and selecting that policy, while checkout continues to follow the same flow.
 
-The system is not closed to every conceivable change. A new destination model, currency requirement or shipping obligation may legitimately change the contract and its consumers. Fixing a bug or changing a business rule also requires edits. OCP is selective protection around a useful variation point, not a ban on modifying existing files.
+**Choose the extension point around a real source of variation.** Shipping policies may vary independently of accepting an order. A small, stable set of cases can still be expressed clearly with a `switch`.
 
-A small exhaustive `switch` over a closed domain can be clearer than a registry of plugins. If the variants must evolve together with one rule, keeping that rule centralized can improve correctness. Introduce extension boundaries where there is evidence of independent variation; speculative plugins add configuration, navigation and compatibility costs.
+A change to the underlying contract, such as supporting several currencies, can legitimately require changing checkout and its collaborators. OCP helps localize a known kind of change.
 
-Registration and deployment still happen. “No edits to checkout” does not mean “no code changes anywhere” or “no regression testing needed.” New behavior must satisfy the old contract and its own requirements.
+## L — Liskov Substitution Principle
 
-## Liskov Substitution Principle
+**A replacement must preserve the behavior promised to its callers.**
 
-LSP concerns **behavioral substitutability**: clients relying on a contract should continue to work with a conforming replacement. Sharing a method name or satisfying a structural TypeScript interface is insufficient.
+Two shipping implementations can satisfy the same TypeScript signature and still disagree about what their results mean. The contract must establish the accepted inputs, amount units, outcomes and side effects.
 
-A replacement must not demand stronger preconditions than its accepted contract. If valid shipments include both AR and US, a replacement cannot silently require AR only and throw “unsupported” for an otherwise valid US input when the contract requires a quoted/unavailable outcome. Model limited availability explicitly or expose a different capability.
+For the shipping contract above, a successful quote is a nonnegative safe integer in **USD cents**. A policy accepts valid AR and US shipments and can return `unavailable`. It preserves the caller's input.
 
-A replacement must preserve promised postconditions and invariants. Returning dollars through a `shippingCents` field, returning a negative amount or mutating the caller's shipment violates the quote contract even if all values have the declared JavaScript types. A storage replacement that returns success before making the accepted effect durable can also change the caller's meaning of success.
+| Replacement behavior | Contract result |
+| --- | --- |
+| Return a different valid shipping price | Compatible — policies can price differently |
+| Return 500 to represent five USD | Compatible with the cents convention |
+| Return 5 while intending five USD | Incompatible units |
+| Return a negative shipping price | Violates the promised result |
+| Return `unavailable` for a supported input | Compatible with the declared outcome |
+| Silently modify the shipment | Violates input ownership |
 
-```ts
-const quote = await shipping.quote(shipment);
-if (quote.kind === 'unavailable') {
-  return { kind: 'shipping_unavailable' };
-}
-if (!Number.isSafeInteger(quote.shippingCents) || quote.shippingCents < 0) {
-  throw new Error('Shipping contract violated');
-}
-```
+The same principle applies to a storage adapter. A memory implementation and a SQLite implementation must agree on what `created`, `out_of_stock` and `conflict` mean. Both must preserve the promised stock/order relationship.
 
-This check detects one class of provider violation before persistence. It does not prove every aspect of substitutability. Shared contract tests should cover supported inputs, result meaning, mutation, errors and state transitions, while provider-specific tests cover its distinct pricing or integration rules.
+**Types check shape. Contract tests check selected behaviors.** Run shared cases against each implementation, including errors and side effects. Provider-specific tests can then check its own pricing rules.
 
-Class inheritance is one context for LSP, but adapters and function replacements face the same issue. An in-memory repository that returns live object references while the database adapter returns independent records can make tests behave differently from production. Return snapshots when that is the advertised ownership contract.
-
-Expected temporary failures can be part of a contract. LSP does not require every implementation to have identical latency or never fail; clients must know which failure behaviors and timing assumptions they can rely on. Do not hide incompatible guarantees behind the same interface and expect typing alone to repair them.
-
-:::check{question="Two shipping providers both return Promise<number>. One returns 500 cents and the other returns 5 dollars. Does TypeScript compatibility make them interchangeable?"}
-No. Their units give the values different meanings. Define the amount unit in the contract and normalize the provider response at its boundary. Compiler compatibility cannot establish semantic postconditions such as currency, ownership, ordering or durability.
+:::check{question="Two shipping adapters return Promise<number>, but one uses cents and the other uses dollars. Can checkout safely substitute them?"}
+Their values have different meanings. Define the unit and normalize each provider's response before exposing it through the shared contract. A matching TypeScript return type alone cannot establish that agreement.
 :::
 
-## Interface Segregation Principle
+## I — Interface Segregation Principle
 
-ISP gives a client the capabilities it actually relies on instead of requiring it to depend on a broad unrelated surface. An order-status reader does not need stock adjustment, migration or administrative-delete operations. A checkout does not need to know how to list every order just to commit one.
+**Give each consumer the capabilities it actually needs.**
+
+An order-status screen needs to read an order. Checkout needs to commit one. A broad interface that also exposes migrations, refunds and administrative deletion makes both consumers depend on unrelated operations.
+
+The example uses separate read and commit capabilities.
 
 ```ts
 type OrderReader = {
-  find: (id: string) => Promise<Order | undefined>;
+  find: (id: string) => Promise<CommitOrder | undefined>;
 };
+
 type OrderCommit = {
-  commit: (order: NewOrder) => Promise<CommitResult>;
+  commit: (order: CommitOrder) => Promise<CommitResult>;
 };
 ```
 
-One adapter may implement both contracts while consumers receive only the relevant view. That is different from creating a one-method interface for every method regardless of client needs. Segregate by coherent client capability and expected change, not an arbitrary interface size.
+Here, `CommitOrder` is the accepted order data. `CommitResult` describes creation, insufficient stock or an ID conflict.
 
-An implementation forced to throw `UnsupportedOperation` for half a “universal repository” suggests mismatched capabilities. A reader interface should not promise writes if read-only implementations are legitimate. A no-op write is more dangerous because it pretends the promised effect occurred.
+One storage adapter can implement both capabilities. Each consumer receives the contract relevant to its work. This also makes test doubles easier to construct.
 
-Small capability surfaces improve dependency clarity; they are not a security sandbox in a structurally typed runtime. The object may still have extra methods, and a malicious caller or unsafe cast can bypass compile-time views. Enforce actual authorization at trusted boundaries.
+**Split by consumer needs while preserving the guarantees of each operation.** `commit` deliberately includes the order and stock update. Splitting it into two independent calls would expose a failure gap.
 
-Do not break an atomic operation into separately callable steps merely to make interfaces smaller. In the example, `OrderCommit` deliberately combines stock deduction and insertion. Clients depend on the combined guarantee; exposing them as two independent calls would weaken that guarantee.
+:::check{question="A refactor replaces one atomic commit with deductStock() followed by saveOrder(). Has a smaller interface preserved the behavior?"}
+A save failure can leave stock deducted without an order. Keep the combined atomic operation, or provide an explicit transaction mechanism that preserves the original guarantee.
+:::
 
-## Dependency Inversion Principle
+## D — Dependency Inversion Principle
 
-DIP makes stable application policy independent of replaceable implementation detail. The application owns the contract it needs; an infrastructure adapter implements that contract. The adapter depends on the application's meaning rather than the application importing a database-specific meaning.
+**Application rules depend on the capabilities they need. Infrastructure implements those capabilities.**
 
-![Source dependencies point at the application contract while runtime calls reach an adapter](/docs/solid/v1/dependency-direction.svg)
+Checkout needs an order commit and a shipping quote. Its application-facing contracts describe those operations. The SQLite adapter implements the commit through SQL, while a shipping policy implements the quote.
+
+![Application and adapter source dependencies point toward the application contract, while runtime calls reach the selected adapter.](/docs/solid/v1/dependency-direction.svg)
+
+Concrete implementations are selected where the application is assembled.
 
 ```ts
-import { createCheckout } from './checkout.js';
-import { memoryOrders } from './memory.js';
-import { weightShipping } from './shipping.js';
-
 const checkout = createCheckout({
   shipping: weightShipping(),
   orders: memoryOrders(10),
 });
-await checkout({ orderId: 'order-104', quantity: 2, destination: 'AR' });
+
+await checkout({
+  orderId: 'order-104',
+  quantity: 2,
+  destination: 'AR',
+});
 ```
 
-The application imports domain-facing types, while the SQLite adapter imports those same contract types and translates its local operations. SQL strings and database row shapes stay inside the adapter.
+This setup can supply a SQLite adapter through the same `OrderCommit` contract. Checkout continues to express the application flow without taking ownership of SQL queries or database rows.
 
-Dependency injection is the mechanism that supplies collaborators. Dependency inversion is the decision about what the consumer depends on and who owns that meaning. Passing a concrete database client into a constructor is injection, but may leave application policy coupled to its queries and transaction API.
+**Dependency injection supplies a collaborator. Dependency inversion determines the contract the application depends on.** Passing a concrete database client into a service uses injection, but the service may still depend directly on its query API.
 
-A composition root wires concrete policies/adapters into the application at startup. It is expected to know the choices it assembles. Business modules should not repeatedly look up dependencies from a global container: that service-locator pattern hides their requirements and can introduce shared lifetime/state surprises.
+In NestJS, a provider token can identify this application-owned contract, and module configuration can bind it to an adapter. That is a way to implement the dependency direction shown above. The runnable example uses ordinary functions and objects.
 
-TypeScript interfaces disappear at runtime. Functions and object values can implement the contract without `implements`; framework containers may need runtime tokens, as explained in NestJS. A container is optional. An injected function is often enough for one capability, while a concrete pure utility needs no replaceability boundary solely because it is imported.
+The distinction between OCP and DIP is their focus. **OCP** concerns extending a variation while keeping its consumer stable. **DIP** concerns directing source dependencies toward application-owned contracts. The shipping boundary supports both.
 
-## Composition, State & Transaction Boundaries
+## Applying SOLID to a Change
 
-Composition delegates a capability to an explicit collaborator. Inheritance combines behavior through a type hierarchy and can be appropriate where the subtype genuinely preserves the base contract. Avoid inheriting merely to reuse a helper when subclasses must disable behavior or depend on protected implementation details.
+For this checkout, the question is whether a new requirement changes the right place.
 
-A base class that calls overridable hooks while maintaining an invariant can be fragile: a subclass changes the hook without preserving the surrounding assumptions. A composed policy with a small documented input/output contract makes that variation easier to identify and test. It still needs behavioral guarantees; composition does not automatically make an incorrect adapter safe.
+| Requirement | Expected place to change |
+| --- | --- |
+| Adjust weight-based shipping prices | Shipping policy |
+| Add another shipping calculation | New policy and application assembly |
+| Change the database representation | Storage adapter |
+| Add an order-status reader | Read capability and its consumer |
+| Change what an accepted order means | Application contract and affected implementations |
 
-Responsibilities also have temporal boundaries. Checkout's database adapter must make stock deduction and order insertion one operation even though they affect separate tables:
+Use the relevant principle to explain the decision. SRP identifies responsibility, OCP isolates a variation, LSP preserves compatible behavior, ISP limits consumer dependencies and DIP gives the application ownership of its required contracts.
 
-![One atomic commit contains stock deduction and order insertion, with rollback on failure](/docs/solid/v1/atomic-commit.svg)
+The executable project contains two shipping policies and memory/SQLite storage adapters. Its existing tests exercise shared contracts, invalid quotes and rollback when order insertion fails after stock deduction. These give you concrete behavior to inspect while following the five principles.
 
-A transaction boundary is part of the application-facing contract, not merely an implementation convenience. If a second storage system or a remote payment is added, a local database transaction cannot suddenly cover it. Revisit the contract and recovery strategy; architecture/distributed-systems readings develop those broader mechanisms.
-
-Avoid exposing internal mutable state. The sample adapters copy incoming and returned order data so a caller cannot alter stored state by editing a previously returned object. This simple record has only scalar fields; a shallow copy would not isolate nested mutable objects without further handling.
-
-## Clean Code & Local Reasoning
-
-Clean Code in this reading means code whose behavior, assumptions and effects can be followed with limited guesswork. Formatting and naming help, but they do not compensate for unclear ownership, hidden I/O or an invalid contract.
-
-| Concern                | Concrete improvement                                                                                                        |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Ambiguous units        | Prefer `massGrams`, `shippingCents` and a declared currency over `weight` and `amount`.                                     |
-| Unclear state          | Prefer named outcomes such as `out_of_stock` and `conflict` over unexplained false/null values.                             |
-| Hidden effects         | Make an operation's writes, calls and failure boundary visible in its contract and name.                                    |
-| Boolean mode arguments | Replace unclear positional flags with named options or distinct operations where the modes have different responsibilities. |
-| Deep nesting           | Use guard clauses for invalid/terminal cases while preserving the required check order.                                     |
-| Large parameter lists  | Group a coherent request/capability instead of passing an unrelated “context” bag everywhere.                               |
-| Comments               | Explain a non-obvious invariant, tradeoff or external constraint rather than restate a visible assignment.                  |
-
-Function length is evidence, not a rule. A longer cohesive calculation can be easier to understand than a chain of vague one-line wrappers. Keep names at a consistent abstraction level: orchestration should express business steps while low-level parsing and persistence details remain in their own boundary.
-
-An early return can simplify a function but still be wrong if it changes required authorization or validation ordering. A “helper” that commits a transaction or sends email has effects a caller must know. Hiding those effects under a name such as `prepare()` creates a temporal dependency that the signature does not reveal.
-
-Duplication matters when the same **knowledge** must change consistently in several places. Similar-looking calculations for tax and shipping may be independent rules that should evolve separately. Merging them prematurely into a configurable universal calculator can create coupling through flags and exceptional cases. Extract shared policy after establishing that it has the same meaning and change owner.
-
-DRY does not mean deleting all repetition; YAGNI does not mean refusing a required boundary. Use an existing requirement or observed change pattern to justify an abstraction and account for the cost of maintaining it. A generic `BaseService<T>` is not automatically clearer than two small services with different invariants.
-
-## Errors & Effect Ordering
-
-Separate expected domain outcomes from unexpected infrastructure or programming failures. Out-of-stock and duplicate-ID conflict are documented results in the sample. A database insertion failure rejects the operation after rollback; it is not translated into out-of-stock just because both prevent an order from being created.
-
-Catch an error where there is a useful recovery, translation or cleanup action. Catching every error and returning an empty array can make a dependency outage look like a legitimate absence of records. Preserve enough causal context for diagnosis without leaking sensitive data to an external client.
-
-Do not retry an ambiguous write merely because its promise rejected. A remote effect may have committed before a response was lost. The sample deliberately defines repeated order IDs as conflicts rather than claiming a complete idempotency workflow. Delivery guarantees and persistent deduplication belong to the relevant system/storage contract, not to the SOLID acronym.
-
-Design cleanup and resource ownership explicitly. The SQLite connection belongs to the composition/test scope that opens it; checkout neither opens a connection for every rule nor closes a shared dependency behind other consumers. Lifetimes are observable behavior when state or resource pressure is involved.
-
-## Incremental Refactoring & Verification
-
-A refactor changes structure while preserving the intended observable contract. Establish the behavior that must remain stable, including error cases and side effects, before moving responsibilities. If a change intentionally alters a business rule, distinguish that requirement change from structural cleanup so its new behavior can be reviewed directly.
-
-Start with the pressure that is causing edits or failures. Extract one responsibility/contract, wire it explicitly, keep callers compatible, then verify the boundary. Do not replace a working module with a speculative hierarchy just to check all five letters at once.
-
-The example runs the same storage contract cases against an in-memory fixture and real SQLite: successful atomic commit, insufficient stock, conflicting IDs and detached returned snapshots. A SQLite trigger then forces insertion failure **after** stock deduction to verify rollback at the actual transaction boundary. Passing the memory fixture alone would not prove that database property.
-
-Shipping contract cases cover both policies without requiring identical prices. Checkout cases verify that unavailable/invalid quotes do not begin persistence, an additional policy can be composed without changing orchestration, and unknown runtime input cannot bypass the boundary. Tests of observable outcomes are more useful here than assertions that a private helper ran a particular number of times during a harmless refactor.
-
-:::check{question="A refactor creates separate InventoryWriter and OrderWriter interfaces, then calls them one after another. Has a cleaner interface split preserved the original atomic checkout contract?"}
-Not by itself. A failure after stock deduction can leave no order. Preserve one application-facing atomic operation or an explicit shared transaction/recovery design. Smaller interfaces do not justify removing the consistency guarantee that clients rely on.
-:::
-
-[Executable TypeScript example and setup](https://github.com/LeandroCadena/engineering-knowledge-base/tree/codex/software-design-solid-reading/examples/software-design-solid)
+[Executable TypeScript checkout and setup](https://github.com/LeandroCadena/engineering-knowledge-base/tree/main/examples/software-design-solid)
