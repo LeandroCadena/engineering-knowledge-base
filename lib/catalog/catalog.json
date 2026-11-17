@@ -822,7 +822,7 @@
       "id": "solid",
       "title": "Software Design & SOLID",
       "category": "foundations",
-      "description": "Cohesion and coupling, information hiding, behavioral contracts, the five SOLID principles, composition, Clean Code, error boundaries, and incremental refactoring in TypeScript.",
+      "description": "The five SOLID principles explained through a TypeScript checkout, with short definitions, practical examples, and clear dependency boundaries.",
       "contentPath": "foundations/software-design-solid",
       "status": "review",
       "icon": "solid.svg",

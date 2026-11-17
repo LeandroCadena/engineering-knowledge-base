@@ -52,4 +52,4 @@ The sample record has scalar fields; shallow copies isolate those records. Neste
 - [TypeScript readonly properties](https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties).
 - [Node SQLite API](https://nodejs.org/api/sqlite.html).
 
-The reading owns the foundations and Clean Code discussion. Design Patterns, Backend Application Architecture and DDD remain separate planned readings. Two app-owned editable SVG diagrams live in `public/docs/solid/v1`; the `solid.svg` icon is an original conceptual symbol, not an official logo.
+The reading follows this checkout through the five SOLID principles, with a short definition and an application example for each. Two editable SVG diagrams live in `public/docs/solid/v1`; the icon is an original conceptual symbol.
